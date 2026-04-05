@@ -3,23 +3,37 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home1/stechhwk/schemeapi.stechnotools.com
 
-    - echo "📦 Deploy backend"
+    - echo "🚀 Starting Deployment at $(date)"
+
+    - echo "📦 Sync backend files"
     - /bin/rsync -av --delete --exclude=".git" backend/ $DEPLOYPATH
 
-    - echo "📂 Enter project"
+    - echo "📂 Enter project folder"
     - cd $DEPLOYPATH
 
-    - echo "📦 Install dependencies"
-    - composer install --no-dev --optimize-autoloader
+    - echo "🔍 Check PHP version"
+    - php -v
 
-    - echo "⚙️ Optimize Laravel"
+    - echo "🔍 Check Composer path"
+    - which composer || true
+
+    - echo "📦 Install dependencies (Composer)"
+    - php -d memory_limit=-1 /usr/local/bin/composer install --no-dev --optimize-autoloader || composer install --no-dev --optimize-autoloader
+
+    - echo "🔑 Generate APP KEY if missing"
+    - php artisan key:generate --force || true
+
+    - echo "⚙️ Clear & Cache config"
     - php artisan config:clear
+    - php artisan cache:clear
     - php artisan config:cache
     - php artisan route:cache
     - php artisan view:cache
 
-    - echo "🗄️ Run migrations"
-    - php artisan migrate --force
+    - echo "🗄️ Run database migrations"
+    - php artisan migrate --force || true
 
     - echo "🔐 Fix permissions"
     - chmod -R 775 storage bootstrap/cache
+
+    - echo "🎉 Deployment Finished at $(date)"
