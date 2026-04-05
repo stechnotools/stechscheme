@@ -1,0 +1,25 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home1/stechhwk/schemeapi.stechnotools.com
+
+    - echo "📦 Sync backend"
+    - /bin/rsync -av --delete --exclude=".git" backend/ $DEPLOYPATH
+
+    - echo "📂 Enter project"
+    - cd $DEPLOYPATH
+
+    - echo "📦 Install dependencies"
+    - composer install --no-dev --optimize-autoloader
+
+    - echo "⚙️ Optimize Laravel"
+    - php artisan config:clear
+    - php artisan config:cache
+    - php artisan route:cache
+    - php artisan view:cache
+
+    - echo "🗄️ Run migrations"
+    - php artisan migrate --force
+
+    - echo "🔐 Fix permissions"
+    - chmod -R 775 storage bootstrap/cache
