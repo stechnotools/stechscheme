@@ -3,7 +3,7 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home1/stechhwk/schemeapi.stechnotools.com
 
-    - echo "📦 Sync backend"
+    - echo "📦 Deploy backend"
     - /bin/rsync -av --delete --exclude=".git" backend/ $DEPLOYPATH
 
     - echo "📂 Enter project"
