@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'company_id',
         'name',
         'category',
         'price',
@@ -21,8 +20,4 @@ class Product extends Model
         ];
     }
 
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
 }

@@ -17,6 +17,7 @@ type Props = {
   open: boolean
   handleClose: () => void
   roles: string[]
+  branches: Array<{ id: number; name: string }>
   editingUser?: UsersType | null
   loading?: boolean
   onSubmitUser: (payload: {
@@ -27,6 +28,7 @@ type Props = {
     password?: string
     status: string
     role_names: string[]
+    branch_ids: number[]
   }) => Promise<void>
 }
 
@@ -37,9 +39,10 @@ type FormValues = {
   password: string
   role: string
   status: string
+  branch_ids: number[]
 }
 
-const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading = false, onSubmitUser }: Props) => {
+const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null, loading = false, onSubmitUser }: Props) => {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const {
     control,
@@ -53,7 +56,8 @@ const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading =
       mobile: '',
       password: '',
       role: roles[0] ?? '',
-      status: 'active'
+      status: 'active',
+      branch_ids: []
     }
   })
 
@@ -67,7 +71,8 @@ const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading =
         mobile: editingUser.contact === '-' ? '' : editingUser.contact,
         password: '',
         role: editingUser.role || roles[0] || '',
-        status: editingUser.status || 'active'
+        status: editingUser.status || 'active',
+        branch_ids: editingUser.branchIds || []
       })
     } else {
       reset({
@@ -76,7 +81,8 @@ const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading =
         mobile: '',
         password: '',
         role: roles[0] ?? '',
-        status: 'active'
+        status: 'active',
+        branch_ids: []
       })
     }
   }, [open, editingUser, roles, reset])
@@ -98,7 +104,8 @@ const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading =
         mobile: data.mobile,
         password: data.password.trim() ? data.password : undefined,
         status: data.status,
-        role_names: data.role ? [data.role] : []
+        role_names: data.role ? [data.role] : [],
+        branch_ids: data.branch_ids || []
       })
 
       handleReset()
@@ -185,6 +192,37 @@ const AddUserDrawer = ({ open, handleClose, roles, editingUser = null, loading =
               )}
             />
             {errors.role ? <FormHelperText>This field is required.</FormHelperText> : null}
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel id='branch-select'>Select Branches</InputLabel>
+            <Controller
+              name='branch_ids'
+              control={control}
+              render={({ field }) => (
+                <Select
+                  multiple
+                  label='Select Branches'
+                  labelId='branch-select'
+                  {...field}
+                  value={field.value || []}
+                  renderValue={selected => {
+                    const selectedIds = selected as number[]
+
+                    return branches
+                      .filter(branch => selectedIds.includes(branch.id))
+                      .map(branch => branch.name)
+                      .join(', ')
+                  }}
+                >
+                  {branches.map(branch => (
+                    <MenuItem key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
+            <FormHelperText>Optional. Assign the user to one or more branches.</FormHelperText>
           </FormControl>
           <FormControl fullWidth>
             <InputLabel id='status-select'>Select Status</InputLabel>

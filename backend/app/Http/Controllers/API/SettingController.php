@@ -4,7 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
-use App\Models\Company;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,11 +23,9 @@ class SettingController extends Controller
     {
         $this->validateSection($section);
 
-        $companyId = $request->user()?->company_id;
         $key = $this->toSettingKey($section);
 
         $setting = AppSetting::query()
-            ->where('company_id', $companyId)
             ->where('key', $key)
             ->first();
 
@@ -48,12 +45,10 @@ class SettingController extends Controller
             'value' => ['required', 'array'],
         ]);
 
-        $companyId = $request->user()?->company_id;
         $key = $this->toSettingKey($section);
 
         $setting = AppSetting::query()->updateOrCreate(
             [
-                'company_id' => $companyId,
                 'key' => $key,
             ],
             [
@@ -78,14 +73,19 @@ class SettingController extends Controller
 
         $path = $validated['logo']->store('company-logos', 'public');
         $publicPath = "/storage/{$path}";
+        $key = $this->toSettingKey('company-profile');
 
-        $companyId = $request->user()?->company_id;
+        $setting = AppSetting::query()->firstOrCreate(
+            ['key' => $key],
+            ['value' => []]
+        );
 
-        if ($companyId) {
-            Company::query()->whereKey($companyId)->update([
-                'logo' => $publicPath,
-            ]);
-        }
+        $value = is_array($setting->value) ? $setting->value : [];
+        $value['logo'] = $publicPath;
+
+        $setting->update([
+            'value' => $value,
+        ]);
 
         return response()->json([
             'message' => 'Logo uploaded successfully.',

@@ -15,11 +15,13 @@ class StoreCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['required', 'integer', 'exists:companies,id'],
             'name' => ['nullable', 'string', 'max:255'],
-            'mobile' => ['required', 'string', 'max:20', 'unique:customers,mobile'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'mobile' => ['required', 'string', 'max:20', 'unique:customers,mobile', 'unique:users,mobile'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
+            'portal_enabled' => ['nullable', 'boolean'],
+            'portal_password' => ['nullable', 'string', 'min:6'],
+            'branch_id' => ['nullable', 'integer', Rule::exists('branches', 'id')],
         ];
     }
 }

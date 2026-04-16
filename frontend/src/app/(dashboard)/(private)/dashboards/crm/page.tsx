@@ -46,22 +46,22 @@ const metricCards = (report: Awaited<ReturnType<typeof getJewelleryDashboardData
   },
   {
     title: 'Active memberships',
-    value: report.memberships_count.toString(),
-    note: `${report.schemes_count} running schemes`,
+    value: report.active_memberships_count.toString(),
+    note: `${report.upcoming_maturities_count} maturing in 30 days`,
     icon: 'ri-medal-line',
     color: '#b45309'
   },
   {
     title: 'Customer base',
     value: report.customers_count.toString(),
-    note: `${report.companies_count} companies onboarded`,
+    note: `${report.schemes_count} active scheme masters`,
     icon: 'ri-team-line',
     color: '#1d4ed8'
   },
   {
-    title: 'Pending installments',
-    value: report.pending_installments_count.toString(),
-    note: `${report.transactions_count} ledger entries tracked`,
+    title: 'Overdue installments',
+    value: report.overdue_installments_count.toString(),
+    note: `${report.pending_installments_count} pending in total`,
     icon: 'ri-timer-line',
     color: '#be123c'
   }
@@ -75,9 +75,6 @@ const DashboardCRM = async () => {
           name?: string
           email?: string | null
           mobile?: string | null
-          company?: {
-            name?: string
-          } | null
         }
       }
     | null
@@ -96,7 +93,6 @@ const DashboardCRM = async () => {
   }
 
   const userName = session?.backendUser?.name || 'Team member'
-  const companyName = session?.backendUser?.company?.name || 'Jewellery company'
 
   return (
     <Grid container spacing={6}>
@@ -137,7 +133,7 @@ const DashboardCRM = async () => {
                   {`Welcome back, ${userName}.`}
                 </Typography>
                 <Typography variant='body1' sx={{ maxWidth: 760, color: 'rgba(255,255,255,0.82)' }}>
-                  {`${themeConfig.templateName} now connects to the Laravel backend for schemes, customers, memberships, payments, and reporting. This dashboard gives your ${companyName} team a live operational snapshot instead of the stock template widgets.`}
+                  {`${themeConfig.templateName} now connects to the Laravel backend for schemes, customers, memberships, payments, and reporting. This dashboard gives your team a live operational snapshot instead of the stock template widgets.`}
                 </Typography>
               </div>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} useFlexGap flexWrap='wrap'>
@@ -211,7 +207,7 @@ const DashboardCRM = async () => {
                 <TableBody>
                   {data?.payments.map(payment => (
                     <TableRow key={payment.id} hover>
-                      <TableCell>{payment.membership?.user?.name || 'Unknown member'}</TableCell>
+                      <TableCell>{payment.membership?.customer?.name || payment.membership?.customer?.mobile || payment.membership?.user?.name || 'Unknown member'}</TableCell>
                       <TableCell>{payment.membership?.scheme?.name || 'N/A'}</TableCell>
                       <TableCell>{format(new Date(payment.payment_date), 'dd MMM yyyy')}</TableCell>
                       <TableCell>
@@ -259,7 +255,7 @@ const DashboardCRM = async () => {
                     </ListItemAvatar>
                     <ListItemText
                       primary={customer.name || customer.mobile}
-                      secondary={`${customer.company?.name || 'No company'} • ${customer.mobile}`}
+                      secondary={customer.mobile}
                     />
                     <Chip
                       size='small'
@@ -349,7 +345,7 @@ const DashboardCRM = async () => {
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={membership.user?.name || 'Unknown member'}
+                      primary={membership.customer?.name || membership.customer?.mobile || membership.user?.name || 'Unknown member'}
                       secondary={`${membership.scheme?.name || 'No scheme'} • maturity ${format(new Date(membership.maturity_date), 'dd MMM yyyy')}`}
                     />
                     <div className='text-right'>

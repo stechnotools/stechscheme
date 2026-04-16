@@ -15,7 +15,6 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
     protected $fillable = [
-        'company_id',
         'name',
         'email',
         'mobile',
@@ -44,18 +43,23 @@ class User extends Authenticatable
         ];
     }
 
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     public function memberships()
     {
         return $this->hasMany(Membership::class);
     }
 
+    public function customer()
+    {
+        return $this->hasOne(Customer::class);
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class)->withTimestamps();
     }
 }

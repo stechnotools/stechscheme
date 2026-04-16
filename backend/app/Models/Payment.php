@@ -8,6 +8,7 @@ class Payment extends Model
 {
     protected $fillable = [
         'membership_id',
+        'installment_id',
         'amount',
         'gateway',
         'transaction_id',
@@ -26,5 +27,10 @@ class Payment extends Model
     public function membership()
     {
         return $this->belongsTo(Membership::class);
+    }
+
+    public function installment()
+    {
+        return $this->belongsTo(Installment::class);
     }
 }

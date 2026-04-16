@@ -15,9 +15,9 @@ class UserController extends CrudController
 {
     protected string $modelClass = User::class;
 
-    protected array $relations = ['company', 'roles', 'memberships.scheme', 'transactions'];
+    protected array $relations = ['roles', 'branches', 'memberships.scheme', 'transactions'];
 
-    protected array $filterable = ['company_id', 'status', 'gender', 'mobile_verified'];
+    protected array $filterable = ['status', 'gender', 'mobile_verified'];
 
     protected array $sortable = ['id', 'name', 'email', 'mobile', 'created_at', 'updated_at'];
 
@@ -26,7 +26,6 @@ class UserController extends CrudController
         $userId = $model?->getKey();
 
         return [
-            'company_id' => ['nullable', 'integer', 'exists:companies,id'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'mobile' => ['nullable', 'string', 'max:20', Rule::unique('users', 'mobile')->ignore($userId)],
@@ -39,6 +38,8 @@ class UserController extends CrudController
             'status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
             'role_names' => ['sometimes', 'array'],
             'role_names.*' => ['string', Rule::exists('roles', 'name')],
+            'branch_ids' => ['sometimes', 'array'],
+            'branch_ids.*' => ['integer', Rule::exists('branches', 'id')],
         ];
     }
 
@@ -66,13 +67,19 @@ class UserController extends CrudController
     {
         $validated = $request->validate($this->rules());
         $roleNames = $validated['role_names'] ?? [];
+        $branchIds = $validated['branch_ids'] ?? [];
         unset($validated['role_names']);
+        unset($validated['branch_ids']);
 
         /** @var User $user */
         $user = User::query()->create($this->mutateValidatedData($validated, null));
 
         if (is_array($roleNames) && $roleNames !== []) {
             $user->syncRoles($roleNames);
+        }
+
+        if (is_array($branchIds)) {
+            $user->branches()->sync($branchIds);
         }
 
         $this->syncCustomerRecordForCustomerRole($user, $roleNames);
@@ -89,12 +96,18 @@ class UserController extends CrudController
         $user = User::query()->findOrFail($id);
         $validated = $request->validate($this->rules($user));
         $roleNames = $validated['role_names'] ?? null;
+        $branchIds = $validated['branch_ids'] ?? null;
         unset($validated['role_names']);
+        unset($validated['branch_ids']);
 
         $user->update($this->mutateValidatedData($validated, $user));
 
         if (is_array($roleNames)) {
             $user->syncRoles($roleNames);
+        }
+
+        if (is_array($branchIds)) {
+            $user->branches()->sync($branchIds);
         }
 
         $this->syncCustomerRecordForCustomerRole($user, $roleNames);
@@ -117,12 +130,6 @@ class UserController extends CrudController
             ]);
         }
 
-        if (empty($user->company_id)) {
-            throw ValidationException::withMessages([
-                'company_id' => 'Company is required when assigning customer role.',
-            ]);
-        }
-
         $customerQuery = Customer::query()->where('mobile', $user->mobile);
 
         if (! empty($user->email)) {
@@ -133,7 +140,6 @@ class UserController extends CrudController
 
         if ($customer) {
             $customer->update([
-                'company_id' => $user->company_id,
                 'name' => $user->name,
                 'mobile' => $user->mobile,
                 'email' => $user->email,
@@ -144,7 +150,6 @@ class UserController extends CrudController
         }
 
         Customer::query()->create([
-            'company_id' => $user->company_id,
             'name' => $user->name,
             'mobile' => $user->mobile,
             'email' => $user->email,

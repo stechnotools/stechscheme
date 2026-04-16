@@ -1,18 +1,16 @@
 export type DashboardReport = {
-  companies_count: number
   customers_count: number
   schemes_count: number
   memberships_count: number
+  active_memberships_count: number
   payments_count: number
   transactions_count: number
   pending_installments_count: number
+  overdue_installments_count: number
+  pending_kyc_count: number
+  today_collections_amount: number
+  upcoming_maturities_count: number
   total_collected_amount: number
-}
-
-export type Company = {
-  id: number
-  name: string
-  email?: string | null
 }
 
 export type Customer = {
@@ -21,7 +19,6 @@ export type Customer = {
   mobile: string
   email?: string | null
   status: string
-  company?: Company | null
   kyc?: {
     status?: string
   } | null
@@ -32,10 +29,35 @@ export type Scheme = {
   name: string
   code: string
   scheme_type: string
+  item_group?: string | null
+  start_date?: string | null
+  termination_date?: string | null
+  no_of_installment_type?: string | null
+  min_no_of_installments?: number | null
+  installment_code?: string | null
+  installment_base?: string | null
+  installment_duration?: string | null
+  first_installment_multiple_of?: string | null
   installment_value: string
   total_installments: number
+  late_fee_effect_account?: string | null
   allow_overdue: boolean
-  company?: Company | null
+  grace_days?: number | null
+  maturity_months_after_last_installment?: number | null
+  apply_rate?: string | null
+  allow_change_rate_closing?: boolean
+  advance_closure_account?: string | null
+  allow_bonus?: boolean
+  benefit_type?: string | null
+  benefit_mode?: string | null
+  bonus_no_of_installments?: number | null
+  bonus_effect_account?: string | null
+  effect_to_account?: string | null
+  interest_receivable_account?: string | null
+  advertisement_publicity_account?: string | null
+  remarks?: string | null
+  is_closed?: boolean
+  wt_booked_with_gst?: boolean
 }
 
 export type Membership = {
@@ -44,6 +66,11 @@ export type Membership = {
   start_date: string
   maturity_date: string
   total_paid: string
+  customer?: {
+    id: number
+    name?: string | null
+    mobile: string
+  } | null
   user?: {
     id: number
     name: string
@@ -64,6 +91,10 @@ export type Payment = {
   transaction_id?: string | null
   membership?: {
     id: number
+    customer?: {
+      name?: string | null
+      mobile: string
+    } | null
     user?: {
       name: string
     } | null

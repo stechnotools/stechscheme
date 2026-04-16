@@ -9,7 +9,7 @@ class KycService
 {
     public function paginate(array $filters): LengthAwarePaginator
     {
-        $query = CustomerKyc::query()->with(['customer.company']);
+        $query = CustomerKyc::query()->with(['customer']);
 
         foreach (['customer_id', 'status', 'city', 'state'] as $field) {
             if (! empty($filters[$field])) {
@@ -37,6 +37,6 @@ class KycService
         return CustomerKyc::updateOrCreate(
             ['customer_id' => $validated['customer_id']],
             $validated
-        )->fresh(['customer.company']);
+        )->fresh(['customer']);
     }
 }

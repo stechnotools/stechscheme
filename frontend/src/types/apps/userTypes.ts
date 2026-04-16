@@ -13,5 +13,7 @@ export type UsersType = {
   fullName: string
   username: string
   currentPlan: string
+  branchNames?: string[]
+  branchIds?: number[]
   avatarColor?: ThemeColor
 }

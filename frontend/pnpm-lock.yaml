@@ -79,9 +79,15 @@ importers:
       '@mui/material-nextjs':
         specifier: 7.3.5
         version: 7.3.5(@emotion/cache@11.14.0)(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(next@16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      '@mui/utils':
+        specifier: 7.3.6
+        version: 7.3.6(@types/react@19.2.7)(react@19.2.3)
       '@prisma/client':
         specifier: 6.19.0
         version: 6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3)
+      '@radix-ui/react-dialog':
+        specifier: 1.1.15
+        version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@reduxjs/toolkit':
         specifier: 2.10.1
         version: 2.10.1(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1))(react@19.2.3)
@@ -97,9 +103,15 @@ importers:
       '@tiptap/core':
         specifier: 3.14.0
         version: 3.14.0(@tiptap/pm@3.14.0)
+      '@tiptap/extension-bold':
+        specifier: 3.14.0
+        version: 3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))
       '@tiptap/extension-color':
         specifier: 3.14.0
         version: 3.14.0(@tiptap/extension-text-style@3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0)))
+      '@tiptap/extension-italic':
+        specifier: 3.14.0
+        version: 3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))
       '@tiptap/extension-list':
         specifier: 3.14.0
         version: 3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))(@tiptap/pm@3.14.0)
@@ -109,6 +121,9 @@ importers:
       '@tiptap/extension-placeholder':
         specifier: 3.14.0
         version: 3.14.0(@tiptap/extensions@3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))(@tiptap/pm@3.14.0))
+      '@tiptap/extension-strike':
+        specifier: 3.14.0
+        version: 3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))
       '@tiptap/extension-text-align':
         specifier: 3.14.0
         version: 3.14.0(@tiptap/core@3.14.0(@tiptap/pm@3.14.0))

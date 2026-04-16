@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRef } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, MouseEvent } from 'react'
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
@@ -12,15 +12,11 @@ import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-type Company = {
-  id?: number
+type CompanyProfileSettings = {
   name: string
   email?: string | null
   phone?: string | null
   logo?: string | null
-}
-
-type CompanyProfileSettings = {
   address: string
   owner_name: string
   gst_no: string
@@ -48,8 +44,25 @@ const resolveBackendApiUrl = () => {
 }
 
 const backendApiUrl = resolveBackendApiUrl()
+const backendOrigin = backendApiUrl.replace(/\/api$/, '')
+
+const resolveAssetUrl = (value?: string | null) => {
+  if (!value) return ''
+
+  if (/^(blob:|data:|https?:\/\/)/i.test(value)) {
+    return value
+  }
+
+  const normalizedValue = value.startsWith('/') ? value : `/${value}`
+
+  return `${backendOrigin}${normalizedValue}`
+}
 
 const initialProfile: CompanyProfileSettings = {
+  name: '',
+  email: '',
+  phone: '',
+  logo: '',
   address: '',
   owner_name: '',
   gst_no: '',
@@ -59,11 +72,8 @@ const initialProfile: CompanyProfileSettings = {
 const CompanyInfoSettings = () => {
   const { data: session, status } = useSession()
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
-  const sessionCompany = (session as { backendUser?: { company?: Company | null } } | null)?.backendUser?.company ?? null
 
-  const [company, setCompany] = useState<Company>({ name: '', email: '', phone: '', logo: '' })
   const [profile, setProfile] = useState<CompanyProfileSettings>(initialProfile)
-  const [companyId, setCompanyId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,25 +121,14 @@ const CompanyInfoSettings = () => {
     setError(null)
 
     try {
-      const sessionCompanyId = sessionCompany?.id ?? null
-
-      if (sessionCompanyId) {
-        const companyResponse = await request<{ data: Company }>(`/companies/${sessionCompanyId}`)
-        const currentCompany = companyResponse.data
-
-        setCompanyId(currentCompany.id ?? null)
-        setCompany({
-          name: currentCompany.name || '',
-          email: currentCompany.email || '',
-          phone: currentCompany.phone || '',
-          logo: currentCompany.logo || ''
-        })
-      }
-
       const settings = await request<SettingsResponse>('/settings/company-profile')
       const value = settings.data?.value || {}
 
       setProfile({
+        name: value.name || '',
+        email: value.email || '',
+        phone: value.phone || '',
+        logo: value.logo || '',
         address: value.address || '',
         owner_name: value.owner_name || '',
         gst_no: value.gst_no || '',
@@ -140,7 +139,7 @@ const CompanyInfoSettings = () => {
     } finally {
       setLoading(false)
     }
-  }, [accessToken, request, sessionCompany?.id])
+  }, [accessToken, request])
 
   useEffect(() => {
     return () => {
@@ -162,12 +161,12 @@ const CompanyInfoSettings = () => {
   }, [status, accessToken, loadData])
 
   const handleSave = async () => {
-    if (!company.name.trim()) {
+    if (!profile.name.trim()) {
       setError('Company name is required.')
       return
     }
 
-    if (!company.phone?.trim()) {
+    if (!profile.phone?.trim()) {
       setError('Mobile number is required.')
       return
     }
@@ -178,7 +177,7 @@ const CompanyInfoSettings = () => {
     setSuccess(null)
 
     try {
-      let finalLogo = company.logo || null
+      let finalLogo = profile.logo || null
 
       if (pendingLogoFile) {
         const formData = new FormData()
@@ -193,43 +192,22 @@ const CompanyInfoSettings = () => {
 
         if (uploadedLogo) {
           finalLogo = uploadedLogo
-          setCompany(prev => ({ ...prev, logo: uploadedLogo }))
+          setProfile(prev => ({ ...prev, logo: uploadedLogo }))
         }
-      }
-
-      const companyPayload = {
-        name: company.name,
-        email: company.email || null,
-        phone: company.phone || null,
-        logo: finalLogo
-      }
-
-      let finalCompanyId = companyId
-
-      if (companyId) {
-        await request(`/companies/${companyId}`, {
-          method: 'PUT',
-          body: JSON.stringify(companyPayload)
-        })
-      } else {
-        const created = await request<{ data: Company }>('/companies', {
-          method: 'POST',
-          body: JSON.stringify(companyPayload)
-        })
-
-        finalCompanyId = created.data.id ?? null
-        setCompanyId(finalCompanyId)
       }
 
       await request('/settings/company-profile', {
         method: 'PUT',
         body: JSON.stringify({
           value: {
+            name: profile.name,
+            email: profile.email || null,
+            phone: profile.phone || null,
+            logo: finalLogo,
             address: profile.address,
             owner_name: profile.owner_name,
             gst_no: profile.gst_no,
-            pan_no: profile.pan_no,
-            company_id: finalCompanyId
+            pan_no: profile.pan_no
           }
         })
       })
@@ -249,7 +227,7 @@ const CompanyInfoSettings = () => {
     }
   }
 
-  const handleResetLogo = (event?: React.MouseEvent<HTMLButtonElement>) => {
+  const handleResetLogo = (event?: MouseEvent<HTMLButtonElement>) => {
     event?.preventDefault()
 
     if (logoPreviewUrl) {
@@ -257,10 +235,10 @@ const CompanyInfoSettings = () => {
     }
     setPendingLogoFile(null)
     setLogoPreviewUrl(null)
-    setCompany(prev => ({ ...prev, logo: '' }))
+    setProfile(prev => ({ ...prev, logo: '' }))
   }
 
-  const handleBrowseLogo = (event?: React.MouseEvent<HTMLButtonElement>) => {
+  const handleBrowseLogo = (event?: MouseEvent<HTMLButtonElement>) => {
     event?.preventDefault()
     logoInputRef.current?.click()
   }
@@ -301,7 +279,7 @@ const CompanyInfoSettings = () => {
                 height={100}
                 width={100}
                 className='rounded object-cover border'
-                src={logoPreviewUrl || company.logo?.trim() || '/images/avatars/1.png'}
+                src={logoPreviewUrl || resolveAssetUrl(profile.logo?.trim()) || '/images/avatars/1.png'}
                 alt='Company Logo'
               />
               <div className='flex grow flex-col gap-4'>
@@ -330,8 +308,8 @@ const CompanyInfoSettings = () => {
                 <TextField
                   fullWidth
                   label='Company Name'
-                  value={company.name}
-                  onChange={e => setCompany(prev => ({ ...prev, name: e.target.value }))}
+                  value={profile.name}
+                  onChange={e => setProfile(prev => ({ ...prev, name: e.target.value }))}
                   disabled={loading}
                 />
               </Grid>
@@ -339,8 +317,8 @@ const CompanyInfoSettings = () => {
                 <TextField
                   fullWidth
                   label='Email'
-                  value={company.email || ''}
-                  onChange={e => setCompany(prev => ({ ...prev, email: e.target.value }))}
+                  value={profile.email || ''}
+                  onChange={e => setProfile(prev => ({ ...prev, email: e.target.value }))}
                   disabled={loading}
                 />
               </Grid>
@@ -348,8 +326,8 @@ const CompanyInfoSettings = () => {
                 <TextField
                   fullWidth
                   label='Mobile No'
-                  value={company.phone || ''}
-                  onChange={e => setCompany(prev => ({ ...prev, phone: e.target.value }))}
+                  value={profile.phone || ''}
+                  onChange={e => setProfile(prev => ({ ...prev, phone: e.target.value }))}
                   disabled={loading}
                 />
               </Grid>

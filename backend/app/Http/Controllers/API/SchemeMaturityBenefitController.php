@@ -9,7 +9,7 @@ class SchemeMaturityBenefitController extends CrudController
 {
     protected string $modelClass = SchemeMaturityBenefit::class;
 
-    protected array $relations = ['scheme.company'];
+    protected array $relations = ['scheme'];
 
     protected array $filterable = ['scheme_id', 'month', 'type'];
 
@@ -20,7 +20,7 @@ class SchemeMaturityBenefitController extends CrudController
         return [
             'scheme_id' => ['required', 'integer', 'exists:schemes,id'],
             'month' => ['required', 'integer', 'min:1'],
-            'type' => ['required', 'string', 'max:100'],
+            'type' => ['required', 'in:percentage'],
             'value' => ['required', 'numeric', 'min:0'],
         ];
     }

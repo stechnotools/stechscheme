@@ -12,6 +12,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PermissionSeeder::class,
             AdminSeeder::class,
+            SystemChartOfAccountsSeeder::class,
+            SchemeChartOfAccountsSeeder::class,
         ]);
     }
 }

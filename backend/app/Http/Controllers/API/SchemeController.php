@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Scheme\StoreSchemeRequest;
+use App\Models\ChartOfAccount;
 use App\Models\Scheme;
 use App\Services\SchemeService;
 use Illuminate\Http\JsonResponse;
@@ -22,16 +23,19 @@ class SchemeController extends Controller
 
     public function store(StoreSchemeRequest $request): JsonResponse
     {
+        $scheme = $this->schemeService->create($request->validated());
+
         return response()->json([
             'message' => 'Scheme created successfully.',
-            'data' => $this->schemeService->create($request->validated()),
+            'scheme_id' => $scheme->id,
+            'data' => $scheme,
         ], 201);
     }
 
     public function show(int $id): JsonResponse
     {
         return response()->json([
-            'data' => Scheme::query()->with(['company', 'maturityBenefits', 'memberships'])->findOrFail($id),
+            'data' => Scheme::query()->with(['maturityBenefits', 'memberships'])->findOrFail($id),
         ]);
     }
 
@@ -47,7 +51,14 @@ class SchemeController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        Scheme::query()->findOrFail($id)->delete();
+        $scheme = Scheme::query()->findOrFail($id);
+
+        ChartOfAccount::query()
+            ->where('source_type', 'scheme')
+            ->where('source_id', $scheme->id)
+            ->delete();
+
+        $scheme->delete();
 
         return response()->json([
             'message' => 'Scheme deleted successfully.',

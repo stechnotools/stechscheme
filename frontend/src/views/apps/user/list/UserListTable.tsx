@@ -36,7 +36,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import tableStyles from '@core/styles/table.module.css'
 
-declare module '@tanstack/table-core' {
+declare module '@tanstack/react-table' {
   interface FilterFns {
     fuzzy: FilterFn<unknown>
   }
@@ -60,6 +60,7 @@ type UserStatusType = {
 type Props = {
   users: UsersType[]
   roles: string[]
+  branches: Array<{ id: number; name: string }>
   loading: boolean
   onRefresh: () => Promise<void>
   request: <T>(path: string, init?: RequestInit) => Promise<T>
@@ -68,7 +69,13 @@ type Props = {
 const Icon = styled('i')({})
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-  const itemRank = rankItem(row.getValue(columnId), value)
+  const rawValue = row.getValue(columnId)
+  const normalizedValue = Array.isArray(rawValue)
+    ? rawValue.join(' ')
+    : rawValue === null || rawValue === undefined
+      ? ''
+      : String(rawValue)
+  const itemRank = rankItem(normalizedValue, value)
 
   addMeta({
     itemRank
@@ -134,7 +141,7 @@ const userStatusObj: UserStatusType = {
 
 const columnHelper = createColumnHelper<UsersTypeWithAction>()
 
-const UserListTable = ({ users, roles, loading, onRefresh, request }: Props) => {
+const UserListTable = ({ users, roles, branches, loading, onRefresh, request }: Props) => {
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UsersType | null>(null)
   const [rowSelection, setRowSelection] = useState({})
@@ -156,6 +163,7 @@ const UserListTable = ({ users, roles, loading, onRefresh, request }: Props) => 
     password?: string
     status: string
     role_names: string[]
+    branch_ids: number[]
   }) => {
     setActionError(null)
     const { userId, ...body } = payload
@@ -246,6 +254,26 @@ const UserListTable = ({ users, roles, loading, onRefresh, request }: Props) => 
             </div>
           )
         }
+      }),
+      columnHelper.accessor(row => row.branchNames?.join(', ') ?? '', {
+        id: 'branchNames',
+        header: 'Branches',
+        cell: ({ row }) => {
+          const branchNames = row.original.branchNames || []
+
+          if (!branchNames.length) {
+            return <Typography color='text.secondary'>-</Typography>
+          }
+
+          return (
+            <div className='flex items-center gap-2 flex-wrap'>
+              {branchNames.map(branchName => (
+                <Chip key={branchName} label={branchName} size='small' variant='tonal' />
+              ))}
+            </div>
+          )
+        },
+        enableSorting: false
       }),
       columnHelper.accessor('status', {
         header: 'Status',
@@ -436,6 +464,7 @@ const UserListTable = ({ users, roles, loading, onRefresh, request }: Props) => 
           setEditingUser(null)
         }}
         roles={roles}
+        branches={branches}
         editingUser={editingUser}
         loading={loading}
         onSubmitUser={handleSubmitUser}

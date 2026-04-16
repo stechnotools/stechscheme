@@ -18,11 +18,6 @@ type BackendLoginResponse = {
     name: string
     email: string | null
     mobile: string | null
-    company?: {
-      id: number
-      name: string
-      email?: string | null
-    } | null
     role?: string | null
     roles?: Array<{ name?: string | null }> | string[]
     status?: string | null
@@ -35,11 +30,6 @@ type SessionBackendUser = {
   name: string
   email: string | null
   mobile: string | null
-  company?: {
-    id: number
-    name: string
-    email?: string | null
-  } | null
   role?: string | null
   roles?: string[]
   status?: string | null
@@ -87,7 +77,6 @@ export const authOptions: NextAuthOptions = {
           name: data.data.name,
           email: data.data.email,
           mobile: data.data.mobile,
-          company: data.data.company ?? null,
           role: data.data.role ?? roles[0] ?? null,
           roles,
           status: data.data.status ?? null

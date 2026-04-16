@@ -16,7 +16,7 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     label: 'Dashboard',
     icon: 'ri-dashboard-line',
     children: [
-      { id: 'dashboard-overview', label: 'Overview', href: '/', permission: 'dashboard.overview', roles: ['super-admin', 'admin', 'staff', 'customer'] },
+      { id: 'dashboard-overview', label: 'Overview', href: '/', permission: 'dashboard.overview', roles: ['super-admin', 'admin', 'staff'] },
       {
         id: 'dashboard-analytics',
         label: 'Analytics',
@@ -42,14 +42,7 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     icon: 'ri-group-line',
     children: [
       { id: 'customers-all', label: 'All Customers', href: '/customers', permission: 'customers.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'customers-add', label: 'Add Customer', href: '/customers/add', permission: 'customers.add', roles: ['super-admin', 'admin', 'staff'] },
-      {
-        id: 'customers-profile',
-        label: 'Customer Profile',
-        href: '/customers/profile',
-        permission: 'customers.profile',
-        roles: ['super-admin', 'admin', 'staff', 'customer']
-      }
+      { id: 'customers-add', label: 'Add Customer', href: '/customers/add', permission: 'customers.add', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
   {
@@ -70,12 +63,20 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     roles: ['super-admin', 'admin', 'staff'],
     children: [
       { id: 'schemes-all', label: 'All Schemes', href: '/schemes', permission: 'schemes.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'schemes-create', label: 'Create Scheme', href: '/schemes/create', permission: 'schemes.create', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'schemes-create', label: 'Create Scheme', href: '/schemes/create', permission: 'schemes.create', roles: ['super-admin', 'admin', 'staff'] }
+    ]
+  },
+  {
+    id: 'accounts',
+    label: 'Accounts',
+    icon: 'ri-bank-card-line',
+    roles: ['super-admin', 'admin', 'staff'],
+    children: [
       {
-        id: 'schemes-maturity',
-        label: 'Maturity Benefits',
-        href: '/schemes/maturity-benefits',
-        permission: 'schemes.maturity-benefits',
+        id: 'accounts-chart-of-accounts',
+        label: 'Chart of Accounts',
+        href: '/chart-of-accounts',
+        permission: 'accounts.chart-of-accounts',
         roles: ['super-admin', 'admin', 'staff']
       }
     ]
@@ -85,9 +86,10 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     label: 'Membership',
     icon: 'ri-vip-crown-line',
     children: [
-      { id: 'membership-active', label: 'Active', href: '/membership/active', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff', 'customer'] },
-      { id: 'membership-matured', label: 'Matured', href: '/membership/matured', permission: 'membership.matured', roles: ['super-admin', 'admin', 'staff', 'customer'] },
-      { id: 'membership-redeemed', label: 'Redeemed', href: '/membership/redeemed', permission: 'membership.redeemed', roles: ['super-admin', 'admin', 'staff', 'customer'] },
+      { id: 'membership-create', label: 'Create Membership', href: '/membership/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'membership-active', label: 'Active', href: '/membership/active', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'membership-matured', label: 'Matured', href: '/membership/matured', permission: 'membership.matured', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'membership-redeemed', label: 'Redeemed', href: '/membership/redeemed', permission: 'membership.redeemed', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'membership-closed', label: 'Closed', href: '/membership/closed', permission: 'membership.closed', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
@@ -98,8 +100,8 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     children: [
       { id: 'installments-all', label: 'All', href: '/installments', permission: 'installments.all', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'installments-pending', label: 'Pending', href: '/installments/pending', permission: 'installments.pending', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'installments-paid', label: 'Paid', href: '/installments/paid', permission: 'installments.paid', roles: ['super-admin', 'admin', 'staff', 'customer'] },
-      { id: 'installments-overdue', label: 'Overdue', href: '/installments/overdue', permission: 'installments.overdue', roles: ['super-admin', 'admin', 'staff', 'customer'] }
+      { id: 'installments-paid', label: 'Paid', href: '/installments/paid', permission: 'installments.paid', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'installments-overdue', label: 'Overdue', href: '/installments/overdue', permission: 'installments.overdue', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
   {
@@ -108,33 +110,16 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     icon: 'ri-secure-payment-line',
     children: [
       { id: 'payments-all', label: 'All Payments', href: '/payments', permission: 'payments.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'payments-history', label: 'Payment History', href: '/payments/history', permission: 'payments.history', roles: ['super-admin', 'admin', 'staff', 'customer'] },
+      { id: 'payments-history', label: 'Payment History', href: '/payments/history', permission: 'payments.history', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'payments-failed', label: 'Failed', href: '/payments/failed', permission: 'payments.failed', roles: ['super-admin', 'admin', 'staff'] },
       {
         id: 'payments-receipt',
-        label: 'Receipt / Deposit Slip',
+        label: 'Receipts',
         href: '/payments/receipt',
         permission: 'payments.receipt',
-        roles: ['super-admin', 'admin', 'staff', 'customer']
+        roles: ['super-admin', 'admin', 'staff']
       }
     ]
-  },
-  {
-    id: 'catalog',
-    label: 'Catalog',
-    icon: 'ri-price-tag-3-line',
-    roles: ['super-admin', 'admin', 'staff'],
-    children: [
-      { id: 'catalog-products', label: 'Products', href: '/catalog/products', permission: 'catalog.products', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'catalog-categories', label: 'Categories', href: '/catalog/categories', permission: 'catalog.categories', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'promotions',
-    label: 'Promotions',
-    icon: 'ri-megaphone-line',
-    roles: ['super-admin', 'admin', 'staff'],
-    children: [{ id: 'promotions-offers', label: 'Offers', href: '/promotions/offers', permission: 'promotions.offers', roles: ['super-admin', 'admin', 'staff'] }]
   },
   {
     id: 'reports',
@@ -145,16 +130,6 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
       { id: 'reports-revenue', label: 'Revenue', href: '/reports/revenue', permission: 'reports.revenue', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'reports-customers', label: 'Customers', href: '/reports/customers', permission: 'reports.customers', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'reports-payments', label: 'Payments', href: '/reports/payments', permission: 'reports.payments', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'feedback',
-    label: 'Feedback',
-    icon: 'ri-message-2-line',
-    children: [
-      { id: 'feedback-all', label: 'All Feedback', href: '/feedback', permission: 'feedback.all', roles: ['super-admin', 'admin', 'staff', 'customer'] },
-      { id: 'feedback-pending', label: 'Pending', href: '/feedback/pending', permission: 'feedback.pending', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'feedback-resolved', label: 'Resolved', href: '/feedback/resolved', permission: 'feedback.resolved', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
   {

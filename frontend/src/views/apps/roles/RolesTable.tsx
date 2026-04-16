@@ -32,7 +32,7 @@ import type { RankingInfo } from '@tanstack/match-sorter-utils'
 import type { RoleApiType } from '@/types/apps/roleTypes'
 import tableStyles from '@core/styles/table.module.css'
 
-declare module '@tanstack/table-core' {
+declare module '@tanstack/react-table' {
   interface FilterFns {
     fuzzy: FilterFn<unknown>
   }

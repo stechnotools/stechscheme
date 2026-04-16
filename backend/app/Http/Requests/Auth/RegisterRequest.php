@@ -15,7 +15,6 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['nullable', 'integer', 'exists:companies,id'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'mobile' => ['nullable', 'string', 'max:20', 'unique:users,mobile'],

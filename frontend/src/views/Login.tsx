@@ -266,22 +266,20 @@ const Login = ({ mode }: { mode: Mode }) => {
                         errorState !== null && setErrorState(null)
                       }}
                       sx={textFieldSx}
-                      slotProps={{
-                        input: {
-                          endAdornment: (
-                            <InputAdornment position='end'>
-                              <IconButton
-                                edge='end'
-                                onClick={handleClickShowPassword}
-                                onMouseDown={e => e.preventDefault()}
-                                aria-label='toggle password visibility'
-                                sx={{ color: '#e8cf9a' }}
-                              >
-                                <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
-                              </IconButton>
-                            </InputAdornment>
-                          )
-                        }
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position='end'>
+                            <IconButton
+                              edge='end'
+                              onClick={handleClickShowPassword}
+                              onMouseDown={e => e.preventDefault()}
+                              aria-label='toggle password visibility'
+                              sx={{ color: '#e8cf9a' }}
+                            >
+                              <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
+                            </IconButton>
+                          </InputAdornment>
+                        )
                       }}
                       error={Boolean(passwordErrorText)}
                       helperText={passwordErrorText}
@@ -351,6 +349,22 @@ const Login = ({ mode }: { mode: Mode }) => {
                   }}
                 >
                   Create an account
+                </Typography>
+              </div>
+              <div className='flex justify-center gap-2'>
+                <Typography sx={{ color: 'rgba(245, 241, 232, 0.78)' }}>Customer access?</Typography>
+                <Typography
+                  component={Link}
+                  href='/customer/login'
+                  sx={{
+                    color: '#f0c876',
+                    fontWeight: 600,
+                    '&:hover': {
+                      color: '#f7d898'
+                    }
+                  }}
+                >
+                  Open customer panel
                 </Typography>
               </div>
             </form>

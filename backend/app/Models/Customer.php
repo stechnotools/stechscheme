@@ -7,20 +7,35 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     protected $fillable = [
-        'company_id',
+        'user_id',
         'name',
         'mobile',
         'email',
         'status',
+        'portal_enabled',
+        'portal_enabled_at',
     ];
 
-    public function company()
+    protected function casts(): array
     {
-        return $this->belongsTo(Company::class);
+        return [
+            'portal_enabled' => 'boolean',
+            'portal_enabled_at' => 'datetime',
+        ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function kyc()
     {
         return $this->hasOne(CustomerKyc::class);
+    }
+
+    public function memberships()
+    {
+        return $this->hasMany(Membership::class);
     }
 }

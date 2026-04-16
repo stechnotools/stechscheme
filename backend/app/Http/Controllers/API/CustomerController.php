@@ -32,7 +32,13 @@ class CustomerController extends Controller
     public function show(int $id): JsonResponse
     {
         return response()->json([
-            'data' => Customer::query()->with(['company', 'kyc'])->findOrFail($id),
+            'data' => Customer::query()->with([
+                'user.branches',
+                'kyc',
+                'memberships.scheme.maturityBenefits',
+                'memberships.installments',
+                'memberships.payments.installment',
+            ])->findOrFail($id),
         ]);
     }
 

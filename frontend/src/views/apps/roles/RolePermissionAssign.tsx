@@ -60,13 +60,14 @@ const moduleLabelMap: Record<string, string> = {
   membership: 'Membership',
   installments: 'Installments',
   payments: 'Payments',
-  catalog: 'Catalog',
-  promotions: 'Promotions',
+  accounts: 'Accounts',
   reports: 'Reports',
-  feedback: 'Feedback',
   users: 'Users & Roles',
   settings: 'Settings'
 }
+
+const hiddenPermissionModules = new Set(['catalog', 'promotions', 'feedback'])
+const hiddenPermissions = new Set(['customers.profile'])
 
 const getModuleName = (item: PermissionApiItem) => {
   if (item.module_name?.trim()) {
@@ -156,10 +157,15 @@ const RolePermissionAssign = () => {
         request<PermissionsPaginatedResponse>('/permissions?per_page=500&sort_by=name&sort_direction=asc')
       ])
 
+      const visiblePermissions = permissionsResponse.data.filter(item => {
+        const moduleKey = item.name.split('.')[0]?.toLowerCase() ?? ''
+
+        return !hiddenPermissionModules.has(moduleKey) && !hiddenPermissions.has(item.name)
+      })
       const selected = new Set((roleResponse.data.permissions ?? []).map(item => item.name))
 
       setRole(roleResponse.data)
-      setPermissions(permissionsResponse.data)
+      setPermissions(visiblePermissions)
       setSelectedPermissions(selected)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load role permissions.')

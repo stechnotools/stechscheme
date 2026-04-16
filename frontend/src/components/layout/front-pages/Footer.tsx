@@ -37,7 +37,7 @@ const Footer = () => {
                   <Logo color='var(--mui-palette-common-white)' />
                 </Link>
                 <Typography color='white' className='lg:max-is-[390px] opacity-[0.78]'>
-                  Most Powerful & Comprehensive 🤩 React NextJS Admin Template with Elegant Material Design & Unique
+                  Most Powerful & Comprehensive ðŸ¤© React NextJS Admin Template with Elegant Material Design & Unique
                   Layouts.
                 </Typography>
                 <div className='flex gap-4'>
@@ -154,11 +154,9 @@ const Footer = () => {
           )}
         >
           <Typography className='text-white opacity-[0.92]' variant='body2'>
-            <span>{`© ${new Date().getFullYear()}, Made with `}</span>
-            <span>{`❤️`}</span>
-            <span>{` by `}</span>
-            <Link href='https://pixinvent.com/' target='_blank' className='font-medium text-white'>
-              Pixinvent
+            <span>{`© ${new Date().getFullYear()}, Made with ❤️ by `}</span>
+            <Link href='https://stechnotools.com' target='_blank' className='font-medium text-white'>
+              Stechnotools
             </Link>
           </Typography>
           <div className='flex gap-1.5 items-center opacity-[0.78]'>

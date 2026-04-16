@@ -27,8 +27,7 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
     icon: 'ri-group-line',
     children: [
       { label: 'All Customers', href: '/customers' },
-      { label: 'Add Customer', href: '/customers/add' },
-      { label: 'Customer Profile', href: '/customers/profile' }
+      { label: 'Add Customer', href: '/customers/add' }
     ]
   },
   {
@@ -45,14 +44,19 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
     icon: 'ri-medal-line',
     children: [
       { label: 'All Schemes', href: '/schemes' },
-      { label: 'Create Scheme', href: '/schemes/create' },
-      { label: 'Maturity Benefits', href: '/schemes/maturity-benefits' }
+      { label: 'Create Scheme', href: '/schemes/create' }
     ]
+  },
+  {
+    label: 'Accounts',
+    icon: 'ri-bank-card-line',
+    children: [{ label: 'Chart of Accounts', href: '/chart-of-accounts' }]
   },
   {
     label: 'Membership',
     icon: 'ri-vip-crown-line',
     children: [
+      { label: 'Create Membership', href: '/membership/create' },
       { label: 'Active', href: '/membership/active' },
       { label: 'Matured', href: '/membership/matured' },
       { label: 'Redeemed', href: '/membership/redeemed' },
@@ -76,21 +80,8 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
       { label: 'All Payments', href: '/payments' },
       { label: 'Payment History', href: '/payments/history' },
       { label: 'Failed', href: '/payments/failed' },
-      { label: 'Receipt / Deposit Slip', href: '/payments/receipt' }
+      { label: 'Receipts', href: '/payments/receipt' }
     ]
-  },
-  {
-    label: 'Catalog',
-    icon: 'ri-price-tag-3-line',
-    children: [
-      { label: 'Products', href: '/catalog/products' },
-      { label: 'Categories', href: '/catalog/categories' }
-    ]
-  },
-  {
-    label: 'Promotions',
-    icon: 'ri-megaphone-line',
-    children: [{ label: 'Offers', href: '/promotions/offers' }]
   },
   {
     label: 'Reports',
@@ -99,15 +90,6 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
       { label: 'Revenue', href: '/reports/revenue' },
       { label: 'Customers', href: '/reports/customers' },
       { label: 'Payments', href: '/reports/payments' }
-    ]
-  },
-  {
-    label: 'Feedback',
-    icon: 'ri-message-2-line',
-    children: [
-      { label: 'All Feedback', href: '/feedback' },
-      { label: 'Pending', href: '/feedback/pending' },
-      { label: 'Resolved', href: '/feedback/resolved' }
     ]
   },
   {

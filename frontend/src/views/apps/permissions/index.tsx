@@ -45,7 +45,7 @@ import PermissionDialog from '@components/dialogs/permission-dialog'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-declare module '@tanstack/table-core' {
+declare module '@tanstack/react-table' {
   interface FilterFns {
     fuzzy: FilterFn<unknown>
   }
@@ -159,13 +159,14 @@ const moduleLabelMap: Record<string, string> = {
   membership: 'Membership',
   installments: 'Installments',
   payments: 'Payments',
-  catalog: 'Catalog',
-  promotions: 'Promotions',
+  accounts: 'Accounts',
   reports: 'Reports',
-  feedback: 'Feedback',
   users: 'Users & Roles',
   settings: 'Settings'
 }
+
+const hiddenPermissionModules = new Set(['catalog', 'promotions', 'feedback'])
+const hiddenPermissions = new Set(['customers.profile'])
 
 const getModuleName = (item: PermissionApiItem) => {
   if (item.module_name?.trim()) {
@@ -274,8 +275,13 @@ const Permissions = () => {
 
     try {
       const response = await request<PermissionsPaginatedResponse>('/permissions?per_page=100&sort_by=created_at&sort_direction=desc')
+      const visiblePermissions = response.data.filter(item => {
+        const moduleKey = item.name.split('.')[0]?.toLowerCase() ?? ''
 
-      setData(response.data.map(mapPermissionToRow))
+        return !hiddenPermissionModules.has(moduleKey) && !hiddenPermissions.has(item.name)
+      })
+
+      setData(visiblePermissions.map(mapPermissionToRow))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load permissions.')
     } finally {

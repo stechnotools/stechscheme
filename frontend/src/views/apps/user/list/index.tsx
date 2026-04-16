@@ -15,9 +15,15 @@ type ApiUser = {
   mobile: string | null
   status: string | null
   roles?: Array<{ name: string }>
+  branches?: Array<{ id: number; name: string }>
 }
 
 type ApiRole = {
+  id: number
+  name: string
+}
+
+type ApiBranch = {
   id: number
   name: string
 }
@@ -28,6 +34,10 @@ type UsersResponse = {
 
 type RolesResponse = {
   data: ApiRole[]
+}
+
+type BranchesResponse = {
+  data: ApiBranch[]
 }
 
 const resolveBackendApiUrl = () => {
@@ -59,7 +69,9 @@ const mapUser = (user: ApiUser): UsersType => {
     status: mapStatus(user.status),
     company: '-',
     country: '-',
-    contact: user.mobile || '-'
+    contact: user.mobile || '-',
+    branchNames: user.branches?.map(branch => branch.name) || [],
+    branchIds: user.branches?.map(branch => branch.id) || []
   }
 }
 
@@ -69,6 +81,7 @@ const UserList = () => {
 
   const [users, setUsers] = useState<UsersType[]>([])
   const [roles, setRoles] = useState<string[]>([])
+  const [branches, setBranches] = useState<ApiBranch[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -106,13 +119,15 @@ const UserList = () => {
     setError(null)
 
     try {
-      const [usersResponse, rolesResponse] = await Promise.all([
+      const [usersResponse, rolesResponse, branchesResponse] = await Promise.all([
         request<UsersResponse>('/users?per_page=200&sort_by=created_at&sort_direction=desc'),
-        request<RolesResponse>('/roles?per_page=200&sort_by=name&sort_direction=asc')
+        request<RolesResponse>('/roles?per_page=200&sort_by=name&sort_direction=asc'),
+        request<BranchesResponse>('/branches?per_page=200&sort_by=name&sort_direction=asc')
       ])
 
       setUsers(usersResponse.data.map(mapUser))
       setRoles(rolesResponse.data.map(item => item.name))
+      setBranches(branchesResponse.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users.')
     } finally {
@@ -142,7 +157,7 @@ const UserList = () => {
         <UserListCards users={users} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <UserListTable users={users} roles={roles} loading={loading} onRefresh={loadData} request={request} />
+        <UserListTable users={users} roles={roles} branches={branches} loading={loading} onRefresh={loadData} request={request} />
       </Grid>
     </Grid>
   )
