@@ -104,7 +104,6 @@ const FilePreviewCard = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 2,
                 border: '1px dashed var(--mui-palette-divider)',
                 borderRadius: 'var(--mui-shape-borderRadius)',
                 bgcolor: 'var(--mui-palette-action-hover)',

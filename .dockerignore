@@ -1,0 +1,27 @@
+# Global Ignores
+**/node_modules
+**/.next
+**/.pnpm-store
+**/.git
+**/.vscode
+**/.idea
+**/*.log
+
+# Frontend Specific
+frontend/out
+frontend/build
+frontend/dist
+frontend/pnpm-lock.yaml
+
+# Backend Specific
+backend/vendor
+backend/storage/logs/*.log
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*.php
+backend/storage/framework/cache/data/*
+
+# Other
+**/.DS_Store
+**/Thumbs.db
+**/Dockerfile*
+**/docker-compose*.yml

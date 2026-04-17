@@ -1,13 +1,7 @@
 node_modules
 .next
-.pnpm-store
 .vscode
 *.log
 npm-debug.log*
 pnpm-debug.log*
 tsconfig.tsbuildinfo
-.git
-.github
-dist
-build
-out

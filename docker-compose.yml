@@ -2,6 +2,7 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
     container_name: jewelleryscheme-backend
     restart: unless-stopped
     environment:
@@ -20,18 +21,21 @@ services:
       SESSION_DRIVER: ${SESSION_DRIVER:-database}
       CACHE_STORE: ${CACHE_STORE:-database}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
-    ports:
-      - "${BACKEND_PORT:-8000}:80"
     volumes:
-      - backend_storage:/var/www/html/backend/storage
+      - ./backend:/var/www/html
+      - ./docker/backend/php.ini:/usr/local/etc/php/conf.d/custom.ini
+      - backend_storage:/var/www/html/storage
+    networks:
+      - app-network
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
       args:
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
-        API_URL: ${API_URL:-http://backend/api}
+        API_URL: ${API_URL:-http://nginx/api}
         NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
         NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-jewellery-scheme-nextauth-secret}
         NEXTAUTH_BASEPATH: ${NEXTAUTH_BASEPATH:-/api/auth}
@@ -47,15 +51,36 @@ services:
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
-      API_URL: ${API_URL:-http://backend/api}
+      API_URL: ${API_URL:-http://nginx/api}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-jewellery-scheme-nextauth-secret}
       NEXTAUTH_BASEPATH: ${NEXTAUTH_BASEPATH:-/api/auth}
       BASEPATH: ${BASEPATH:-}
       NEXT_PUBLIC_DOCS_URL: ${NEXT_PUBLIC_DOCS_URL:-https://demos.pixinvent.com/materialize-nextjs-admin-template/documentation}
       MAPBOX_ACCESS_TOKEN: ${MAPBOX_ACCESS_TOKEN:-}
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: jewelleryscheme-nginx
+    restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./backend/public:/var/www/html/public:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   backend_storage:

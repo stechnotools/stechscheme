@@ -935,7 +935,6 @@ const MembershipCreatePage = ({ customerId }: { customerId?: number }) => {
                                           sx={{
                                             height: '100%',
                                             minHeight: 140,
-                                            borderRadius: 2,
                                             border: '1px solid var(--mui-palette-divider)',
                                             borderRadius: 'var(--mui-shape-borderRadius)',
                                             bgcolor: 'var(--mui-palette-action-hover)',
@@ -1022,7 +1021,6 @@ const MembershipCreatePage = ({ customerId }: { customerId?: number }) => {
                                           sx={{
                                             height: '100%',
                                             minHeight: 140,
-                                            borderRadius: 2,
                                             border: '1px solid var(--mui-palette-divider)',
                                             borderRadius: 'var(--mui-shape-borderRadius)',
                                             bgcolor: 'var(--mui-palette-action-hover)',
