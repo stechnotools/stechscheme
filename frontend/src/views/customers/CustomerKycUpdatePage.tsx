@@ -78,8 +78,8 @@ const FilePreviewCard = ({
                 width: '100%',
                 height: 240,
                 objectFit: 'cover',
-                borderRadius: 2,
-                border: theme => `1px solid ${theme.palette.divider}`
+                borderRadius: 'var(--mui-shape-borderRadius)',
+                border: '1px solid var(--mui-palette-divider)'
               }}
             />
           ) : null}
@@ -91,8 +91,9 @@ const FilePreviewCard = ({
               sx={{
                 width: '100%',
                 height: 280,
-                border: theme => `1px solid ${theme.palette.divider}`,
-                borderRadius: 2
+                border: '1px solid var(--mui-palette-divider)',
+                borderRadius: 'var(--mui-shape-borderRadius)',
+                p: 3
               }}
             />
           ) : null}
@@ -104,8 +105,9 @@ const FilePreviewCard = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 2,
-                border: theme => `1px dashed ${theme.palette.divider}`,
-                bgcolor: 'action.hover',
+                border: '1px dashed var(--mui-palette-divider)',
+                borderRadius: 'var(--mui-shape-borderRadius)',
+                bgcolor: 'var(--mui-palette-action-hover)',
                 px: 3,
                 textAlign: 'center'
               }}

@@ -289,11 +289,11 @@ const DashboardCRM = async () => {
               {data?.schemes.map(scheme => (
                 <Box
                   key={scheme.id}
-                  sx={{
-                    border: theme => `1px solid ${theme.palette.divider}`,
-                    borderRadius: 2,
-                    p: 3
-                  }}
+                    sx={{
+                      border: '1px solid var(--mui-palette-divider)',
+                      borderRadius: 'var(--mui-shape-borderRadius)',
+                      p: 3
+                    }}
                 >
                   <Stack direction='row' justifyContent='space-between' alignItems='flex-start' spacing={2}>
                     <div>

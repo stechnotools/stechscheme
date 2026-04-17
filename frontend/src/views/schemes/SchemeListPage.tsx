@@ -66,15 +66,17 @@ const SchemeListPage = () => {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const request = useCallback(
-    async <T,>(path: string): Promise<T> => {
+    async <T,>(path: string, options?: RequestInit): Promise<T> => {
       if (!accessToken) {
         throw new Error('Missing access token')
       }
 
       const response = await fetch(`${backendApiUrl}${path}`, {
+        ...options,
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${accessToken}`
+          Authorization: `Bearer ${accessToken}`,
+          ...options?.headers
         }
       })
 
