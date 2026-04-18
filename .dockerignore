@@ -1,27 +1,27 @@
-# Global Ignores
-**/node_modules
-**/.next
-**/.pnpm-store
-**/.git
-**/.vscode
-**/.idea
-**/*.log
+# Version control
+.git
+.gitignore
 
-# Frontend Specific
-frontend/out
-frontend/build
-frontend/dist
-frontend/pnpm-lock.yaml
+# Environment and secrets
+.env
+.env.*
+!.env.example
 
-# Backend Specific
-backend/vendor
-backend/storage/logs/*.log
-backend/storage/framework/sessions/*
-backend/storage/framework/views/*.php
-backend/storage/framework/cache/data/*
+# IDE and OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
 
-# Other
-**/.DS_Store
-**/Thumbs.db
-**/Dockerfile*
-**/docker-compose*.yml
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build artifacts
+.next
+out
+build
+dist
+
+# Logs
+*.log

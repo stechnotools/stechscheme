@@ -1,31 +1,22 @@
-gzip on;
-gzip_vary on;
-gzip_proxied any;
-gzip_comp_level 6;
-gzip_min_length 256;
-gzip_types
-    text/plain
-    text/css
-    text/xml
-    text/javascript
-    application/json
-    application/javascript
-    application/xml
-    application/rss+xml
-    image/svg+xml;
-
-client_max_body_size 100m;
-
-fastcgi_read_timeout 600;
-fastcgi_send_timeout 600;
-
-include /etc/nginx/conf.d/security-headers.conf;
+# SSL Configuration Template
+# To enable: rename this file to ssl.conf, provide certificates, and uncomment SSL volume in docker-compose.yml
 
 server {
-    listen 80;
-    server_name localhost nginx;
+    listen 443 ssl http2;
+    server_name your-domain.com;
 
-    # ── Frontend static assets ──────────────────────────────────────
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    include /etc/nginx/conf.d/security-headers.conf;
+
+    # ── Frontend static assets ──
     location ^~ /_next {
         proxy_pass http://frontend:3000;
         proxy_http_version 1.1;
@@ -34,12 +25,12 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
-    # ── Laravel auth endpoints (must be BEFORE the NextAuth catch-all) ──
+    # ── Laravel auth endpoints ──
     location = /api/auth/login {
         fastcgi_pass backend:9000;
         fastcgi_index index.php;
@@ -76,7 +67,7 @@ server {
         fastcgi_param DOCUMENT_ROOT /var/www/html/public;
     }
 
-    # ── NextAuth routes (frontend handles session, csrf, callback, providers) ──
+    # ── NextAuth routes ──
     location ^~ /api/auth {
         proxy_pass http://frontend:3000;
         proxy_http_version 1.1;
@@ -89,7 +80,7 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # ── Backend API (Laravel via PHP-FPM) ───────────────────────────
+    # ── Backend API ──
     location ^~ /api {
         fastcgi_pass backend:9000;
         fastcgi_index index.php;
@@ -113,7 +104,7 @@ server {
         fastcgi_param DOCUMENT_ROOT /var/www/html/public;
     }
 
-    # ── Frontend pages (catch-all) ──────────────────────────────────
+    # ── Frontend catch-all ──
     location / {
         proxy_pass http://frontend:3000;
         proxy_http_version 1.1;
@@ -128,4 +119,11 @@ server {
 
     error_log  /var/log/nginx/error.log;
     access_log /var/log/nginx/access.log;
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$host$request_uri;
 }

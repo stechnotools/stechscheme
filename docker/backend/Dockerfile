@@ -1,6 +1,5 @@
-FROM php:8.4-fpm
+FROM php:8.4-fpm AS deps
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libpq-dev \
@@ -10,21 +9,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /var/www/html
-
-# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy application files
-COPY . ./
+WORKDIR /var/www/html
 
-# Set permissions
+COPY . ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress \
+    && composer clear-cache
+
+FROM php:8.4-fpm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    postgresql-client \
+    && docker-php-ext-install pdo_pgsql \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html
+
+COPY . ./
+COPY --from=deps /var/www/html/vendor ./vendor
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 RUN mkdir -p storage bootstrap/cache \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
-# Use custom entrypoint
 COPY entrypoint.sh /usr/local/bin/backend-entrypoint
 RUN chmod +x /usr/local/bin/backend-entrypoint
 

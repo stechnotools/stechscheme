@@ -1,8 +1,12 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Git branch to deploy')
+        string(name: 'DEPLOY_ENV', defaultValue: 'production', description: 'Deployment environment (staging/production)')
+    }
+
     environment {
-        // Define common variables
         PROJECT_NAME = "jewelleryscheme"
         DOCKER_COMPOSE = "docker compose"
     }
@@ -10,20 +14,18 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/stechnotools/stechscheme.git'
+                git branch: params.BRANCH_NAME, url: 'https://github.com/stechnotools/stechscheme.git'
             }
         }
 
         stage('Prepare Environment') {
             steps {
                 script {
-                    // Load environment variables from Jenkins Credentials
                     withCredentials([
-                        string(credentialsId: 'DB_PASSWORD', variable: 'DB_PASSWORD'),
-                        string(credentialsId: 'APP_KEY', variable: 'APP_KEY'),
+                        string(credentialsId: "DB_PASSWORD_${params.DEPLOY_ENV}", variable: 'DB_PASSWORD'),
+                        string(credentialsId: "APP_KEY_${params.DEPLOY_ENV}", variable: 'APP_KEY'),
                         string(credentialsId: 'NEXTAUTH_SECRET', variable: 'NEXTAUTH_SECRET')
                     ]) {
-                        // Create/Update .env file for the build
                         sh "cp .env.example .env"
                         sh "sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/' .env"
                         sh "sed -i 's/APP_KEY=.*/APP_KEY=${APP_KEY}/' .env"
@@ -35,23 +37,52 @@ pipeline {
 
         stage('Build Services') {
             steps {
-                sh "${DOCKER_COMPOSE} build"
+                sh "${DOCKER_COMPOSE} build --no-cache"
+            }
+        }
+
+        stage('Tag Current Images for Rollback') {
+            steps {
+                script {
+                    sh '''
+                        docker images --format "{{.Repository}}:{{.Tag}}" jewelleryscheme* | while read img; do
+                            rollback=$(echo "$img" | sed 's|jewelleryscheme-|jewelleryscheme-roll-|' | sed 's|:latest|:rollback|')
+                            docker tag "$img" "$rollback" 2>/dev/null || true
+                        done
+                    '''
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                // Restart containers with the new images
-                sh "${DOCKER_COMPOSE} up -d"
+                sh "${DOCKER_COMPOSE} up -d --remove-orphans"
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                script {
+                    sh '''
+                        echo "Waiting for services to become healthy..."
+                        for i in $(seq 1 30); do
+                            if ${DOCKER_COMPOSE} ps --format json 2>/dev/null | grep -q '"Health":"healthy"' 2>/dev/null; then
+                                echo "All services healthy"
+                                exit 0
+                            fi
+                            echo "Attempt $i/30: waiting..."
+                            sleep 5
+                        done
+                        echo "Health check failed after 150s"
+                        exit 1
+                    '''
+                }
             }
         }
 
         stage('Post-Deployment') {
             steps {
-                // Run migrations to ensure DB schema is up to date
                 sh "${DOCKER_COMPOSE} exec -T backend php artisan migrate --force"
-                
-                // Optional: Clear caches
                 sh "${DOCKER_COMPOSE} exec -T backend php artisan config:clear"
                 sh "${DOCKER_COMPOSE} exec -T backend php artisan cache:clear"
             }
@@ -59,18 +90,25 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                // Remove unused images to save disk space
-                sh "docker image prune -f"
+                sh "docker image prune -f --filter 'dangling=true'"
             }
         }
     }
 
     post {
         success {
-            echo "Deployment successful!"
+            echo "Deployment of ${params.BRANCH_NAME} to ${params.DEPLOY_ENV} successful!"
         }
         failure {
-            echo "Deployment failed! Please check logs."
+            echo "Deployment failed! Rolling back..."
+            sh '''
+                docker compose down
+                docker images --format "{{.Repository}}:{{.Tag}}" jewelleryscheme-roll-* | while read img; do
+                    original=$(echo "$img" | sed 's|jewelleryscheme-roll-|jewelleryscheme-|' | sed 's|:rollback|:latest|')
+                    docker tag "$img" "$original" 2>/dev/null || true
+                done
+                docker compose up -d --remove-orphans
+            '''
         }
     }
 }

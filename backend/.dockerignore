@@ -1,5 +1,28 @@
-node_modules
-vendor
-*.log
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Environment
 .env
+.env.*
+!.env.example
+
+# PHP dependencies (installed in image)
+vendor
+
+# Node
+node_modules
+
+# Laravel
+storage/logs/*.log
+storage/framework/sessions/*
+storage/framework/views/*.php
+storage/framework/cache/data/*
 bootstrap/cache/*.php
+
+# Tests
+tests
+phpunit.xml

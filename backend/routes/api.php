@@ -85,3 +85,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('settings/company-logo', [SettingController::class, 'uploadCompanyLogo'])
         ->middleware('role:super-admin,admin');
 });
+
+Route::get('/test-speed', function() { return 'Fast!'; });

@@ -1,9 +1,8 @@
 FROM nginx:stable-alpine
 
-# Copy nginx config
 COPY conf.d/default.conf /etc/nginx/conf.d/default.conf
+COPY conf.d/security-headers.conf /etc/nginx/conf.d/security-headers.conf
 
-# Set working directory to serve app static assets if needed
 WORKDIR /var/www/html
 
 EXPOSE 80

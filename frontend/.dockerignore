@@ -1,13 +1,26 @@
-node_modules
-.next
-.pnpm-store
+.git
+.gitignore
 .vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Dependencies (installed in image)
+node_modules
+
+# Build cache (rebuilt in image)
+.next
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 tsconfig.tsbuildinfo
-.git
-.github
-dist
-build
-out
+
+# Tests
+coverage
