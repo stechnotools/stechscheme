@@ -88,14 +88,6 @@ const CustomerPortalDashboardPage = () => {
     router.replace('/customer/login')
   }
 
-  if (loading) {
-    return (
-      <Stack sx={{ minHeight: '100vh' }} alignItems='center' justifyContent='center'>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   if (!payload) {
     return (
       <Stack sx={{ minHeight: '100vh', p: 4 }}>

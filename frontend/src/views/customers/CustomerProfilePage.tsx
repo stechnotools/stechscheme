@@ -1,9 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -15,6 +17,7 @@ import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+
 import {
   getCustomerLocationLabel,
   getCustomerName,
@@ -61,6 +64,9 @@ type Membership = {
     transaction_id?: string | null
     payment_date: string
     status: string
+    installment?: {
+      installment_no: number
+    } | null
   }>
 }
 
@@ -118,6 +124,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
+
       return
     }
 
@@ -129,6 +136,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
 
       try {
         const response = await request<CustomerResponse>(`/customers/${customerId}`)
+
         setCustomer(response.data)
         setMemberships((response.data.memberships as Membership[] | undefined) || [])
       } catch (err) {
@@ -141,14 +149,6 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
     void loadCustomer()
   }, [status, accessToken, customerId, request])
 
-  if (loading) {
-    return (
-      <Stack alignItems='center' justifyContent='center' sx={{ minHeight: 320 }}>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   if (!customer) {
     return <Alert severity='error'>{error || 'Customer not found.'}</Alert>
   }
@@ -158,7 +158,16 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
   const kycStatus = customer.kyc?.status || 'pending'
   const totalPaid = memberships.reduce((sum, membership) => sum + Number(membership.total_paid || 0), 0)
   const totalPayments = memberships.reduce((sum, membership) => sum + (membership.payments?.length || 0), 0)
-  const activeMemberships = memberships.filter(membership => membership.status === 'active').length
+  const customerPayments = memberships
+    .flatMap(membership =>
+      (membership.payments || []).map(payment => ({
+        ...payment,
+        membershipId: membership.id,
+        schemeName: membership.scheme?.name || 'No scheme',
+        schemeCode: membership.scheme?.code || 'No code'
+      }))
+    )
+    .sort((left, right) => new Date(right.payment_date).getTime() - new Date(left.payment_date).getTime())
   const upcomingMaturity = memberships
     .filter(membership => membership.maturity_date)
     .sort((left, right) => new Date(left.maturity_date).getTime() - new Date(right.maturity_date).getTime())[0]
@@ -199,7 +208,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                   <Chip label={customer.status || 'blocked'} color={getCustomerStatusColor(customer.status)} size='small' />
                 </Stack>
                 <Typography sx={{ color: 'rgba(255,255,255,0.82)' }}>
-                  Customer ID #{customer.id} • Joined on {joinedOn}
+                  {`Customer ID #${customer.id} • Joined on ${joinedOn}`}
                 </Typography>
               </div>
 
@@ -215,6 +224,9 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                 </Button>
                 <Button component={Link} href={`/membership/create?customerId=${customer.id}`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
                   Enroll Membership
+                </Button>
+                <Button component={Link} href={`/payments/history?customer_id=${customer.id}`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
+                  Payment History
                 </Button>
                 <Button
                   variant='outlined'
@@ -347,7 +359,6 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
               </Stack>
             </CardContent>
           </Card>
-
         </Stack>
       </Grid>
 
@@ -441,7 +452,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                                 <div>
                                   <Typography variant='h5'>{membership.scheme?.name || `Membership #${membership.id}`}</Typography>
                                   <Typography variant='body2' color='text.secondary'>
-                                    {membership.scheme?.code || 'No scheme code'} • {membership.scheme?.scheme_type || 'Scheme type pending'}
+                                    {`${membership.scheme?.code || 'No scheme code'} • ${membership.scheme?.scheme_type || 'Scheme type pending'}`}
                                   </Typography>
                                 </div>
                                 <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
@@ -462,7 +473,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                                     Start / Maturity
                                   </Typography>
                                   <Typography fontWeight={700}>
-                                    {new Date(membership.start_date).toLocaleDateString('en-IN')} • {new Date(membership.maturity_date).toLocaleDateString('en-IN')}
+                                    {`${new Date(membership.start_date).toLocaleDateString('en-IN')} • ${new Date(membership.maturity_date).toLocaleDateString('en-IN')}`}
                                   </Typography>
                                 </Grid>
                                 <Grid size={{ xs: 12, md: 4 }}>
@@ -488,8 +499,11 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                                         <Box key={payment.id} sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover' }}>
                                           <Typography fontWeight={700}>{currencyFormatter.format(Number(payment.amount || 0))}</Typography>
                                           <Typography variant='body2' color='text.secondary'>
-                                            {new Date(payment.payment_date).toLocaleDateString('en-IN')} • {payment.gateway || 'Manual'} • {payment.status}
+                                            {`${new Date(payment.payment_date).toLocaleDateString('en-IN')} • installment #${payment.installment?.installment_no || '-'} • ${payment.gateway || 'Manual'} • ${payment.status}`}
                                           </Typography>
+                                          <Button component={Link} href={`/payments/receipt/${payment.id}`} variant='text' size='small' sx={{ mt: 1, px: 0 }}>
+                                            View Receipt
+                                          </Button>
                                         </Box>
                                       ))}
                                     </Stack>
@@ -507,7 +521,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                                         <Box key={benefit.id} sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover' }}>
                                           <Typography fontWeight={700}>{`Month ${benefit.month}`}</Typography>
                                           <Typography variant='body2' color='text.secondary'>
-                                            {benefit.type} • {benefit.type === 'percentage' ? `${benefit.value}%` : currencyFormatter.format(Number(benefit.value || 0))}
+                                            {`${benefit.type} • ${benefit.type === 'percentage' ? `${benefit.value}%` : currencyFormatter.format(Number(benefit.value || 0))}`}
                                           </Typography>
                                         </Box>
                                       ))}
@@ -531,6 +545,54 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                         </Card>
                       )
                     })}
+                  </Stack>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Stack spacing={3}>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' spacing={2}>
+                  <div>
+                    <Typography variant='h5'>Customer Payment History</Typography>
+                    <Typography variant='body2' color='text.secondary'>
+                      Aggregated collections across all memberships with installment mapping.
+                    </Typography>
+                  </div>
+                  <Button component={Link} href={`/payments/history?customer_id=${customer.id}`} variant='outlined'>
+                    Open Full Ledger
+                  </Button>
+                </Stack>
+
+                {!customerPayments.length ? (
+                  <Alert severity='info'>No payments recorded for this customer yet.</Alert>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {customerPayments.slice(0, 8).map(payment => (
+                      <Box key={payment.id} sx={{ p: 2.5, borderRadius: 3, bgcolor: 'action.hover' }}>
+                        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' spacing={2}>
+                          <div>
+                            <Typography fontWeight={700}>{currencyFormatter.format(Number(payment.amount || 0))}</Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              {`${new Date(payment.payment_date).toLocaleDateString('en-IN')} • ${payment.schemeName} (${payment.schemeCode}) • Membership #${payment.membershipId}`}
+                            </Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              {`Installment #${payment.installment?.installment_no || '-'} • ${payment.gateway || 'Manual'} • ${payment.transaction_id || 'No reference id'} • ${payment.status}`}
+                            </Typography>
+                          </div>
+                          <Stack direction='row' spacing={1}>
+                            <Button component={Link} href={`/membership/${payment.membershipId}`} variant='outlined' size='small'>
+                              Membership
+                            </Button>
+                            <Button component={Link} href={`/payments/receipt/${payment.id}`} variant='contained' size='small'>
+                              Receipt
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      </Box>
+                    ))}
                   </Stack>
                 )}
               </Stack>

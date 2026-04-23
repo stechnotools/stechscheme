@@ -18,6 +18,8 @@ import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import LinearProgress from '@mui/material/LinearProgress'
 import MenuItem from '@mui/material/MenuItem'
+
+import { SkeletonCard } from '@/components/SkeletonLoader'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -375,10 +377,10 @@ const BranchListPage = () => {
               </Stack>
 
               {loading ? (
-                <Stack alignItems='center' justifyContent='center' sx={{ py: 10 }}>
-                  <CircularProgress />
-                </Stack>
-              ) : !filteredBranches.length ? (
+                <SkeletonCard count={4} />
+              ) : (
+              <>
+              {!filteredBranches.length ? (
                 <Alert severity='info'>No branches match the current filters.</Alert>
               ) : null}
 
@@ -503,6 +505,8 @@ const BranchListPage = () => {
                   )
                 })}
               </Stack>
+              </>
+              )}
             </Stack>
           </CardContent>
         </Card>

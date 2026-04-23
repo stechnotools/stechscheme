@@ -1,0 +1,135 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Git branch to deploy
+        required: true
+        default: main
+      deploy_env:
+        description: Deployment environment
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
+      services:
+        description: Services to deploy
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - frontend
+          - backend
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.deploy_env || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_env || 'production' }}
+    env:
+      DEPLOY_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref_name }}
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_env || 'production' }}
+      DEPLOY_SERVICES: ${{ github.event_name == 'workflow_dispatch' && inputs.services || 'all' }}
+    steps:
+      - name: Deploy on server over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          envs: DEPLOY_BRANCH,DEPLOY_ENV,DEPLOY_SERVICES
+          script: |
+            set -e
+
+            APP_DIR="${{ secrets.APP_PATH }}"
+
+            if [ -z "$APP_DIR" ]; then
+              echo "APP_PATH secret is required."
+              exit 1
+            fi
+
+            cd "$APP_DIR"
+
+            git fetch origin
+            git checkout "$DEPLOY_BRANCH"
+            git pull origin "$DEPLOY_BRANCH"
+
+            cp .env.example .env
+
+            python3 - <<'PY'
+            from pathlib import Path
+            import os
+
+            env_path = Path(".env")
+            content = env_path.read_text().splitlines()
+
+            updates = {
+              "APP_ENV": os.environ["DEPLOY_ENV"],
+              "DB_PASSWORD": """${{ secrets.DB_PASSWORD }}""",
+              "APP_KEY": """${{ secrets.APP_KEY }}""",
+              "NEXTAUTH_SECRET": """${{ secrets.NEXTAUTH_SECRET }}"""
+            }
+
+            rewritten = []
+            seen = set()
+
+            for line in content:
+              if "=" in line and not line.lstrip().startswith("#"):
+                key, value = line.split("=", 1)
+                if key in updates:
+                  rewritten.append(f"{key}={updates[key]}")
+                  seen.add(key)
+                  continue
+
+              rewritten.append(line)
+
+            for key, value in updates.items():
+              if key not in seen:
+                rewritten.append(f"{key}={value}")
+
+            env_path.write_text("\n".join(rewritten) + "\n")
+            PY
+
+            case "$DEPLOY_SERVICES" in
+              frontend)
+                docker compose build --no-cache frontend
+                docker compose up -d --no-deps frontend
+                ;;
+              backend)
+                docker compose build --no-cache backend
+                docker compose up -d --no-deps backend nginx
+                docker compose exec -T backend php artisan migrate --force
+                docker compose exec -T backend php artisan config:clear
+                docker compose exec -T backend php artisan cache:clear
+                ;;
+              all)
+                docker compose build --no-cache
+                docker compose up -d --remove-orphans
+                docker compose exec -T backend php artisan migrate --force
+                docker compose exec -T backend php artisan config:clear
+                docker compose exec -T backend php artisan cache:clear
+                ;;
+              *)
+                echo "Unsupported services option: $DEPLOY_SERVICES"
+                exit 1
+                ;;
+            esac

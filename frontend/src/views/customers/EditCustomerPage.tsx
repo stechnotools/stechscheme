@@ -148,14 +148,6 @@ const EditCustomerPage = ({ customerId }: { customerId: number }) => {
     }
   }
 
-  if (loading) {
-    return (
-      <Stack alignItems='center' justifyContent='center' sx={{ minHeight: 320 }}>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   const activeMemberships = customer?.memberships?.filter(membership => membership.status === 'active') || []
   const totalPaid = customer?.memberships?.reduce((sum, membership) => sum + Number(membership.total_paid || 0), 0) || 0
   const nextDueInstallment = customer?.memberships

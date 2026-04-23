@@ -22,6 +22,9 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContentText from '@mui/material/DialogContentText'
 import IconButton from '@mui/material/IconButton'
 
+import { usePageLoading } from '@/contexts/pageLoadingContext'
+import { SkeletonCard } from '@/components/SkeletonLoader'
+
 type Scheme = {
   id: number
   name: string
@@ -64,6 +67,7 @@ const SchemeListPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [schemeToDelete, setSchemeToDelete] = useState<Scheme | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const { startLoading, stopLoading } = usePageLoading()
 
   const request = useCallback(
     async <T,>(path: string, options?: RequestInit): Promise<T> => {
@@ -94,6 +98,7 @@ const SchemeListPage = () => {
   const loadSchemes = useCallback(async () => {
     if (!accessToken) return
 
+    startLoading()
     setLoading(true)
     setError(null)
 
@@ -104,8 +109,9 @@ const SchemeListPage = () => {
       setError(err instanceof Error ? err.message : 'Failed to load schemes.')
     } finally {
       setLoading(false)
+      stopLoading()
     }
-  }, [accessToken, request])
+  }, [accessToken, request, startLoading, stopLoading])
 
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
@@ -281,7 +287,10 @@ const SchemeListPage = () => {
                 />
               </Stack>
 
-              <Grid container spacing={3}>
+              {loading ? (
+                <SkeletonCard count={6} />
+              ) : (
+                <Grid container spacing={3}>
                 {filteredSchemes.map(scheme => (
                   <Grid key={scheme.id} size={{ xs: 12, md: 6, xl: 4 }}>
                     <Card
@@ -372,11 +381,12 @@ const SchemeListPage = () => {
                 {!filteredSchemes.length ? (
                   <Grid size={{ xs: 12 }}>
                     <Alert severity='info'>
-                      {loading ? 'Loading schemes...' : 'No schemes found for the current filters.'}
+                      No schemes found for the current filters.
                     </Alert>
                   </Grid>
                 ) : null}
               </Grid>
+              )}
             </Stack>
           </CardContent>
         </Card>

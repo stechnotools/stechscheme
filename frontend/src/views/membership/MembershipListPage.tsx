@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
@@ -9,9 +10,13 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+
+import { SkeletonCard } from '@/components/SkeletonLoader'
 
 type MembershipItem = {
   id: number
@@ -88,7 +93,7 @@ const MembershipListPage = ({ statusGroup, title }: { statusGroup: 'active' | 'm
               </Stack>
               {error ? <Alert severity='error'>{error}</Alert> : null}
               <TextField label='Search membership' value={search} onChange={event => setSearch(event.target.value)} />
-              {loading ? <Alert severity='info'>Loading memberships...</Alert> : null}
+              {loading ? <SkeletonCard count={6} /> : (
               <Grid container spacing={3}>
                 {filtered.map(item => {
                   const paidInstallments = item.installments?.filter(installment => installment.paid).length || 0
@@ -117,9 +122,9 @@ const MembershipListPage = ({ statusGroup, title }: { statusGroup: 'active' | 'm
                     </Grid>
                   )
                 })}
-                {!loading && filtered.length === 0 ? <Grid size={{ xs: 12 }}><Alert severity='info'>No memberships found.</Alert></Grid> : null}
+                {filtered.length === 0 ? <Grid size={{ xs: 12 }}><Alert severity='info'>No memberships found.</Alert></Grid> : null}
               </Grid>
-            </Stack>
+              )}
           </CardContent>
         </Card>
       </Grid>

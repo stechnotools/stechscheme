@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\CustomerKyc;
 use App\Models\User;
 use App\Models\Branch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -25,9 +26,9 @@ class CustomerService
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $builder->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('mobile', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
             });
         }
 
@@ -44,8 +45,13 @@ class CustomerService
     public function create(array $validated): Customer
     {
         return DB::transaction(function () use ($validated) {
-            $customer = Customer::create($validated);
+            $customerPayload = $validated;
+            $kycPayload = $customerPayload['kyc'] ?? null;
+            unset($customerPayload['kyc']);
+
+            $customer = Customer::create($customerPayload);
             $this->syncCustomerUser($customer, $validated);
+            $this->syncCustomerKyc($customer, $kycPayload);
 
             return $customer->fresh(['kyc', 'user']);
         });
@@ -56,9 +62,13 @@ class CustomerService
         return DB::transaction(function () use ($customer, $validated) {
             $originalMobile = $customer->mobile;
             $originalEmail = $customer->email;
+            $customerPayload = $validated;
+            $kycPayload = $customerPayload['kyc'] ?? null;
+            unset($customerPayload['kyc']);
 
-            $customer->update($validated);
+            $customer->update($customerPayload);
             $this->syncCustomerUser($customer, $validated, $originalMobile, $originalEmail);
+            $this->syncCustomerKyc($customer, $kycPayload);
 
             return $customer->fresh(['kyc', 'user']);
         });
@@ -135,5 +145,20 @@ class CustomerService
         }
 
         return $user?->email ?: sprintf('customer.%s@portal.local', preg_replace('/\D+/', '', $customer->mobile));
+    }
+
+    private function syncCustomerKyc(Customer $customer, ?array $kycPayload): void
+    {
+        if ($kycPayload === null) {
+            return;
+        }
+
+        CustomerKyc::query()->updateOrCreate(
+            ['customer_id' => $customer->id],
+            [
+                ...$kycPayload,
+                'customer_id' => $customer->id,
+            ]
+        );
     }
 }

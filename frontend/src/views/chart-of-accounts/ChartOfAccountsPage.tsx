@@ -19,6 +19,8 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
+import { SkeletonTable } from '@/components/SkeletonLoader'
+
 type ChartOfAccount = {
   id: number
   name: string
@@ -652,7 +654,9 @@ const ChartOfAccountsPage = () => {
                 </Stack>
               </Box>
 
-              {!flatAccounts.length ? (
+              {loading ? (
+                <SkeletonTable rows={10} cols={5} />
+              ) : !flatAccounts.length ? (
                 <Box sx={{ px: 4, py: 8, textAlign: 'center' }}>
                   <Typography variant='h6' sx={{ mb: 1 }}>
                     No accounts found

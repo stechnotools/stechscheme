@@ -309,10 +309,7 @@ const RolePermissionAssign = () => {
       <Grid size={{ xs: 12 }}>
         <Card>
           <CardContent>
-            {loading ? (
-              <Typography>Loading permissions...</Typography>
-            ) : (
-              <div className='flex flex-col gap-6'>
+            <div className='flex flex-col gap-6'>
                 {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => {
                   const selectedCount = modulePermissions.filter(item => selectedPermissions.has(item.name)).length
                   const allSelected = modulePermissions.length > 0 && selectedCount === modulePermissions.length
@@ -368,7 +365,6 @@ const RolePermissionAssign = () => {
                   )
                 })}
               </div>
-            )}
           </CardContent>
         </Card>
       </Grid>

@@ -115,6 +115,65 @@ class PaymentController extends CrudController
         return $validated;
     }
 
+    public function storeBulk(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'membership_id' => ['required', 'integer', 'exists:memberships,id'],
+            'installment_ids' => ['required', 'array', 'min:1'],
+            'installment_ids.*' => ['integer', 'exists:installments,id'],
+            'gateway' => ['nullable', 'string', 'max:100'],
+            'transaction_id' => ['nullable', 'string', 'max:255'],
+            'payment_date' => ['required', 'date'],
+            'status' => ['required', Rule::in(['pending', 'success', 'failed', 'refunded'])],
+        ]);
+
+        $payments = DB::transaction(function () use ($validated) {
+            $installments = \App\Models\Installment::query()
+                ->whereIn('id', $validated['installment_ids'])
+                ->where('membership_id', $validated['membership_id'])
+                ->where('paid', false)
+                ->orderBy('installment_no')
+                ->get();
+
+            if ($installments->count() !== count($validated['installment_ids'])) {
+                abort(422, 'One or more installments are already paid or do not belong to this membership.');
+            }
+
+            return $installments->map(function (\App\Models\Installment $installment) use ($validated) {
+                $payment = Payment::query()->create([
+                    'membership_id' => $validated['membership_id'],
+                    'installment_id' => $installment->id,
+                    'amount' => (float) $installment->amount + (float) ($installment->penalty ?? 0),
+                    'gateway' => $validated['gateway'] ?? null,
+                    'transaction_id' => $validated['transaction_id'] ?? null,
+                    'payment_date' => $validated['payment_date'],
+                    'status' => $validated['status'],
+                ]);
+
+                if ($validated['status'] === 'success') {
+                    $installment->update([
+                        'paid' => true,
+                        'paid_date' => $validated['payment_date'],
+                    ]);
+                }
+
+                return $payment;
+            });
+        });
+
+        $membership = \App\Models\Membership::query()->find($validated['membership_id']);
+        if ($membership) {
+            $membership->update([
+                'total_paid' => (float) $membership->payments()->where('status', 'success')->sum('amount'),
+            ]);
+        }
+
+        return response()->json([
+            'message' => count($payments) . ' installment payments created successfully.',
+            'data' => $payments,
+        ], 201);
+    }
+
     private function applyPaymentEffects(Payment $payment): void
     {
         $payment->loadMissing('membership', 'installment');

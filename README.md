@@ -77,4 +77,23 @@ podman compose -f .\docker-compose.dev.yml down
 
 ## Deployment
 
-Server deployment is handled by [`deploy.sh`](/d:/Flyenv/jewelleryscheme/deploy.sh) and [`.cpanel.yml`](/d:/Flyenv/jewelleryscheme/.cpanel.yml).
+GitHub Actions deployment is configured in [.github/workflows/deploy.yml](/d:/Flyenv/jewelleryscheme/.github/workflows/deploy.yml).
+
+Create these repository or environment secrets before running it:
+
+- `SSH_HOST`
+- `SSH_PORT`
+- `SSH_USER`
+- `SSH_PRIVATE_KEY`
+- `APP_PATH`
+- `DB_PASSWORD`
+- `APP_KEY`
+- `NEXTAUTH_SECRET`
+
+The workflow supports:
+
+- automatic deploy on pushes to `main`
+- manual deploy from the Actions tab
+- selective deployment of `frontend`, `backend`, or `all`
+
+The legacy deployment helpers are still available in [`deploy.sh`](/d:/Flyenv/jewelleryscheme/deploy.sh) and [`.cpanel.yml`](/d:/Flyenv/jewelleryscheme/.cpanel.yml).

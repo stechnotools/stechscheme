@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
+    Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
 
     Route::prefix('customer-auth')->group(function () {
         Route::get('me', [CustomerPortalAuthController::class, 'me']);

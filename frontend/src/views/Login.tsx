@@ -14,6 +14,7 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Checkbox from '@mui/material/Checkbox'
+import CircularProgress from '@mui/material/CircularProgress'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -89,7 +90,7 @@ const Login = ({ mode }: { mode: Mode }) => {
   const {
     control,
     handleSubmit,
-    formState: { errors }
+    formState: { errors, isSubmitting }
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
     defaultValues: {
@@ -101,6 +102,8 @@ const Login = ({ mode }: { mode: Mode }) => {
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
   const onSubmit: SubmitHandler<FormData> = async (data: FormData) => {
+    setErrorState(null)
+
     const res = await signIn('credentials', {
       email: data.email,
       password: data.password,
@@ -235,6 +238,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                       fullWidth
                       autoFocus
                       label='Email or mobile'
+                      disabled={isSubmitting}
                       onChange={e => {
                         field.onChange(e.target.value)
                         errorState !== null && setErrorState(null)
@@ -261,6 +265,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                       label='Password'
                       id='login-password'
                       type={isPasswordShown ? 'text' : 'password'}
+                      disabled={isSubmitting}
                       onChange={e => {
                         field.onChange(e.target.value)
                         errorState !== null && setErrorState(null)
@@ -274,6 +279,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                               onClick={handleClickShowPassword}
                               onMouseDown={e => e.preventDefault()}
                               aria-label='toggle password visibility'
+                              disabled={isSubmitting}
                               sx={{ color: '#e8cf9a' }}
                             >
                               <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
@@ -292,6 +298,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                   control={
                     <Checkbox
                       defaultChecked
+                      disabled={isSubmitting}
                       sx={{
                         color: 'rgba(240, 200, 120, 0.7)',
                         '&.Mui-checked': {
@@ -304,13 +311,15 @@ const Login = ({ mode }: { mode: Mode }) => {
                 />
                 <Typography
                   className='text-end'
-                  component={Link}
-                  href='/forgot-password'
-                  sx={{
-                    color: '#f0c876',
-                    '&:hover': {
-                      color: '#f7d898'
-                    }
+                component={Link}
+                href='/forgot-password'
+                sx={{
+                  color: '#f0c876',
+                  pointerEvents: isSubmitting ? 'none' : 'auto',
+                  opacity: isSubmitting ? 0.7 : 1,
+                  '&:hover': {
+                    color: '#f7d898'
+                  }
                   }}
                 >
                   Forgot password?
@@ -320,6 +329,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                 fullWidth
                 type='submit'
                 variant='contained'
+                disabled={isSubmitting}
                 sx={{
                   borderRadius: '12px',
                   py: 1.2,
@@ -333,7 +343,14 @@ const Login = ({ mode }: { mode: Mode }) => {
                   }
                 }}
               >
-                Access Dashboard
+                {isSubmitting ? (
+                  <span className='flex items-center justify-center gap-2'>
+                    <CircularProgress size={18} thickness={5} sx={{ color: '#2a1c08' }} />
+                    Signing In...
+                  </span>
+                ) : (
+                  'Access Dashboard'
+                )}
               </Button>
               <div className='flex justify-center gap-2'>
                 <Typography sx={{ color: 'rgba(245, 241, 232, 0.78)' }}>New on our platform?</Typography>
@@ -343,6 +360,8 @@ const Login = ({ mode }: { mode: Mode }) => {
                   sx={{
                     color: '#f0c876',
                     fontWeight: 600,
+                    pointerEvents: isSubmitting ? 'none' : 'auto',
+                    opacity: isSubmitting ? 0.7 : 1,
                     '&:hover': {
                       color: '#f7d898'
                     }
@@ -354,14 +373,16 @@ const Login = ({ mode }: { mode: Mode }) => {
               <div className='flex justify-center gap-2'>
                 <Typography sx={{ color: 'rgba(245, 241, 232, 0.78)' }}>Customer access?</Typography>
                 <Typography
-                  component={Link}
-                  href='/customer/login'
-                  sx={{
-                    color: '#f0c876',
-                    fontWeight: 600,
-                    '&:hover': {
-                      color: '#f7d898'
-                    }
+                component={Link}
+                href='/customer/login'
+                sx={{
+                  color: '#f0c876',
+                  fontWeight: 600,
+                  pointerEvents: isSubmitting ? 'none' : 'auto',
+                  opacity: isSubmitting ? 0.7 : 1,
+                  '&:hover': {
+                    color: '#f7d898'
+                  }
                   }}
                 >
                   Open customer panel

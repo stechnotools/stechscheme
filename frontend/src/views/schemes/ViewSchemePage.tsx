@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
@@ -15,12 +17,17 @@ import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import CircularProgress from '@mui/material/CircularProgress'
+import Skeleton from '@mui/material/Skeleton'
+
+import { usePageLoading } from '@/contexts/pageLoadingContext'
+import { SkeletonDetail, SkeletonSectionHeader } from '@/components/SkeletonLoader'
 
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
   const normalized = rawUrl.replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
+
+  
+return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
 const backendApiUrl = resolveBackendApiUrl()
@@ -53,19 +60,24 @@ const ViewSchemePage = () => {
   const [scheme, setScheme] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { startLoading, stopLoading } = usePageLoading()
 
   const request = useCallback(
     async <T,>(path: string): Promise<T> => {
       if (!accessToken) throw new Error('Missing access token')
+
       const response = await fetch(`${backendApiUrl}${path}`, {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${accessToken}`
         }
       })
+
       const payload = await response.json().catch(() => null)
+
       if (!response.ok) throw new Error(payload?.message || 'Request failed')
-      return payload as T
+      
+return payload as T
     },
     [accessToken]
   )
@@ -74,29 +86,95 @@ const ViewSchemePage = () => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
       setLoading(false)
-      return
+      
+return
     }
 
     if (status === 'authenticated' && accessToken && schemeId) {
       const fetchScheme = async () => {
+        startLoading()
+
         try {
           const response = await request<{ data: any }>(`/schemes/${schemeId}`)
+
           setScheme(response.data)
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load scheme details.')
         } finally {
           setLoading(false)
+          stopLoading()
         }
       }
+
       void fetchScheme()
     }
   }, [status, accessToken, schemeId, request])
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
-      </Box>
+      <Grid container spacing={6}>
+        <Grid size={{ xs: 12 }}>
+          <Stack spacing={1}>
+            <Skeleton width={220} height={36} animation='wave' />
+            <Stack direction='row' spacing={1}>
+              <Skeleton width={80} height={28} variant='rounded' animation='wave' />
+              <Skeleton width={70} height={28} variant='rounded' animation='wave' />
+            </Stack>
+          </Stack>
+        </Grid>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Stack spacing={4}>
+            <Card variant='outlined'>
+              <CardContent>
+                <SkeletonSectionHeader />
+                <Box sx={{ px: 3, pb: 2 }}>
+                  <Stack spacing={3}>
+                    {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                      <Stack key={i} direction='row' spacing={2} alignItems='center'>
+                        <Skeleton width={140} height={20} animation='wave' />
+                        <Skeleton width={200} height={20} animation='wave' />
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Box>
+              </CardContent>
+            </Card>
+            <Card variant='outlined'>
+              <CardContent>
+                <SkeletonSectionHeader />
+                <Box sx={{ px: 3, pb: 2 }}>
+                  <Stack spacing={3}>
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                      <Stack key={i} direction='row' spacing={2} alignItems='center'>
+                        <Skeleton width={140} height={20} animation='wave' />
+                        <Skeleton width={200} height={20} animation='wave' />
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Box>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Stack spacing={4}>
+            <Card variant='outlined'>
+              <CardContent>
+                <SkeletonDetail />
+              </CardContent>
+            </Card>
+            <Card variant='outlined'>
+              <CardContent>
+                <Stack spacing={2}>
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} width='100%' height={60} variant='rounded' animation='wave' />
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+      </Grid>
     )
   }
 
@@ -166,8 +244,11 @@ const ViewSchemePage = () => {
                 <InfoRow label="Installment Type" value={scheme.no_of_installment_type} />
                 <InfoRow label="Installment Value" value={currencyFormatter.format(Number(scheme.installment_value || 0))} />
                 <InfoRow label="No of Installments" value={scheme.total_installments} />
+                <InfoRow label="Free Installments" value={scheme.free_installments || 0} />
                 <InfoRow label="Duration" value={scheme.installment_duration} />
                 <InfoRow label="Grace Days" value={`${scheme.grace_days} Days`} />
+                <InfoRow label="Closing Penalty" value={scheme.closing_penalty ? `${scheme.closing_penalty}%` : 'None'} />
+                <InfoRow label="Gold Rate Policy" value={scheme.gold_rate_policy === 'enrollment_rate' ? 'Enrollment Rate' : 'Closing Rate'} />
                 <InfoRow 
                   label="Overdue Policy" 
                   value={

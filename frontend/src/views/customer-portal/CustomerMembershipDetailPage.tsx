@@ -57,14 +57,6 @@ const CustomerMembershipDetailPage = ({ membershipId }: { membershipId: number }
     void load()
   }, [membershipId])
 
-  if (loading) {
-    return (
-      <Stack sx={{ minHeight: '100vh' }} alignItems='center' justifyContent='center'>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   if (!membership) {
     return (
       <Stack sx={{ minHeight: '100vh', p: 4 }}>

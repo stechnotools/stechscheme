@@ -15,62 +15,22 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
     ]
   },
   {
-    label: 'Branches',
-    icon: 'ri-building-4-line',
+    label: 'Masters',
+    icon: 'ri-folder-user-line',
     children: [
-      { label: 'All Branches', href: '/branches' },
-      { label: 'Add Branch', href: '/branches/add' }
+      { label: 'Branch Master', href: '/branches' },
+      { label: 'Customer Master', href: '/customers' },
+      { label: 'Scheme Master', href: '/schemes' },
+      { label: 'Chart of Accounts', href: '/chart-of-accounts' }
     ]
   },
   {
-    label: 'Customers',
-    icon: 'ri-group-line',
+    label: 'Scheme Entry',
+    icon: 'ri-file-list-3-line',
     children: [
-      { label: 'All Customers', href: '/customers' },
-      { label: 'Add Customer', href: '/customers/add' }
-    ]
-  },
-  {
-    label: 'KYC',
-    icon: 'ri-shield-check-line',
-    children: [
-      { label: 'Pending', href: '/kyc/pending' },
-      { label: 'Approved', href: '/kyc/approved' },
-      { label: 'Rejected', href: '/kyc/rejected' }
-    ]
-  },
-  {
-    label: 'Schemes',
-    icon: 'ri-medal-line',
-    children: [
-      { label: 'All Schemes', href: '/schemes' },
-      { label: 'Create Scheme', href: '/schemes/create' }
-    ]
-  },
-  {
-    label: 'Accounts',
-    icon: 'ri-bank-card-line',
-    children: [{ label: 'Chart of Accounts', href: '/chart-of-accounts' }]
-  },
-  {
-    label: 'Membership',
-    icon: 'ri-vip-crown-line',
-    children: [
-      { label: 'Create Membership', href: '/membership/create' },
-      { label: 'Active', href: '/membership/active' },
-      { label: 'Matured', href: '/membership/matured' },
-      { label: 'Redeemed', href: '/membership/redeemed' },
-      { label: 'Closed', href: '/membership/closed' }
-    ]
-  },
-  {
-    label: 'Installments',
-    icon: 'ri-calendar-check-line',
-    children: [
-      { label: 'All', href: '/installments' },
-      { label: 'Pending', href: '/installments/pending' },
-      { label: 'Paid', href: '/installments/paid' },
-      { label: 'Overdue', href: '/installments/overdue' }
+      { label: 'Deposit Entry', href: '/payments/collect' },
+      { label: 'Redeem Entry', href: '/membership/redeemed' },
+      { label: 'Closing Entry', href: '/membership/closed' }
     ]
   },
   {
@@ -78,9 +38,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
     icon: 'ri-secure-payment-line',
     children: [
       { label: 'All Payments', href: '/payments' },
-      { label: 'Payment History', href: '/payments/history' },
-      { label: 'Failed', href: '/payments/failed' },
-      { label: 'Receipts', href: '/payments/receipt' }
+      { label: 'Create Payment', href: '/payments/create' }
     ]
   },
   {

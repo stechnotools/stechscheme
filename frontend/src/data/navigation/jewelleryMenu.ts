@@ -27,51 +27,17 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     ]
   },
   {
-    id: 'branches',
-    label: 'Branches',
-    icon: 'ri-building-4-line',
+    id: 'masters',
+    label: 'Masters',
+    icon: 'ri-folder-user-line',
     roles: ['super-admin', 'admin', 'staff'],
     children: [
-      { id: 'branches-all', label: 'All Branches', href: '/branches', permission: 'branches.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'branches-add', label: 'Add Branch', href: '/branches/add', permission: 'branches.add', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'customers',
-    label: 'Customers',
-    icon: 'ri-group-line',
-    children: [
-      { id: 'customers-all', label: 'All Customers', href: '/customers', permission: 'customers.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'customers-add', label: 'Add Customer', href: '/customers/add', permission: 'customers.add', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'kyc',
-    label: 'KYC',
-    icon: 'ri-shield-check-line',
-    roles: ['super-admin', 'admin', 'staff'],
-    children: [
-      { id: 'kyc-pending', label: 'Pending', href: '/kyc/pending', permission: 'kyc.pending', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'kyc-approved', label: 'Approved', href: '/kyc/approved', permission: 'kyc.approved', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'kyc-rejected', label: 'Rejected', href: '/kyc/rejected', permission: 'kyc.rejected', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'schemes',
-    label: 'Schemes',
-    icon: 'ri-medal-line',
-    roles: ['super-admin', 'admin', 'staff'],
-    children: [
-      { id: 'schemes-all', label: 'All Schemes', href: '/schemes', permission: 'schemes.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'schemes-create', label: 'Create Scheme', href: '/schemes/create', permission: 'schemes.create', roles: ['super-admin', 'admin', 'staff'] }
-    ]
-  },
-  {
-    id: 'accounts',
-    label: 'Accounts',
-    icon: 'ri-bank-card-line',
-    roles: ['super-admin', 'admin', 'staff'],
-    children: [
+      { id: 'branches-all', label: 'Branch Master', href: '/branches', permission: 'branches.all', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'branches-add', label: 'Add Branch', href: '/branches/add', permission: 'branches.add', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'customers-all', label: 'Customer Master', href: '/customers', permission: 'customers.all', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'customers-add', label: 'Add Customer', href: '/customers/add', permission: 'customers.add', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'schemes-all', label: 'Scheme Master', href: '/schemes', permission: 'schemes.all', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'schemes-create', label: 'Create Scheme', href: '/schemes/create', permission: 'schemes.create', roles: ['super-admin', 'admin', 'staff'] },
       {
         id: 'accounts-chart-of-accounts',
         label: 'Chart of Accounts',
@@ -86,11 +52,8 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     label: 'Membership',
     icon: 'ri-vip-crown-line',
     children: [
-      { id: 'membership-create', label: 'Create Membership', href: '/membership/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'membership-active', label: 'Active', href: '/membership/active', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'membership-matured', label: 'Matured', href: '/membership/matured', permission: 'membership.matured', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'membership-redeemed', label: 'Redeemed', href: '/membership/redeemed', permission: 'membership.redeemed', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'membership-closed', label: 'Closed', href: '/membership/closed', permission: 'membership.closed', roles: ['super-admin', 'admin', 'staff'] }
+      { id: 'membership-all', label: 'All Membership', href: '/membership/active', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'membership-create', label: 'Create Membership', href: '/membership/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
   {

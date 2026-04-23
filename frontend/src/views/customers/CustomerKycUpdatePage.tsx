@@ -391,14 +391,6 @@ const CustomerKycUpdatePage = ({ customerId }: { customerId: number }) => {
     }
   }
 
-  if (loading) {
-    return (
-      <Stack alignItems='center' justifyContent='center' sx={{ minHeight: 320 }}>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   if (!customer) {
     return <Alert severity='error'>{error || 'Customer not found.'}</Alert>
   }

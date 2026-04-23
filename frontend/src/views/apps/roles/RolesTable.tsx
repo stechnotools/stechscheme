@@ -283,15 +283,7 @@ const RolesTable = ({ roles, loading, onRefresh, request }: Props) => {
             ))}
           </thead>
 
-          {loading ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                  Loading roles...
-                </td>
-              </tr>
-            </tbody>
-          ) : table.getFilteredRowModel().rows.length === 0 ? (
+          {table.getFilteredRowModel().rows.length === 0 ? (
             <tbody>
               <tr>
                 <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>

@@ -85,14 +85,6 @@ const BranchDetailPage = ({ branchId }: { branchId: number }) => {
     void loadBranch()
   }, [status, accessToken, branchId, request])
 
-  if (loading) {
-    return (
-      <Stack alignItems='center' justifyContent='center' sx={{ minHeight: 320 }}>
-        <CircularProgress />
-      </Stack>
-    )
-  }
-
   if (!branch) {
     return <Alert severity='error'>{error || 'Branch not found.'}</Alert>
   }

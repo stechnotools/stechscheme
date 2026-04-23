@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BlockBotRequests;
 use App\Http\Middleware\EnsureMobileVerified;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
@@ -14,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(BlockBotRequests::class);
+
         $middleware->alias([
             'mobile.verified' => EnsureMobileVerified::class,
             'role' => RoleMiddleware::class,

@@ -1393,8 +1393,6 @@ const MembershipCreatePage = ({ customerId }: { customerId?: number }) => {
               </StepperWrapper>
 
               {error ? <Alert severity='error'>{error}</Alert> : null}
-              {loading ? <Alert severity='info'>Loading SIP setup data...</Alert> : null}
-
               <Card variant='outlined'>
                 <CardContent>
                   <Grid container spacing={5}>

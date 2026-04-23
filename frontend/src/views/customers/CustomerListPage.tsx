@@ -12,6 +12,8 @@ import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
+
+import { SkeletonCard } from '@/components/SkeletonLoader'
 import InputAdornment from '@mui/material/InputAdornment'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
@@ -36,6 +38,7 @@ const CustomerListPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [searching, setSearching] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'blocked'>('all')
   const [kycFilter, setKycFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
 
@@ -324,11 +327,18 @@ const CustomerListPage = () => {
                   label='Search customers'
                   placeholder='Search by name, mobile, email, or city'
                   value={search}
-                  onChange={event => setSearch(event.target.value)}
+                  onChange={event => {
+                    const value = event.target.value
+                    setSearch(value)
+                    if (value.trim()) {
+                      setSearching(true)
+                    }
+                  }}
+                  onBlur={() => setSearching(false)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
-                        <i className='ri-search-line' />
+                        {searching ? <CircularProgress size={18} /> : <i className='ri-search-line' />}
                       </InputAdornment>
                     )
                   }}
@@ -359,11 +369,7 @@ const CustomerListPage = () => {
                 </TextField>
               </Stack>
 
-              {loading ? (
-                <Stack alignItems='center' justifyContent='center' sx={{ py: 10 }}>
-                  <CircularProgress />
-                </Stack>
-              ) : !filteredCustomers.length ? (
+              {loading ? <SkeletonCard count={6} /> : !filteredCustomers.length ? (
                 <Alert severity='info'>No customers found for the current filters.</Alert>
               ) : (
                 <Grid container spacing={3}>
