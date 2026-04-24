@@ -33,6 +33,7 @@ import { alpha } from '@mui/material/styles'
 
 import { usePageLoading } from '../../contexts/pageLoadingContext'
 
+
 type SchemeResponse = {
   data: { id: number }
   scheme_id?: number
@@ -122,7 +123,7 @@ const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
   const normalized = rawUrl.replace(/\/+$/, '')
 
-  
+
 return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
@@ -253,7 +254,7 @@ const CreateSchemePage = () => {
         throw new Error(msg || payload?.message || 'Request failed')
       }
 
-      
+
 return payload as T
     },
     [accessToken]
@@ -262,7 +263,7 @@ return payload as T
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
-      
+
 return
     }
 
@@ -436,7 +437,7 @@ return
     if (Object.keys(nextErrors).length) {
       setFieldErrors(nextErrors)
       setError('Please correct the highlighted fields and try again.')
-      
+
 return
     }
 
