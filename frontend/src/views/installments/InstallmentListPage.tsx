@@ -206,98 +206,100 @@ const InstallmentListPage = ({ title, query }: { title: string; query: string })
                   </Grid>
                 ))}
               </Grid>
-              )}
 
               {error ? <Alert severity='error'>{error}</Alert> : null}
 
-              {loading ? <SkeletonCard count={6} /> : (
-              <Grid container spacing={3}>
-                {rows.map(item => (
-                  <Grid key={item.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                    <Card
-                      variant='outlined'
-                      sx={{
-                        height: '100%',
-                        borderRadius: 4,
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: theme => theme.shadows[6]
-                        }
-                      }}
-                    >
-                      <CardContent>
-                        <Stack spacing={2}>
-                          <Stack direction='row' justifyContent='space-between' alignItems='flex-start' spacing={2}>
-                            <Box>
-                              <Typography variant='h6' fontWeight={700}>{`Installment #${item.installment_no}`}</Typography>
+              {loading ? (
+                <SkeletonCard count={6} />
+              ) : (
+                <Grid container spacing={3}>
+                  {rows.map(item => (
+                    <Grid key={item.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                      <Card
+                        variant='outlined'
+                        sx={{
+                          height: '100%',
+                          borderRadius: 4,
+                          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: theme => theme.shadows[6]
+                          }
+                        }}
+                      >
+                        <CardContent>
+                          <Stack spacing={2}>
+                            <Stack direction='row' justifyContent='space-between' alignItems='flex-start' spacing={2}>
+                              <Box>
+                                <Typography variant='h6' fontWeight={700}>{`Installment #${item.installment_no}`}</Typography>
+                                <Typography variant='body2' color='text.secondary'>
+                                  {item.membership?.scheme?.code || 'No scheme code'}
+                                </Typography>
+                              </Box>
+                              <Chip
+                                size='small'
+                                label={item.paid ? 'Paid' : 'Pending'}
+                                color={item.paid ? 'success' : 'warning'}
+                                variant={item.paid ? 'filled' : 'tonal'}
+                              />
+                            </Stack>
+
+                            <Box
+                              sx={{
+                                p: 2,
+                                borderRadius: 3,
+                                backgroundColor: theme => theme.palette.action.hover
+                              }}
+                            >
+                              <Typography fontWeight={700}>
+                                {item.membership?.customer?.name || item.membership?.customer?.mobile || 'Unknown customer'}
+                              </Typography>
                               <Typography variant='body2' color='text.secondary'>
-                                {item.membership?.scheme?.code || 'No scheme code'}
+                                {item.membership?.customer?.mobile || 'Customer mobile unavailable'}
                               </Typography>
                             </Box>
-                            <Chip
-                              size='small'
-                              label={item.paid ? 'Paid' : 'Pending'}
-                              color={item.paid ? 'success' : 'warning'}
-                              variant={item.paid ? 'filled' : 'tonal'}
-                            />
+
+                            <Divider />
+
+                            <Grid container spacing={2}>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography variant='body2' color='text.secondary'>
+                                  Scheme
+                                </Typography>
+                                <Typography fontWeight={600}>{item.membership?.scheme?.name || 'No scheme'}</Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography variant='body2' color='text.secondary'>
+                                  Due Date
+                                </Typography>
+                                <Typography fontWeight={600}>{new Date(item.due_date).toLocaleDateString('en-IN')}</Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography variant='body2' color='text.secondary'>
+                                  Amount
+                                </Typography>
+                                <Typography fontWeight={700}>{`Rs ${Number(item.amount || 0).toLocaleString('en-IN')}`}</Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography variant='body2' color='text.secondary'>
+                                  Membership
+                                </Typography>
+                                <Typography fontWeight={600}>{item.membership?.id ? `#${item.membership.id}` : 'Unlinked'}</Typography>
+                              </Grid>
+                            </Grid>
                           </Stack>
-
-                          <Box
-                            sx={{
-                              p: 2,
-                              borderRadius: 3,
-                              backgroundColor: theme => theme.palette.action.hover
-                            }}
-                          >
-                            <Typography fontWeight={700}>
-                              {item.membership?.customer?.name || item.membership?.customer?.mobile || 'Unknown customer'}
-                            </Typography>
-                            <Typography variant='body2' color='text.secondary'>
-                              {item.membership?.customer?.mobile || 'Customer mobile unavailable'}
-                            </Typography>
-                          </Box>
-
-                          <Divider />
-
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Scheme
-                              </Typography>
-                              <Typography fontWeight={600}>{item.membership?.scheme?.name || 'No scheme'}</Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Due Date
-                              </Typography>
-                              <Typography fontWeight={600}>{new Date(item.due_date).toLocaleDateString('en-IN')}</Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Amount
-                              </Typography>
-                              <Typography fontWeight={700}>{`Rs ${Number(item.amount || 0).toLocaleString('en-IN')}`}</Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Membership
-                              </Typography>
-                              <Typography fontWeight={600}>{item.membership?.id ? `#${item.membership.id}` : 'Unlinked'}</Typography>
-                            </Grid>
-                          </Grid>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-                {!rows.length ? (
-                  <Grid size={{ xs: 12 }}>
-                    <Alert severity='info'>No installments found.</Alert>
-                  </Grid>
-                ) : null}
-              </Grid>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                  {!rows.length ? (
+                    <Grid size={{ xs: 12 }}>
+                      <Alert severity='info'>No installments found.</Alert>
+                    </Grid>
+                  ) : null}
+                </Grid>
               )}
+            </Stack>
           </CardContent>
         </Card>
       </Grid>

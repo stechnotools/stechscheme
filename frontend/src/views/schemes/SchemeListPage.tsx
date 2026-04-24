@@ -313,8 +313,8 @@ const SchemeListPage = () => {
                             <Stack direction='row' spacing={0.5} alignItems='center'>
                               <Chip
                                 size='small'
-                                label={scheme.allow_overdue ? 'Flexible' : 'Strict'}
-                                color={scheme.allow_overdue ? 'warning' : 'success'}
+                                label={scheme.scheme_type || 'N/A'}
+                                color='secondary'
                                 variant='tonal'
                                 sx={{ mr: 1 }}
                               />
