@@ -1,13 +1,5 @@
-import MembershipCreatePage from '@views/membership/MembershipCreatePage'
+import CollectPaymentPage from '../../../../../views/payments/CollectPaymentPage'
 
-const MembershipCreateRoutePage = async ({
-  searchParams
-}: {
-  searchParams: Promise<{ customerId?: string }>
-}) => {
-  const { customerId } = await searchParams
-
-  return <MembershipCreatePage customerId={customerId ? Number(customerId) : undefined} />
+export default function SubscriptionCreateRoute() {
+  return <CollectPaymentPage />
 }
-
-export default MembershipCreateRoutePage

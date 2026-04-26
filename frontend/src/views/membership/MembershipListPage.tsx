@@ -10,7 +10,6 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
@@ -18,25 +17,58 @@ import Typography from '@mui/material/Typography'
 import Skeleton from '@mui/material/Skeleton'
 import LinearProgress from '@mui/material/LinearProgress'
 import InputAdornment from '@mui/material/InputAdornment'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Paper from '@mui/material/Paper'
+import IconButton from '@mui/material/IconButton'
 
 const MembershipSkeleton = () => (
   <Grid container spacing={6}>
     <Grid size={{ xs: 12 }}>
-      <Skeleton variant='rectangular' height={220} sx={{ borderRadius: 1 }} />
+      <Skeleton variant='rectangular' height={240} sx={{ borderRadius: 2 }} />
     </Grid>
     <Grid container spacing={6} sx={{ mt: 0 }}>
       {[1, 2, 3, 4].map(i => (
         <Grid key={i} size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Skeleton variant='rectangular' height={110} sx={{ borderRadius: 1 }} />
+          <Skeleton variant='rectangular' height={110} sx={{ borderRadius: 2 }} />
         </Grid>
       ))}
     </Grid>
-    <Grid container spacing={6} sx={{ mt: 0 }}>
-      {[1, 2, 3, 4, 5, 6].map(i => (
-        <Grid key={i} size={{ xs: 12, md: 6, lg: 4 }}>
-          <Skeleton variant='rectangular' height={250} sx={{ borderRadius: 2 }} />
-        </Grid>
-      ))}
+    <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
+      <Card>
+        <CardContent sx={{ p: 0 }}>
+          <Box sx={{ p: 5 }}>
+            <Skeleton variant='rectangular' height={56} sx={{ borderRadius: 1 }} />
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <TableCell key={i}><Skeleton variant='text' width='80%' height={30} /></TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map(row => (
+                  <TableRow key={row}>
+                    {[1, 2, 3, 4, 5, 6].map(col => (
+                      <TableCell key={col}>
+                        <Skeleton variant='text' width='90%' height={24} />
+                        {col === 1 && <Skeleton variant='text' width='40%' height={20} />}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
     </Grid>
   </Grid>
 )
@@ -48,7 +80,7 @@ type MembershipItem = {
   maturity_date: string
   total_paid: string | number
   customer?: { id: number; name?: string | null; mobile: string } | null
-  scheme?: { id: number; name: string; code: string; installment_value?: string | number } | null
+  scheme?: { id: number; name: string; code: string; installment_value?: string | number; total_installments?: number | null } | null
   installments?: Array<{ id: number; paid: boolean }>
   payments?: Array<{ id: number }>
 }
@@ -129,7 +161,8 @@ const MembershipListPage = ({
         (item.customer?.name || '').toLowerCase().includes(q) ||
         (item.customer?.mobile || '').toLowerCase().includes(q) ||
         (item.scheme?.name || '').toLowerCase().includes(q) ||
-        (item.scheme?.code || '').toLowerCase().includes(q)
+        (item.scheme?.code || '').toLowerCase().includes(q) ||
+        String(item.id).includes(q)
     )
   }, [memberships, search])
 
@@ -193,7 +226,7 @@ const MembershipListPage = ({
                 <Typography sx={{ color: 'rgba(255,255,255,0.85)', maxWidth: 640 }}>
                   Manage customer scheme subscriptions, monitor installment progress, and track total investments across your branch network.
                 </Typography>
-                <Stack direction='row' spacing={2} sx={{ mt: 2 }}>
+                <Stack direction='row' spacing={3} sx={{ mt: 2 }} flexWrap='wrap' useFlexGap>
                   <Button
                     component={Link}
                     href='/subscriptions/create'
@@ -203,7 +236,7 @@ const MembershipListPage = ({
                       color: '#1e40af',
                       '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' }
                     }}
-                    startIcon={<i className='ri-add-line' />}
+                    startIcon={<i className='ri-user-add-line' />}
                   >
                     New Enrollment
                   </Button>
@@ -285,7 +318,7 @@ const MembershipListPage = ({
             <CardContent sx={{ py: 3 }}>
               <TextField
                 fullWidth
-                placeholder='Search by customer name, mobile, or scheme code...'
+                placeholder='Search by customer name, mobile, scheme code or ID...'
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 InputProps={{
@@ -299,104 +332,109 @@ const MembershipListPage = ({
             </CardContent>
           </Card>
 
-          {/* Subscriptions Grid */}
-          <Grid container spacing={6}>
-            {filtered.map(item => {
-              const paidInstallments = item.installments?.filter(i => i.paid).length || 0
-              const totalInstallments = item.installments?.length || 0
-              const progress = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0
+          {/* Subscriptions Data Table */}
+          <Card>
+            <TableContainer component={Paper} elevation={0}>
+              <Table sx={{ minWidth: 1000 }} aria-label='subscriptions table'>
+                <TableHead sx={{ bgcolor: 'action.hover' }}>
+                  <TableRow>
+                    <TableCell sx={{ pl: 4 }}>ID / Customer</TableCell>
+                    <TableCell>Scheme Plan</TableCell>
+                    <TableCell>Start / Maturity</TableCell>
+                    <TableCell>Progress</TableCell>
+                    <TableCell align='right'>Paid Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align='right' sx={{ pr: 4 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filtered.map(item => {
+                    const paidInstallments = item.installments?.filter(i => i.paid).length || 0
+                    const totalInstallments = item.installments?.length || item.scheme?.total_installments || 0
+                    const progress = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0
 
-              return (
-                <Grid key={item.id} size={{ xs: 12, md: 6, lg: 4 }}>
-                  <Card 
-                    sx={{ 
-                      height: '100%',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 'var(--mui-customShadows-md)'
-                      }
-                    }}
-                  >
-                    <CardContent>
-                      <Stack spacing={4}>
-                        <Stack direction='row' justifyContent='space-between' alignItems='flex-start'>
-                          <Box>
-                            <Typography variant='h5' sx={{ mb: 0.5 }}>{item.customer?.name || 'Unknown'}</Typography>
-                            <Typography variant='body2' color='text.secondary'>{item.customer?.mobile}</Typography>
-                          </Box>
+                    return (
+                      <TableRow key={item.id} hover>
+                        <TableCell sx={{ pl: 4 }}>
+                          <Stack direction='row' spacing={3} alignItems='center'>
+                            <Typography variant='body2' fontWeight={700} sx={{ color: 'text.disabled', minWidth: 40 }}>
+                              #{item.id}
+                            </Typography>
+                            <Box>
+                              <Typography variant='body1' fontWeight={600}>{item.customer?.name || 'Unknown'}</Typography>
+                              <Typography variant='caption' color='text.secondary'>{item.customer?.mobile}</Typography>
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2' fontWeight={600} color='primary'>{item.scheme?.name || 'N/A'}</Typography>
+                          <Typography variant='caption' color='text.secondary'>{item.scheme?.code || 'No code'}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2'>{new Date(item.start_date).toLocaleDateString('en-IN')}</Typography>
+                          <Typography variant='caption' color='text.secondary'>to {new Date(item.maturity_date).toLocaleDateString('en-IN')}</Typography>
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 180 }}>
+                          <Stack spacing={1}>
+                            <Stack direction='row' justifyContent='space-between'>
+                              <Typography variant='caption' fontWeight={600}>{paidInstallments} / {totalInstallments} Months</Typography>
+                              <Typography variant='caption' color='text.secondary'>{Math.round(progress)}%</Typography>
+                            </Stack>
+                            <LinearProgress 
+                              variant='determinate' 
+                              value={progress} 
+                              sx={{ height: 6, borderRadius: 3, bgcolor: 'action.selected' }} 
+                              color={progress === 100 ? 'success' : 'primary'}
+                            />
+                          </Stack>
+                        </TableCell>
+                        <TableCell align='right'>
+                          <Typography variant='body2' fontWeight={700}>
+                            {currencyFormatter.format(Number(item.total_paid || 0))}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            of {currencyFormatter.format(Number(item.scheme?.installment_value || 0) * (totalInstallments || 1))}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
                           <Chip 
                             label={item.status} 
                             size='small' 
                             color={getStatusColor(item.status)} 
                             variant='tonal' 
-                            sx={{ fontWeight: 600, textTransform: 'capitalize' }} 
+                            sx={{ fontWeight: 600, textTransform: 'capitalize', px: 1 }} 
                           />
-                        </Stack>
-
-                        <Box sx={{ p: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
-                          <Typography variant='subtitle2' color='text.secondary' gutterBottom>Scheme Plan</Typography>
-                          <Typography variant='h6' sx={{ color: 'primary.main' }}>{item.scheme?.name || 'N/A'}</Typography>
-                          <Typography variant='caption' color='text.secondary'>{item.scheme?.code || 'No code'} • ID #{item.id}</Typography>
-                        </Box>
-
-                        <Stack spacing={1.5}>
-                          <Stack direction='row' justifyContent='space-between'>
-                            <Typography variant='body2' color='text.secondary'>Progress</Typography>
-                            <Typography variant='body2' fontWeight={600}>{paidInstallments} / {totalInstallments} Months</Typography>
-                          </Stack>
-                          <LinearProgress 
-                            variant='determinate' 
-                            value={progress} 
-                            sx={{ height: 8, borderRadius: 4 }} 
-                            color={progress === 100 ? 'success' : 'primary'}
-                          />
-                        </Stack>
-
-                        <Grid container spacing={2}>
-                          <Grid size={{ xs: 6 }}>
-                            <Typography variant='caption' color='text.secondary' display='block'>Paid Amount</Typography>
-                            <Typography variant='body1' fontWeight={700}>{currencyFormatter.format(Number(item.total_paid || 0))}</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 6 }}>
-                            <Typography variant='caption' color='text.secondary' display='block'>Maturity Date</Typography>
-                            <Typography variant='body1' fontWeight={600}>{new Date(item.maturity_date).toLocaleDateString('en-IN')}</Typography>
-                          </Grid>
-                        </Grid>
-
-                        <Divider />
-
-                        <Stack direction='row' justifyContent='space-between' alignItems='center'>
-                          <Typography variant='caption' color='text.disabled'>
-                            Started: {new Date(item.start_date).toLocaleDateString('en-IN')}
-                          </Typography>
+                        </TableCell>
+                        <TableCell align='right' sx={{ pr: 4 }}>
                           <Button 
                             component={Link} 
-                            href={`/subscriptions/${item.id}`} 
-                            variant='outlined' 
+                            href={`/subscriptions/${item.id}`}
+                            variant='outlined'
                             size='small'
-                            endIcon={<i className='ri-arrow-right-line' />}
+                            startIcon={<i className='ri-eye-line' />}
                           >
                             Details
                           </Button>
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )
-            })}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
 
-            {filtered.length === 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Box sx={{ p: 10, textAlign: 'center', bgcolor: 'background.paper', borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
-                  <i className='ri-subscription-line' style={{ fontSize: 48, color: 'var(--mui-palette-text-disabled)' }} />
-                  <Typography variant='h6' color='text.secondary' sx={{ mt: 2 }}>No subscriptions found.</Typography>
-                  <Typography variant='body2' color='text.disabled'>Try a different search term or check another status group.</Typography>
-                </Box>
-              </Grid>
-            )}
-          </Grid>
+                  {filtered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} align='center' sx={{ py: 15 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <i className='ri-subscription-line' style={{ fontSize: 48, color: 'var(--mui-palette-text-disabled)' }} />
+                          <Typography variant='h6' color='text.secondary' sx={{ mt: 2 }}>No subscriptions found.</Typography>
+                          <Typography variant='body2' color='text.disabled'>Try a different search term or check another status group.</Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
         </Stack>
       </Grid>
     </Grid>

@@ -28,8 +28,8 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       label: 'Gold SIP',
       icon: 'ri-vip-crown-line',
       children: [
-        { label: 'Subscription List', href: '/subscriptions' },
-        { label: 'Deposit Entry', href: '/payments/history' }
+        { label: 'New Enrollment', href: '/subscriptions/create' },
+        { label: 'Subscription List', href: '/subscriptions' }
       ]
     },
     {
