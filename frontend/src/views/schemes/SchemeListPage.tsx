@@ -188,37 +188,130 @@ const SchemeListPage = () => {
               }}
             />
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
+              direction={{ xs: 'column', lg: 'row' }}
               spacing={3}
               justifyContent='space-between'
-              alignItems={{ xs: 'flex-start', md: 'center' }}
+              alignItems={{ xs: 'flex-start', lg: 'center' }}
               sx={{ position: 'relative', zIndex: 1 }}
             >
-              <div>
-                <Typography variant='h4' sx={{ color: 'common.white', mb: 1.5 }}>
-                  All Schemes
-                </Typography>
-                <Typography sx={{ maxWidth: 760, color: 'rgba(255,255,255,0.86)' }}>
-                  Track every jewellery savings plan in one place, review installment rules, and keep the membership
-                  team aligned on what is currently active.
-                </Typography>
-              </div>
-              <Button
-                component={Link}
-                href='/schemes/create'
-                variant='contained'
-                startIcon={<i className='ri-add-line' />}
+              <Stack spacing={2} sx={{ maxWidth: 760 }}>
+                <Chip
+                  label='Gold Scheme Master'
+                  sx={{
+                    alignSelf: 'flex-start',
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    color: 'common.white',
+                    '& .MuiChip-label': { fontWeight: 700 }
+                  }}
+                />
+                <div>
+                  <Typography variant='h3' sx={{ color: 'common.white', mb: 1.5 }}>
+                    Track and manage all jewellery savings schemes.
+                  </Typography>
+                  <Typography sx={{ color: 'rgba(255,255,255,0.86)', maxWidth: 680 }}>
+                    Keep the membership team aligned on what is currently active, review installment rules, and monitor scheme performance.
+                  </Typography>
+                </div>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button
+                    component={Link}
+                    href='/schemes/create'
+                    variant='contained'
+                    startIcon={<i className='ri-add-line' />}
+                    sx={{
+                      bgcolor: 'common.white',
+                      color: '#9a6700',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' }
+                    }}
+                  >
+                    Create Scheme
+                  </Button>
+                </Stack>
+              </Stack>
+
+              <Card
                 sx={{
-                  bgcolor: 'common.white',
-                  color: '#9a6700',
-                  '&:hover': {
-                    bgcolor: 'rgba(255,255,255,0.92)'
-                  }
+                  minWidth: { xs: '100%', lg: 320 },
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(8px)',
+                  color: 'common.white',
+                  border: '1px solid rgba(255,255,255,0.12)'
                 }}
               >
-                Create Scheme
-              </Button>
+                <CardContent>
+                  <Typography variant='overline' sx={{ color: 'rgba(255,255,255,0.72)', letterSpacing: 1 }}>
+                    Live Scheme Count
+                  </Typography>
+                  <Typography variant='h4' sx={{ color: 'common.white', mt: 1.5 }}>
+                    {schemes.length}
+                  </Typography>
+                  <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.78)', mt: 1 }}>
+                    Total active schemes configured in the system.
+                  </Typography>
+                </CardContent>
+              </Card>
             </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography variant='body2' color='text.secondary'>
+              Visible Schemes
+            </Typography>
+            <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
+              {filteredSchemes.length}
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Based on current filters
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography variant='body2' color='text.secondary'>
+              Gold Schemes
+            </Typography>
+            <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
+              {filteredSchemes.filter(s => s.scheme_type?.toLowerCase().includes('gold')).length}
+            </Typography>
+            <Typography variant='body2' color='success.main'>
+              Most popular category
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography variant='body2' color='text.secondary'>
+              Short Term Plans
+            </Typography>
+            <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
+              {filteredSchemes.filter(s => s.total_installments <= 11).length}
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              11 months or fewer
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography variant='body2' color='text.secondary'>
+              Long Term Plans
+            </Typography>
+            <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
+              {filteredSchemes.filter(s => s.total_installments > 11).length}
+            </Typography>
+            <Typography variant='body2' color='info.main'>
+              12 months or longer
+            </Typography>
           </CardContent>
         </Card>
       </Grid>

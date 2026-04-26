@@ -123,7 +123,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
 
     try {
       await request(`/memberships/${membership.id}`, { method: 'DELETE' })
-      router.replace('/membership/active')
+      router.replace('/subscriptions')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete membership.')
     } finally {
@@ -174,8 +174,8 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                 </div>
                 <Stack direction='row' spacing={1} alignItems='center'>
                   <Chip label={membership.status} color='primary' variant='tonal' />
-                  <Button component={Link} href='/membership/create' variant='outlined' size='small'>Edit</Button>
-                  <Button component={Link} href='/membership/active' variant='outlined' size='small'>Back</Button>
+                  <Button component={Link} href='/subscriptions/create' variant='outlined' size='small'>Edit</Button>
+                  <Button component={Link} href='/subscriptions' variant='outlined' size='small'>Back</Button>
                 </Stack>
               </Stack>
               {error ? <Alert severity='error'>{error}</Alert> : null}

@@ -48,12 +48,12 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     ]
   },
   {
-    id: 'membership',
-    label: 'Membership',
+    id: 'subscriptions',
+    label: 'Subscriptions',
     icon: 'ri-vip-crown-line',
     children: [
-      { id: 'membership-all', label: 'All Membership', href: '/membership/active', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'membership-create', label: 'Create Membership', href: '/membership/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] }
+      { id: 'subscriptions-all', label: 'Subscription Master', href: '/subscriptions', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'subscriptions-create', label: 'Create Subscription', href: '/subscriptions/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] }
     ]
   },
   {
@@ -73,7 +73,7 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     icon: 'ri-secure-payment-line',
     children: [
       { id: 'payments-all', label: 'All Payments', href: '/payments', permission: 'payments.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'payments-history', label: 'Payment History', href: '/payments/history', permission: 'payments.history', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'payments-history', label: 'Deposit Entry', href: '/payments/history', permission: 'payments.history', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'payments-failed', label: 'Failed', href: '/payments/failed', permission: 'payments.failed', roles: ['super-admin', 'admin', 'staff'] },
       {
         id: 'payments-receipt',

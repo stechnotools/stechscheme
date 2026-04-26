@@ -17,7 +17,7 @@ import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-
+import Skeleton from '@mui/material/Skeleton'
 import {
   getCustomerLocationLabel,
   getCustomerName,
@@ -76,6 +76,79 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0
 })
 
+const CustomerProfileSkeleton = () => (
+  <Grid container spacing={6}>
+    <Grid size={{ xs: 12 }}>
+      <Skeleton variant='rectangular' height={200} sx={{ borderRadius: 1 }} />
+    </Grid>
+
+    <Grid size={{ xs: 12, lg: 4 }}>
+      <Stack spacing={6}>
+        <Skeleton variant='rectangular' height={150} sx={{ borderRadius: 1 }} />
+        <Card>
+          <CardContent>
+            <Stack spacing={3}>
+              <Skeleton variant='text' width='60%' height={32} />
+              <Skeleton variant='text' width='40%' />
+              <Grid container spacing={3}>
+                {[1, 2, 3, 4].map(i => (
+                  <Grid key={i} size={{ xs: 12 }}>
+                    <Skeleton variant='text' width='30%' />
+                    <Skeleton variant='text' width='70%' height={24} />
+                  </Grid>
+                ))}
+              </Grid>
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <Stack spacing={2.5}>
+              <Skeleton variant='text' width='60%' height={32} />
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i}>
+                  <Skeleton variant='text' width='40%' />
+                  <Skeleton variant='text' width='80%' height={24} />
+                  {i < 5 && <Divider sx={{ my: 1.5 }} />}
+                </div>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+    </Grid>
+
+    <Grid size={{ xs: 12, lg: 8 }}>
+      <Stack spacing={6}>
+        <Grid container spacing={3}>
+          {[1, 2, 3].map(i => (
+            <Grid key={i} size={{ xs: 12, md: 4 }}>
+              <Skeleton variant='rectangular' height={120} sx={{ borderRadius: 1 }} />
+            </Grid>
+          ))}
+        </Grid>
+        <Card>
+          <CardContent>
+            <Stack spacing={3}>
+              <Skeleton variant='text' width='40%' height={32} />
+              <Skeleton variant='text' width='60%' />
+              <Skeleton variant='rectangular' height={300} sx={{ borderRadius: 1 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <Stack spacing={3}>
+              <Skeleton variant='text' width='40%' height={32} />
+              <Skeleton variant='rectangular' height={400} sx={{ borderRadius: 1 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+    </Grid>
+  </Grid>
+)
+
 const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -83,7 +156,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [memberships, setMemberships] = useState<Membership[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const request = useCallback(
@@ -148,6 +221,10 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
 
     void loadCustomer()
   }, [status, accessToken, customerId, request])
+
+  if (loading) {
+    return <CustomerProfileSkeleton />
+  }
 
   if (!customer) {
     return <Alert severity='error'>{error || 'Customer not found.'}</Alert>
@@ -219,10 +296,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                 <Button component={Link} href={`/customers/${customer.id}/edit`} variant='contained' sx={{ bgcolor: 'common.white', color: '#0f4c81' }}>
                   Edit Customer
                 </Button>
-                <Button component={Link} href={`/customers/${customer.id}/kyc`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
-                  Update KYC
-                </Button>
-                <Button component={Link} href={`/membership/create?customerId=${customer.id}`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
+                <Button component={Link} href={`/subscriptions/create?customerId=${customer.id}`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
                   Enroll Membership
                 </Button>
                 <Button component={Link} href={`/payments/history?customer_id=${customer.id}`} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}>
@@ -261,9 +335,6 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                       variant='tonal'
                       size='small'
                     />
-                    <Button component={Link} href={`/customers/${customer.id}/kyc`} variant='contained' size='small'>
-                      KYC Update
-                    </Button>
                   </Stack>
                 </CardContent>
               </Card>
@@ -583,7 +654,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                             </Typography>
                           </div>
                           <Stack direction='row' spacing={1}>
-                            <Button component={Link} href={`/membership/${payment.membershipId}`} variant='outlined' size='small'>
+                            <Button component={Link} href={`/subscriptions/${payment.membershipId}`} variant='outlined' size='small'>
                               Membership
                             </Button>
                             <Button component={Link} href={`/payments/receipt/${payment.id}`} variant='contained' size='small'>

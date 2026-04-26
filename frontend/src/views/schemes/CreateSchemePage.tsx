@@ -53,12 +53,14 @@ type SchemeListItem = {
   name?: string | null
   scheme_type?: string
   installment_value?: string | number
+  free_installments?: number | string
   total_installments?: number
   no_of_installment_type?: string
   item_group?: string
   installment_duration?: string
   grace_days?: number | null
   allow_overdue?: boolean
+  closing_penalty?: string | number
   late_fee_type?: string
   late_fee_value?: string | number
   late_fee_effect_account?: string
@@ -71,6 +73,7 @@ type SchemeListItem = {
   bonus_no_of_installments?: number | null
   bonus_effect_account?: string
   apply_rate?: string
+  gold_rate_policy?: string
   allow_change_rate_closing?: boolean
   wt_booked_with_gst?: boolean
   is_closed?: boolean
@@ -704,7 +707,7 @@ return
                 <Box sx={(theme) => ({ ...sectionHeaderSx(theme), cursor: 'pointer', userSelect: 'none' })} onClick={() => setShowAdvanced(!showAdvanced)}>
                   <Stack direction='row' spacing={1} alignItems='center'>
                     <Typography variant='subtitle1' fontWeight={700}>Advanced Accounting</Typography>
-                    <i className={showAdvanced ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} style={{ ml: 'auto' }} />
+                    <i className={showAdvanced ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} style={{ marginLeft: 'auto' }} />
                   </Stack>
                 </Box>
                 <Collapse in={showAdvanced}>

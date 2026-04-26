@@ -33,6 +33,12 @@ class PaymentController extends CrudController
             $query->whereHas('membership', fn ($builder) => $builder->where('customer_id', (int) $request->input('customer_id')));
         }
 
+        if ($request->filled('customer_name')) {
+            $query->whereHas('membership.customer', function ($builder) use ($request) {
+                $builder->where('name', 'like', '%' . (string) $request->input('customer_name') . '%');
+            });
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('payment_date', '>=', (string) $request->input('date_from'));
         }
