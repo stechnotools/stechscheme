@@ -1,16 +1,55 @@
 export type CustomerKyc = {
   id?: number
-  aadhaar_number?: string | null
-  pan_number?: string | null
-  aadhaar_file?: string | null
-  pan_file?: string | null
-  photo?: string | null
-  status?: 'pending' | 'approved' | 'rejected' | null
+  family_head?: string | null
+  birth_date?: string | null
+  anniversary?: string | null
+  spouse_name?: string | null
+  child_name_1?: string | null
+  child_1_birth_date?: string | null
+  child_name_2?: string | null
+  child_2_birth_date?: string | null
+  mobile_no_2?: string | null
+  std_code?: string | null
+  phone_no_1?: string | null
+  phone_no_2?: string | null
+  phone_no_3?: string | null
+  phone_no_4?: string | null
+  phone_no_5?: string | null
+  fax_no_1?: string | null
+  fax_no_2?: string | null
+  email_2?: string | null
+  block_no?: string | null
+  building_name?: string | null
+  area?: string | null
   city?: string | null
   state?: string | null
-  address?: string | null
   pincode?: string | null
+  country?: string | null
+  address?: string | null
+  aadhaar_number?: string | null
+  pan_number?: string | null
+  driving_licence?: string | null
+  election_card?: string | null
+  passport_no?: string | null
+  nominee_name?: string | null
+  nominee_relation?: string | null
+  nominee_mobile_1?: string | null
+  nominee_mobile_2?: string | null
+  nominee_block_no?: string | null
+  nominee_building_name?: string | null
+  nominee_street?: string | null
+  nominee_area?: string | null
+  nominee_city?: string | null
+  nominee_state?: string | null
+  nominee_zip_code?: string | null
+  nominee_country?: string | null
+  reference_1?: string | null
+  reference_2?: string | null
   remarks?: string | null
+  photo?: string | null
+  aadhaar_file?: string | null
+  pan_file?: string | null
+  status?: 'pending' | 'approved' | 'rejected' | null
   verified_at?: string | null
 }
 

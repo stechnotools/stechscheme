@@ -1158,7 +1158,7 @@ const CollectPaymentPage = () => {
                 <Stack direction={{ xs: 'column', lg: 'row' }} justifyContent='space-between' spacing={2}>
                   <div>
                     <Typography variant='h4' sx={{ color: 'common.white' }}>
-                      Deposit Entry
+                      New Membership
                     </Typography>
                     <Typography sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.75 }}>
                       Passbook-driven collection desk for first membership and all installment entry in one form.
