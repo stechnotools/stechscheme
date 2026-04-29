@@ -15,11 +15,19 @@ use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\PromotionController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\VoucherSetupController;
+use App\Http\Controllers\MetalBuyingOptionController;
 use App\Http\Controllers\API\SchemeController;
 use App\Http\Controllers\API\SchemeMaturityBenefitController;
 use App\Http\Controllers\API\SettingController;
 use App\Http\Controllers\API\TransactionController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\API\MetalMasterController;
+use App\Http\Controllers\Api\DigitalMetalMasterController;
+use App\Http\Controllers\Api\DigitalMetalSaleController;
+use App\Http\Controllers\Api\DigitalMetalPurchaseController;
+use App\Http\Controllers\Api\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -31,6 +39,8 @@ Route::prefix('customer-auth')->group(function () {
     Route::post('login', [CustomerPortalAuthController::class, 'login']);
 });
 
+Route::post('feedback', [FeedbackController::class, 'store']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
@@ -39,6 +49,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('reports/dashboard', [ReportController::class, 'dashboard'])
         ->middleware('role:super-admin,admin');
+
+    Route::get('metal-masters/logs', [MetalMasterController::class, 'getAllLogs']);
+    Route::get('metal-masters/{id}/logs', [MetalMasterController::class, 'getLogs']);
+    Route::post('metal-masters/bulk-rates', [MetalMasterController::class, 'bulkRateUpdate']);
+    
+    Route::get('digital-metal-masters/logs', [DigitalMetalMasterController::class, 'getAllLogs']);
+    Route::get('digital-metal-masters/{id}/logs', [DigitalMetalMasterController::class, 'getLogs']);
+    Route::post('digital-metal-masters/bulk-rates', [DigitalMetalMasterController::class, 'bulkRateUpdate']);
+    
+    Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    
+    Route::get('voucher-setup/logs', [VoucherSetupController::class, 'logs']);
+    Route::get('voucher-setup', [VoucherSetupController::class, 'index']);
+    Route::put('voucher-setup/{id}', [VoucherSetupController::class, 'update']);
 
     Route::apiResources([
         'chart-of-accounts' => ChartOfAccountController::class,
@@ -54,6 +78,11 @@ Route::middleware('auth:sanctum')->group(function () {
         'products' => ProductController::class,
         'promotions' => PromotionController::class,
         'transactions' => TransactionController::class,
+        'metal-masters' => MetalMasterController::class,
+        'digital-metal-masters' => DigitalMetalMasterController::class,
+        'digital-metal-sales' => DigitalMetalSaleController::class,
+        'digital-metal-purchases' => DigitalMetalPurchaseController::class,
+        'metal-buying-options' => MetalBuyingOptionController::class,
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
@@ -85,6 +114,18 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:super-admin,admin');
     Route::post('settings/company-logo', [SettingController::class, 'uploadCompanyLogo'])
         ->middleware('role:super-admin,admin');
+
+    // Feedback Management
+    Route::prefix('feedback')->group(function () {
+        Route::get('/', [FeedbackController::class, 'index']);
+        Route::get('/stats', [FeedbackController::class, 'stats']);
+        Route::get('/staff-performance', [FeedbackController::class, 'staffPerformance']);
+        Route::post('/{id}/actions', [FeedbackController::class, 'addAction']);
+    });
+    
+    Route::apiResource('feedback-questions', \App\Http\Controllers\Api\FeedbackQuestionController::class);
 });
+
+Route::get('feedback-questions', [\App\Http\Controllers\Api\FeedbackQuestionController::class, 'index']); // Public access to fetch questions for kiosk
 
 Route::get('/test-speed', function() { return 'Fast!'; });

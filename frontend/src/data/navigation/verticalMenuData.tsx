@@ -25,6 +25,28 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       ]
     },
     {
+      label: "Today's Metal Rate",
+      icon: 'ri-funds-line',
+      children: [
+        { label: 'Metal Master', href: '/metal-rates/master' },
+        { label: 'Metal Rate', href: '/metal-rates' }
+      ]
+    },
+    {
+      label: 'Digital Metal',
+      icon: 'ri-coin-line',
+      children: [
+        { label: 'Metal Master', href: '/digital-metal/master' },
+        { label: 'Metal Rate', href: '/digital-metal/rates' },
+        { label: 'DigiMetal Sale Entry', href: '/digital-metal/sales' },
+        { label: 'Digital Metal Purchase', href: '/digital-metal/purchase' },
+        { label: 'Customer Digital Balance Report', href: '/digital-metal/reports/balance' },
+        { label: 'Metal Defult Redeem Option List', href: '/digital-metal/redeem-options' },
+        { label: 'Popular Buying Option', href: '/digital-metal/buying-options' },
+        { label: 'Voucher setup', href: '/digital-metal/voucher-setup' }
+      ]
+    },
+    {
       label: 'Gold SIP',
       icon: 'ri-vip-crown-line',
       children: [
@@ -49,11 +71,20 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       ]
     },
     {
+      label: 'Feedback',
+      icon: 'ri-feedback-line',
+      children: [
+        { label: 'Dashboard', href: '/feedback' },
+        { label: 'Customer Master', href: '/customers' },
+        { label: 'Capture Kiosk', href: '/feedback/capture' },
+        { label: 'Question Setup', href: '/feedback/questions' }
+      ]
+    },
+    {
       label: 'Reports',
       icon: 'ri-file-chart-line',
       children: [
         { label: 'Revenue', href: '/reports/revenue' },
-        { label: 'Customers', href: '/reports/customers' },
         { label: 'Payments', href: '/reports/payments' }
       ]
     },
@@ -70,9 +101,10 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       label: 'Settings',
       icon: 'ri-settings-3-line',
       children: [
+        { label: 'General setup', href: '/settings/general-settings' },
         { label: 'Company Info', href: '/settings/company-info' },
         { label: 'Payment Gateway', href: '/settings/payment-gateway' },
-        { label: 'WhatsApp API', href: '/settings/whatsapp-api' },
+        { label: 'WhatsApp Service Setup', href: '/settings/whatsapp-api' },
         { label: 'Notifications', href: '/settings/notifications' }
       ]
     }

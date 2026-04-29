@@ -13,4 +13,14 @@ class WhatsAppService
             'channel' => 'whatsapp',
         ];
     }
+
+    public function sendMessage(string $mobile, string $message): array
+    {
+        return [
+            'mobile' => $mobile,
+            'message' => $message,
+            'status' => 'queued',
+            'channel' => 'whatsapp',
+        ];
+    }
 }
