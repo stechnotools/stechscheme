@@ -36,6 +36,7 @@ class UpdateCustomerRequest extends FormRequest
             'portal_enabled' => ['nullable', 'boolean'],
             'portal_password' => ['nullable', 'string', 'min:6'],
             'branch_id' => ['nullable', 'integer', Rule::exists('branches', 'id')],
+            'feedback' => ['nullable', 'string'],
             'kyc' => ['nullable', 'array'],
             'kyc.family_head' => ['nullable', 'string', 'max:255'],
             'kyc.contact_name_1' => ['nullable', 'string', 'max:255'],

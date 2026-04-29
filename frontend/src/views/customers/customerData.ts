@@ -20,6 +20,7 @@ export type Customer = {
   mobile: string
   email?: string | null
   status?: 'active' | 'inactive' | 'blocked' | null
+  feedback?: string | null
   created_at?: string | null
   user?: {
     id: number

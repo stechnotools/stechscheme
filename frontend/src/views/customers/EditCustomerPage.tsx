@@ -183,6 +183,7 @@ const EditCustomerPage = ({ customerId }: { customerId: number }) => {
   const [portalPassword, setPortalPassword] = useState('')
   const [branchId, setBranchId] = useState('')
   const [status, setStatus] = useState<'active' | 'inactive' | 'blocked'>('active')
+  const [feedback, setFeedback] = useState('')
 
   // Personal Info
   const [familyHead, setFamilyHead] = useState('')
@@ -330,6 +331,7 @@ const EditCustomerPage = ({ customerId }: { customerId: number }) => {
         setMobile(data.mobile || '')
         setEmail(data.email || '')
         setStatus((data.status as 'active' | 'inactive' | 'blocked' | null) || 'active')
+        setFeedback(data.feedback || '')
         setBranchId(data.user?.branches?.[0]?.id ? String(data.user.branches[0].id) : '')
 
         // KYC fields
@@ -457,6 +459,7 @@ const EditCustomerPage = ({ customerId }: { customerId: number }) => {
           email: email.trim() || null,
           status,
           branch_id: Number(branchId),
+          feedback: feedback.trim() || null,
           ...(portalPassword.trim() ? { portal_password: portalPassword.trim() } : {}),
           kyc: {
             family_head: familyHead.trim() || null,
@@ -627,6 +630,9 @@ const EditCustomerPage = ({ customerId }: { customerId: number }) => {
                       <MenuItem value='inactive'>Inactive</MenuItem>
                       <MenuItem value='blocked'>Blocked</MenuItem>
                     </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField fullWidth multiline minRows={3} label='Initial Feedback / Notes' placeholder='Update feedback collected at onboarding' value={feedback} onChange={e => setFeedback(e.target.value)} />
                   </Grid>
                 </Grid>
               </Stack>

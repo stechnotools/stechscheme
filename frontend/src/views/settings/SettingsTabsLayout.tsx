@@ -14,7 +14,6 @@ type SettingsTabKey =
   | 'sms-gateway'
   | 'whatsapp-api'
   | 'notifications'
-  | 'general-settings'
 
 type Props = {
   activeTab: SettingsTabKey
@@ -66,14 +65,6 @@ const SettingsTabsLayout = ({ activeTab, children }: Props) => {
               value='notifications'
               component={Link}
               href='/settings/notifications'
-            />
-            <Tab
-              label='General Settings'
-              icon={<i className='ri-settings-3-line' />}
-              iconPosition='start'
-              value='general-settings'
-              component={Link}
-              href='/settings/general-settings'
             />
           </CustomTabList>
         </Grid>

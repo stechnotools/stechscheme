@@ -376,6 +376,14 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                     </Typography>
                     <Typography fontWeight={700}>{customer.kyc?.status === 'approved' ? 'Ready for scheme enrollment' : 'KYC approval required'}</Typography>
                   </Grid>
+                  {customer.feedback && (
+                    <Grid size={{ xs: 12 }}>
+                      <Typography variant='body2' color='text.secondary'>
+                        Feedback / Notes
+                      </Typography>
+                      <Typography fontWeight={700}>{customer.feedback}</Typography>
+                    </Grid>
+                  )}
                 </Grid>
               </Stack>
             </CardContent>

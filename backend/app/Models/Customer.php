@@ -14,6 +14,7 @@ class Customer extends Model
         'status',
         'portal_enabled',
         'portal_enabled_at',
+        'feedback',
     ];
 
     protected function casts(): array

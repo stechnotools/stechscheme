@@ -139,6 +139,7 @@ const AddCustomerPage = () => {
   const [portalPassword, setPortalPassword] = useState('')
   const [branchId, setBranchId] = useState('')
   const [status, setStatus] = useState<'active' | 'inactive' | 'blocked'>('active')
+  const [feedback, setFeedback] = useState('')
 
   // Personal Info
   const [familyHead, setFamilyHead] = useState('')
@@ -338,6 +339,7 @@ const AddCustomerPage = () => {
           portal_enabled: true,
           portal_password: portalPassword.trim(),
           branch_id: Number(branchId),
+          feedback: feedback.trim() || null,
           kyc: {
             family_head: familyHead.trim() || null,
             birth_date: birthDate || null,
@@ -483,6 +485,9 @@ const AddCustomerPage = () => {
                       <MenuItem value='inactive'>Inactive</MenuItem>
                       <MenuItem value='blocked'>Blocked</MenuItem>
                     </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField fullWidth multiline minRows={3} label='Initial Feedback / Notes' placeholder='Enter any feedback collected at onboarding' value={feedback} onChange={e => setFeedback(e.target.value)} />
                   </Grid>
                 </Grid>
               </Stack>
