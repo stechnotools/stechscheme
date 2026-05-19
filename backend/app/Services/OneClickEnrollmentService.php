@@ -64,23 +64,36 @@ class OneClickEnrollmentService
                 'skip_kyc_check' => true,
             ]);
 
-            $firstPayment = null;
-            $paymentAmount = (float) (data_get($validated, 'payment.amount') ?? $scheme->installment_value ?? 0);
+            $paymentEntries = data_get($validated, 'payments');
+            if (! $paymentEntries && data_get($validated, 'payment.amount') > 0) {
+                $paymentEntries = [
+                    [
+                        'gateway' => data_get($validated, 'payment.gateway', 'cash'),
+                        'amount' => (float) data_get($validated, 'payment.amount'),
+                        'transaction_id' => data_get($validated, 'payment.transaction_id'),
+                        'payment_date' => data_get($validated, 'payment.payment_date', $validated['start_date']),
+                    ]
+                ];
+            }
 
-            if ($paymentAmount > 0) {
+            $createdPayments = [];
+            if ($paymentEntries) {
                 $firstInstallment = $membership->installments()->orderBy('installment_no')->firstOrFail();
 
-                $firstPayment = Payment::query()->create([
-                    'membership_id' => $membership->id,
-                    'installment_id' => $firstInstallment->id,
-                    'amount' => $paymentAmount,
-                    'gateway' => data_get($validated, 'payment.gateway', 'cash'),
-                    'transaction_id' => data_get($validated, 'payment.transaction_id'),
-                    'payment_date' => data_get($validated, 'payment.payment_date', $validated['start_date']),
-                    'status' => data_get($validated, 'payment.status', 'success'),
-                ]);
+                foreach ($paymentEntries as $entry) {
+                    $payment = Payment::query()->create([
+                        'membership_id' => $membership->id,
+                        'installment_id' => $firstInstallment->id,
+                        'amount' => (float) $entry['amount'],
+                        'gateway' => $entry['gateway'] ?? 'cash',
+                        'transaction_id' => $entry['transaction_id'] ?? null,
+                        'payment_date' => $entry['payment_date'] ?? $validated['start_date'],
+                        'status' => 'success',
+                    ]);
 
-                app(PaymentService::class)->syncPaymentState($firstPayment);
+                    app(PaymentService::class)->syncPaymentState($payment);
+                    $createdPayments[] = $payment;
+                }
             }
 
             $membership = $membership->fresh([
@@ -100,7 +113,7 @@ class OneClickEnrollmentService
             return [
                 'customer' => $customer->fresh(['kyc', 'user']),
                 'membership' => $membership,
-                'payment' => $firstPayment?->fresh(['installment']),
+                'payment' => count($createdPayments) ? $createdPayments[0]->fresh(['installment']) : null,
                 'scheme' => $scheme,
                 'card' => [
                     'membership_no' => $membership->membership_no,

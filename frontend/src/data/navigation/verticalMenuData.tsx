@@ -24,14 +24,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
         { label: 'Chart of Accounts', href: '/chart-of-accounts' }
       ]
     },
-    {
-      label: "Today's Metal Rate",
-      icon: 'ri-funds-line',
-      children: [
-        { label: 'Metal Master', href: '/metal-rates/master' },
-        { label: 'Metal Rate', href: '/metal-rates' }
-      ]
-    },
+
     {
       label: 'Digital Metal',
       icon: 'ri-coin-line',
@@ -50,7 +43,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       label: 'Gold SIP',
       icon: 'ri-vip-crown-line',
       children: [
-        { label: 'New Enrollment', href: '/subscriptions/create' },
+        { label: 'Subscription Entry', href: '/subscriptions/create' },
         { label: 'Subscription List', href: '/subscriptions' }
       ]
     },

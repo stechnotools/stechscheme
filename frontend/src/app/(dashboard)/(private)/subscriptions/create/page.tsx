@@ -1,5 +1,5 @@
-import CollectPaymentPage from '../../../../../views/payments/CollectPaymentPage'
+import SubscriptionCreatePage from '../../../../../views/subscriptions/SubscriptionCreatePage'
 
 export default function SubscriptionCreateRoute() {
-  return <CollectPaymentPage />
+  return <SubscriptionCreatePage />
 }

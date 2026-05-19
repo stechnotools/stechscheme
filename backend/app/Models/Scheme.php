@@ -47,6 +47,13 @@ class Scheme extends Model
         'interest_receivable_account',
         'advertisement_publicity_account',
         'remarks',
+        'lock_in_period_months',
+        'redemption_window_days',
+        'booking_purity',
+        'allow_va_discount',
+        'va_discount_percentage',
+        'banner_image_path',
+        'workflow_html',
     ];
 
     protected function casts(): array
@@ -57,10 +64,12 @@ class Scheme extends Model
             'late_fee_value' => 'decimal:2',
             'closing_penalty' => 'decimal:2',
             'first_installment_multiple_of' => 'decimal:2',
+            'va_discount_percentage' => 'decimal:2',
             'allow_overdue' => 'boolean',
             'wt_booked_with_gst' => 'boolean',
             'allow_change_rate_closing' => 'boolean',
             'allow_bonus' => 'boolean',
+            'allow_va_discount' => 'boolean',
             'is_closed' => 'boolean',
             'start_date' => 'date',
             'termination_date' => 'date',

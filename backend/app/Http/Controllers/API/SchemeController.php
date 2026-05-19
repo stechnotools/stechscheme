@@ -64,4 +64,14 @@ class SchemeController extends Controller
             'message' => 'Scheme deleted successfully.',
         ]);
     }
+
+    public function deleteMaturityBenefits(int $id): JsonResponse
+    {
+        $scheme = Scheme::query()->findOrFail($id);
+        $scheme->maturityBenefits()->delete();
+
+        return response()->json([
+            'message' => 'Scheme maturity benefits deleted successfully.',
+        ]);
+    }
 }

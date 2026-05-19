@@ -50,7 +50,7 @@ type PaymentReceipt = {
 }
 
 type PaymentReceiptResponse = {
-  data: PaymentReceipt
+  data: PaymentReceipt | PaymentReceipt[]
 }
 
 const resolveBackendApiUrl = () => {
@@ -74,7 +74,7 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0
 })
 
-const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
+const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
   const theme = useTheme()
   const searchParams = useSearchParams()
   const autoPrint = searchParams.get('autoprint') === '1'
@@ -82,7 +82,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
   const { data: session } = useSession()
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
 
-  const [payment, setPayment] = useState<PaymentReceipt | null>(null)
+  const [payments, setPayments] = useState<PaymentReceipt[]>([])
   const [error, setError] = useState<string | null>(null)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
   const autoDownloadTriggeredRef = useRef(false)
@@ -167,7 +167,11 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
         setError(null)
         const response = await request<PaymentReceiptResponse>(`/payments/${paymentId}`)
 
-        setPayment(response.data)
+        if (Array.isArray(response.data)) {
+          setPayments(response.data)
+        } else {
+          setPayments([response.data])
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load receipt.')
       }
@@ -177,7 +181,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
   }, [accessToken, paymentId, request])
 
   useEffect(() => {
-    if (!payment || !autoPrint || autoDownloadTriggeredRef.current) return
+    if (!payments.length || !autoPrint || autoDownloadTriggeredRef.current) return
 
     autoDownloadTriggeredRef.current = true
 
@@ -186,21 +190,23 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
     }, 500)
 
     return () => window.clearTimeout(timeoutId)
-  }, [autoPrint, handleDownloadPdf, payment])
+  }, [autoPrint, handleDownloadPdf, payments])
 
-  if (!payment) {
+  if (!payments.length) {
     return <Alert severity={error ? 'error' : 'info'}>{error || 'Loading receipt...'}</Alert>
   }
 
-  const installmentBase = Number(payment.installment?.amount || 0)
-  const installmentPenalty = Number(payment.installment?.penalty || 0)
-  const totalPaid = Number(payment.amount || 0)
+  const payment = payments[0]
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+  const installmentBase = payments.reduce((sum, p) => sum + Number(p.installment?.amount || 0), 0)
+  const installmentPenalty = payments.reduce((sum, p) => sum + Number(p.installment?.penalty || 0), 0)
+  
   const receiptDate = new Date(payment.payment_date).toLocaleDateString('en-IN')
   const customerName = payment.membership?.customer?.name || 'Unknown customer'
   const customerMobile = payment.membership?.customer?.mobile || '-'
   const schemeName = payment.membership?.scheme?.name || '-'
   const schemeCode = payment.membership?.scheme?.code || '-'
-  const gatewayName = payment.gateway || 'manual'
+  const gatewayNames = Array.from(new Set(payments.map(p => p.gateway || 'manual'))).join(', ')
 
   return (
     <Stack spacing={4}>
@@ -259,7 +265,9 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
             <Typography sx={labelSx}>Scheme Details</Typography>
             <Typography fontWeight={600}>{schemeName}</Typography>
             <Typography variant='body2' color='text.secondary'>{schemeCode}</Typography>
-            <Typography variant='body2' color='text.secondary'>Installment #{payment.installment?.installment_no || '-'}</Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Installment(s): {Array.from(new Set(payments.map(p => p.installment?.installment_no).filter(Boolean))).sort((a, b) => (a as any) - (b as any)).join(', ')}
+            </Typography>
           </Stack>
         </Stack>
 
@@ -277,17 +285,19 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              <TableRow>
-                <TableCell>
-                  <Typography fontWeight={600}>{schemeName} installment collection</Typography>
-                  <Typography variant='caption' color='text.secondary'>
-                    Membership #{payment.membership?.id || '-'} &middot; Installment #{payment.installment?.installment_no || '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell align='right'>{currencyFormatter.format(installmentBase)}</TableCell>
-                <TableCell align='right'>{currencyFormatter.format(installmentPenalty)}</TableCell>
-                <TableCell align='right' sx={{ fontWeight: 700 }}>{currencyFormatter.format(totalPaid)}</TableCell>
-              </TableRow>
+              {payments.map((p, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <Typography fontWeight={600}>{schemeName} installment collection</Typography>
+                    <Typography variant='caption' color='text.secondary'>
+                      Installment #{p.installment?.installment_no || '-'} &middot; {p.gateway}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align='right'>{currencyFormatter.format(Number(p.installment?.amount || 0))}</TableCell>
+                  <TableCell align='right'>{currencyFormatter.format(Number(p.installment?.penalty || 0))}</TableCell>
+                  <TableCell align='right' sx={{ fontWeight: 700 }}>{currencyFormatter.format(Number(p.amount || 0))}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -318,7 +328,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number }) => {
         {/* Payment Method & Reference */}
         <Stack direction='row' justifyContent='space-between' sx={{ mb: 4 }}>
           <Typography variant='body2' color='text.secondary'>
-            Payment Method: <strong>{gatewayName}</strong>
+            Payment Method: <strong>{gatewayNames}</strong>
           </Typography>
           <Typography variant='body2' color='text.secondary'>
             Reference: <strong>{payment.transaction_id || 'N/A'}</strong>

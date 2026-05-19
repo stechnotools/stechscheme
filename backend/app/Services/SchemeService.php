@@ -17,6 +17,11 @@ class SchemeService
             $validated['advance_closure_account'] = $schemeName;
         }
 
+        if (request()->hasFile('banner_image')) {
+            $path = request()->file('banner_image')->store('schemes/banners', 'public');
+            $validated['banner_image_path'] = asset('storage/' . $path);
+        }
+
         return $validated;
     }
 

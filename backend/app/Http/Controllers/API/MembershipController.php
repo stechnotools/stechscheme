@@ -60,6 +60,11 @@ class MembershipController extends CrudController
             'payment.transaction_id' => ['nullable', 'string', 'max:255'],
             'payment.payment_date' => ['nullable', 'date'],
             'payment.status' => ['nullable', Rule::in(['pending', 'success', 'failed', 'refunded'])],
+            'payments' => ['nullable', 'array'],
+            'payments.*.gateway' => ['required', 'string', 'max:100'],
+            'payments.*.amount' => ['required', 'numeric', 'min:0'],
+            'payments.*.transaction_id' => ['nullable', 'string', 'max:255'],
+            'payments.*.payment_date' => ['nullable', 'date'],
         ]);
 
         return response()->json([

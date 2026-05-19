@@ -3,6 +3,21 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
+// Block severe bot traffic immediately before booting Laravel
+$botPaths = ['wp-login', 'wp-admin', 'wp-content', 'wp-includes', '.env', '.git', 'xmlrpc.php'];
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+foreach ($botPaths as $path) {
+    if (stripos($requestUri, $path) !== false) {
+        http_response_code(404);
+        exit;
+    }
+}
+// Also sever direct .php script executions other than index.php
+if (preg_match('/\.php$/i', parse_url($requestUri, PHP_URL_PATH) ?? '') && stripos($requestUri, 'index.php') === false) {
+    http_response_code(404);
+    exit;
+}
+
 define('LARAVEL_START', microtime(true));
 
 error_log("BOOT_START: 0");

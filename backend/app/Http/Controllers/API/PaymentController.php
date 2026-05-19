@@ -59,6 +59,20 @@ class PaymentController extends CrudController
         return response()->json($query->paginate($perPage));
     }
 
+    public function show(int|string $id): JsonResponse
+    {
+        if (is_string($id) && str_contains($id, ',')) {
+            $ids = explode(',', $id);
+            $payments = Payment::query()->with($this->relations)->whereIn('id', $ids)->get();
+
+            return response()->json([
+                'data' => $payments,
+            ]);
+        }
+
+        return parent::show((int) $id);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate($this->rules());
@@ -129,6 +143,10 @@ class PaymentController extends CrudController
             'installment_ids.*' => ['integer', 'exists:installments,id'],
             'gateway' => ['nullable', 'string', 'max:100'],
             'transaction_id' => ['nullable', 'string', 'max:255'],
+            'payments' => ['nullable', 'array'],
+            'payments.*.gateway' => ['required', 'string', 'max:100'],
+            'payments.*.amount' => ['required', 'numeric', 'min:0'],
+            'payments.*.transaction_id' => ['nullable', 'string', 'max:255'],
             'payment_date' => ['required', 'date'],
             'status' => ['required', Rule::in(['pending', 'success', 'failed', 'refunded'])],
         ]);
@@ -145,16 +163,62 @@ class PaymentController extends CrudController
                 abort(422, 'One or more installments are already paid or do not belong to this membership.');
             }
 
-            return $installments->map(function (\App\Models\Installment $installment) use ($validated) {
-                $payment = Payment::query()->create([
-                    'membership_id' => $validated['membership_id'],
-                    'installment_id' => $installment->id,
-                    'amount' => (float) $installment->amount + (float) ($installment->penalty ?? 0),
-                    'gateway' => $validated['gateway'] ?? null,
+            $totalDue = $installments->sum(fn ($i) => (float) $i->amount + (float) ($i->penalty ?? 0));
+
+            // Prepare payment pool
+            $paymentPool = [];
+            if ($validated['payments'] ?? null) {
+                foreach ($validated['payments'] as $p) {
+                    $paymentPool[] = [
+                        'gateway' => $p['gateway'] ?? 'cash',
+                        'transaction_id' => $p['transaction_id'] ?? null,
+                        'remaining' => (float) $p['amount'],
+                    ];
+                }
+            } else {
+                $paymentPool[] = [
+                    'gateway' => $validated['gateway'] ?? 'cash',
                     'transaction_id' => $validated['transaction_id'] ?? null,
-                    'payment_date' => $validated['payment_date'],
-                    'status' => $validated['status'],
-                ]);
+                    'remaining' => $totalDue,
+                ];
+            }
+
+            $poolSum = array_sum(array_column($paymentPool, 'remaining'));
+            if (abs($poolSum - $totalDue) > 0.01) {
+                abort(422, "Total payment amount ({$poolSum}) must match total installments due ({$totalDue}).");
+            }
+
+            $createdPayments = [];
+            foreach ($installments as $installment) {
+                $dueForThis = (float) $installment->amount + (float) ($installment->penalty ?? 0);
+                
+                while ($dueForThis > 0.001) {
+                    // Find first available payment in pool
+                    $pIndex = null;
+                    foreach ($paymentPool as $idx => $p) {
+                        if ($p['remaining'] > 0.001) {
+                            $pIndex = $idx;
+                            break;
+                        }
+                    }
+
+                    if ($pIndex === null) break; // Should not happen due to sum check
+
+                    $take = min($dueForThis, $paymentPool[$pIndex]['remaining']);
+                    
+                    $createdPayments[] = Payment::query()->create([
+                        'membership_id' => $validated['membership_id'],
+                        'installment_id' => $installment->id,
+                        'amount' => $take,
+                        'gateway' => $paymentPool[$pIndex]['gateway'],
+                        'transaction_id' => $paymentPool[$pIndex]['transaction_id'],
+                        'payment_date' => $validated['payment_date'],
+                        'status' => $validated['status'],
+                    ]);
+
+                    $paymentPool[$pIndex]['remaining'] -= $take;
+                    $dueForThis -= $take;
+                }
 
                 if ($validated['status'] === 'success') {
                     $installment->update([
@@ -162,9 +226,9 @@ class PaymentController extends CrudController
                         'paid_date' => $validated['payment_date'],
                     ]);
                 }
+            }
 
-                return $payment;
-            });
+            return $createdPayments;
         });
 
         $membership = \App\Models\Membership::query()->find($validated['membership_id']);

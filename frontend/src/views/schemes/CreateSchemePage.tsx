@@ -2,6 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import classnames from 'classnames'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { Underline } from '@tiptap/extension-underline'
+import { TextAlign } from '@tiptap/extension-text-align'
+import { Placeholder } from '@tiptap/extension-placeholder'
+import type { Editor } from '@tiptap/react'
+import { useDropzone } from 'react-dropzone'
+import CustomIconButton from '@core/components/mui/IconButton'
+import '@/libs/styles/tiptapEditor.css'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -12,6 +23,7 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Checkbox from '@mui/material/Checkbox'
+import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import Dialog from '@mui/material/Dialog'
@@ -27,9 +39,137 @@ import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
 import Stack from '@mui/material/Stack'
+import Switch from '@mui/material/Switch'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { alpha } from '@mui/material/styles'
+import { alpha, styled } from '@mui/material/styles'
+import type { BoxProps } from '@mui/material/Box'
+import AppReactDropzone from '@/libs/styles/AppReactDropzone'
+
+const BannerDropzone = styled(AppReactDropzone)<BoxProps>(({ theme }) => ({
+  '& .dropzone': {
+    minHeight: 'unset',
+    padding: theme.spacing(3),
+    border: `2px dashed ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+    cursor: 'pointer',
+    '&:hover': { borderColor: theme.palette.primary.main }
+  }
+}))
+
+type BannerUploadProps = {
+  bannerFile: File | null
+  bannerPreview: string | null
+  setBannerFile: (f: File | null) => void
+  setBannerPreview: (s: string | null) => void
+}
+
+const BannerUpload = ({ bannerFile, bannerPreview, setBannerFile, setBannerPreview }: BannerUploadProps) => {
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    onDrop: (files) => {
+      if (files[0]) {
+        setBannerFile(files[0])
+        setBannerPreview(URL.createObjectURL(files[0]))
+      }
+    }
+  })
+  return (
+    <div>
+      <Typography variant='subtitle2' fontWeight={600} gutterBottom>Scheme Banner</Typography>
+      <BannerDropzone>
+        <div {...getRootProps({ className: 'dropzone' })}>
+          <input {...getInputProps()} />
+          {bannerPreview ? (
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              <img src={bannerPreview} alt='Banner preview' style={{ maxHeight: 140, maxWidth: '100%', borderRadius: 8, display: 'block' }} />
+              <IconButton size='small' color='error' onClick={(e) => { e.stopPropagation(); setBannerFile(null); setBannerPreview(null) }} sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper' }}><i className='ri-close-line' /></IconButton>
+            </Box>
+          ) : (
+            <Stack alignItems='center' spacing={1}>
+              <i className='ri-image-add-line' style={{ fontSize: 32, opacity: 0.5 }} />
+              <Typography variant='body2' color='text.secondary'>Drag &amp; drop or click to upload a banner image</Typography>
+              <Typography variant='caption' color='text.disabled'>PNG, JPG, WEBP up to 5MB</Typography>
+            </Stack>
+          )}
+        </div>
+      </BannerDropzone>
+      {bannerFile && <Typography variant='caption' color='text.secondary' sx={{ mt: 0.5, display: 'block' }}>{bannerFile.name} ({(bannerFile.size / 1024).toFixed(1)} KB)</Typography>}
+    </div>
+  )
+}
+
+    </div>
+  )
+}
+
+const SchemeEditorToolbar = ({ editor }: { editor: Editor | null }) => {
+  if (!editor) return null
+  return (
+    <div className='flex flex-wrap gap-x-2 gap-y-1 plb-2 pli-3' style={{ borderBottom: '1px solid var(--mui-palette-divider)' }}>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().toggleBold().run()} {...(editor.isActive('bold') && { color: 'primary' as const })}><i className={classnames('ri-bold', { 'text-textSecondary': !editor.isActive('bold') })} /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().toggleItalic().run()} {...(editor.isActive('italic') && { color: 'primary' as const })}><i className={classnames('ri-italic', { 'text-textSecondary': !editor.isActive('italic') })} /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().toggleUnderline().run()} {...(editor.isActive('underline') && { color: 'primary' as const })}><i className={classnames('ri-underline', { 'text-textSecondary': !editor.isActive('underline') })} /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().toggleBulletList().run()} {...(editor.isActive('bulletList') && { color: 'primary' as const })}><i className={classnames('ri-list-unordered', { 'text-textSecondary': !editor.isActive('bulletList') })} /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().toggleOrderedList().run()} {...(editor.isActive('orderedList') && { color: 'primary' as const })}><i className={classnames('ri-list-ordered', { 'text-textSecondary': !editor.isActive('orderedList') })} /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().setTextAlign('left').run()} {...(editor.isActive({ textAlign: 'left' }) && { color: 'primary' as const })}><i className='ri-align-left' /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().setTextAlign('center').run()} {...(editor.isActive({ textAlign: 'center' }) && { color: 'primary' as const })}><i className='ri-align-center' /></CustomIconButton>
+      <CustomIconButton variant='outlined' size='small' onClick={() => editor.chain().focus().setTextAlign('right').run()} {...(editor.isActive({ textAlign: 'right' }) && { color: 'primary' as const })}><i className='ri-align-right' /></CustomIconButton>
+    </div>
+  )
+}
+
+const StandardSchedulesDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+  <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+    <DialogTitle>
+      <Stack direction='row' alignItems='center' spacing={2}>
+        <i className='ri-lightbulb-line' style={{ color: 'var(--mui-palette-warning-main)' }} />
+        <Typography variant='h6'>Industry Standard Maturity Schedules</Typography>
+      </Stack>
+    </DialogTitle>
+    <DialogContent>
+      <Grid container spacing={4} sx={{ mt: 1 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant='subtitle1' fontWeight={700} color='primary' gutterBottom>Amount-Based Plans</Typography>
+          <Typography variant='body2' sx={{ mb: 3 }}>Common for monthly cash savings (e.g. ₹5,000/month).</Typography>
+          <Stack spacing={2}>
+            <Box sx={{ p: 2, borderRadius: 1, border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+              <Typography variant='subtitle2' fontWeight={600}>11+1 Standard Plan</Typography>
+              <Typography variant='caption' color='text.secondary'>Month 11: 100% Bonus (1 Installment)</Typography>
+              <Typography variant='body2' sx={{ mt: 1 }}>The most popular plan. Customer pays for 11 months, jeweler pays the 12th installment.</Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant='subtitle2' fontWeight={600}>Loyalty Scaled Plan</Typography>
+              <Typography variant='caption' color='text.secondary'>Month 6: 25% | Month 9: 50% | Month 11: 100%</Typography>
+              <Typography variant='body2' sx={{ mt: 1 }}>Encourages customers to stay longer by increasing the bonus value over time.</Typography>
+            </Box>
+          </Stack>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant='subtitle1' fontWeight={700} color='secondary' gutterBottom>Weight-Based Plans</Typography>
+          <Typography variant='body2' sx={{ mb: 3 }}>Common for booking gold weight (e.g. 1gm/month).</Typography>
+          <Stack spacing={2}>
+            <Box sx={{ p: 2, borderRadius: 1, border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+              <Typography variant='subtitle2' fontWeight={600}>Weight Bonus (11+1)</Typography>
+              <Typography variant='caption' color='text.secondary'>Month 11: 100% Weight Bonus</Typography>
+              <Typography variant='body2' sx={{ mt: 1 }}>At maturity, jeweler adds 1 month's average weight to the customer's total balance.</Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant='subtitle2' fontWeight={600}>VA Discount Plan</Typography>
+              <Typography variant='caption' color='text.secondary'>Month 11: 100% VA Discount</Typography>
+              <Typography variant='body2' sx={{ mt: 1 }}>Instead of extra weight, the jeweler waives off 100% of Making Charges (VA).</Typography>
+            </Box>
+          </Stack>
+        </Grid>
+      </Grid>
+      <Alert severity='info' sx={{ mt: 4 }} icon={<i className='ri-information-line' />}>
+        Note: The <b>Percentage (%)</b> field in the schedule refers to the percentage of one month's installment/weight given as a bonus.
+      </Alert>
+    </DialogContent>
+    <DialogActions><Button onClick={onClose}>Close</Button></DialogActions>
+  </Dialog>
+)
 
 import { usePageLoading } from '../../contexts/pageLoadingContext'
 
@@ -77,8 +217,13 @@ type SchemeListItem = {
   allow_change_rate_closing?: boolean
   wt_booked_with_gst?: boolean
   is_closed?: boolean
-  remarks?: string
-  description?: string
+  remarks: string
+  description: string
+  lock_in_period_months?: number
+  redemption_window_days?: number
+  booking_purity?: string
+  allow_va_discount?: boolean
+  va_discount_percentage?: string | number
   maturity_benefits?: Array<{ month: string; type: string; value: string }>
 }
 
@@ -120,6 +265,12 @@ type SchemeFormState = {
   bonus_effect_account: string
   allow_change_rate_closing_entry: boolean
   is_closed: boolean
+  // Industry standard features
+  lock_in_period_months: string
+  redemption_window_days: string
+  booking_purity: string
+  allow_va_discount: boolean
+  va_discount_percentage: string
 }
 
 const resolveBackendApiUrl = () => {
@@ -147,7 +298,7 @@ const initialFormState: SchemeFormState = {
   termination_date: formatDateInput(nextMonthDate),
   maturity_months_after_last_inst: '0',
   remarks: '',
-  installment_value: '1000',
+  installment_value: '0',
   min_installment_value: '0',
   grace_days: '0',
   closing_penalty: '0',
@@ -167,7 +318,12 @@ const initialFormState: SchemeFormState = {
   bonus_installment_count: '0',
   bonus_effect_account: 'Bonus Expense A/C',
   allow_change_rate_closing_entry: false,
-  is_closed: false
+  is_closed: false,
+  lock_in_period_months: '0',
+  redemption_window_days: '365',
+  booking_purity: '22KT',
+  allow_va_discount: false,
+  va_discount_percentage: '0'
 }
 
 const initialMaturityBenefit: MaturityBenefitFormState = {
@@ -201,6 +357,7 @@ const CreateSchemePage = () => {
   const [success, setSuccess] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [maturityBenefits, setMaturityBenefits] = useState<MaturityBenefitFormState[]>([initialMaturityBenefit])
+  const [standardSchedulesOpen, setStandardSchedulesOpen] = useState(false)
 
   // Auto-generate code from name
   const codeManuallyEdited = useRef(false)
@@ -211,8 +368,19 @@ const CreateSchemePage = () => {
   const [schemeOptions, setSchemeOptions] = useState<SchemeListItem[]>([])
   const [copyLoading, setCopyLoading] = useState(false)
 
-  // Advanced accounting section
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
+  const [metalMasters, setMetalMasters] = useState<any[]>([])
+  const workflowEditor = useEditor({
+    extensions: [
+      StarterKit.configure({ underline: false }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'], defaultAlignment: 'left' }),
+      Placeholder.configure({ placeholder: 'Write scheme terms & conditions, workflow details, benefits...' })
+    ],
+    immediatelyRender: false
+  })
 
   // Live total
   const liveTotal = Number(form.installment_value || 0) * Number(form.total_installments || 0)
@@ -243,7 +411,7 @@ const CreateSchemePage = () => {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${accessToken}`,
-          ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
           ...(init?.headers || {})
         }
       })
@@ -273,8 +441,15 @@ return
     if (status === 'authenticated') {
       setLoading(false)
       stopLoading()
+
+      // Fetch metal masters
+      void request<{ success: boolean; data: any[] }>('/digital-metal-masters')
+        .then(res => {
+          if (res.success) setMetalMasters(res.data)
+        })
+        .catch(console.error)
     }
-  }, [status, accessToken, stopLoading])
+  }, [status, accessToken, stopLoading, request])
 
   const resetForm = useCallback(() => {
     setForm({ ...initialFormState })
@@ -382,7 +557,12 @@ return
       bonus_installment_count: String(scheme.bonus_no_of_installments || '0'),
       bonus_effect_account: scheme.bonus_effect_account || 'Bonus Expense A/C',
       allow_change_rate_closing_entry: Boolean(scheme.allow_change_rate_closing),
-      is_closed: Boolean(scheme.is_closed)
+      is_closed: Boolean(scheme.is_closed),
+      lock_in_period_months: String(scheme.lock_in_period_months || '0'),
+      redemption_window_days: String(scheme.redemption_window_days || '365'),
+      booking_purity: scheme.booking_purity || '22KT',
+      allow_va_discount: Boolean(scheme.allow_va_discount),
+      va_discount_percentage: String(scheme.va_discount_percentage || '0')
     })
 
     if (scheme.maturity_benefits && scheme.maturity_benefits.length > 0) {
@@ -405,20 +585,9 @@ return
       nextErrors.total_installments = 'Total installments must be greater than 0.'
     }
 
-    if (form.installment_value_type === 'Fix') {
-      if (!form.installment_value.trim() || Number(form.installment_value) <= 0) {
-        nextErrors.installment_value = 'Installment value must be greater than 0.'
-      }
-    } else {
-      if (!form.min_installment_value.trim() || Number(form.min_installment_value) < 0) {
-        nextErrors.installment_value = 'Minimum installment value is required.'
-      }
-    }
 
-    if (form.allow_bonus && form.bonus_mode === 'Regular') {
-      if (!form.bonus_installment_count.trim()) nextErrors.bonus_installment_count = 'Required for regular bonus.'
-      if (!form.bonus_effect_account.trim()) nextErrors.bonus_effect_account = 'Required when bonus is enabled.'
-    }
+
+
 
     if (form.allow_bonus && form.bonus_mode === 'Maturity Benefit') {
       const active = maturityBenefits.filter(item => item.month || item.value)
@@ -452,46 +621,51 @@ return
     try {
       const normalizedCode = normalizeCode(form.code.trim())
 
+      const formData = new FormData()
+
+      formData.append('name', form.name.trim())
+      formData.append('code', normalizedCode)
+      formData.append('description', form.description.trim() || '')
+      formData.append('installment_value', String(form.installment_value || 0))
+      formData.append('min_installment_value', String(form.min_installment_value || 0))
+      formData.append('total_installments', String(form.total_installments))
+      formData.append('free_installments', String(form.free_installments || 0))
+      formData.append('scheme_type', form.scheme_type.trim())
+      formData.append('item_group', form.item_group.trim() || '')
+      formData.append('is_closed', String(!form.is_closed ? 1 : 0))
+      formData.append('no_of_installment_type', form.installment_value_type)
+      formData.append('min_no_of_installments', form.installment_value_type === 'Variable' ? '1' : String(form.total_installments))
+      formData.append('installment_duration', form.installment_duration.trim() || '')
+      formData.append('grace_days', form.grace_days.trim() ? String(form.grace_days) : '0')
+      formData.append('closing_penalty', String(form.closing_penalty || 0))
+      formData.append('allow_overdue', form.allow_overdue ? '1' : '0')
+      formData.append('late_fee_type', form.late_fee_type)
+      formData.append('late_fee_value', String(form.late_fee_value || 0))
+      formData.append('late_fee_effect_account', form.late_fee_effect_account.trim() || '')
+      formData.append('wt_booked_with_gst', form.wt_booked_with_gst ? '1' : '0')
+      formData.append('gold_rate_policy', form.gold_rate_policy)
+      formData.append('maturity_months_after_last_installment', form.maturity_months_after_last_inst.trim() ? String(form.maturity_months_after_last_inst) : '0')
+      formData.append('apply_rate', form.apply_rate.trim() || '')
+      formData.append('allow_change_rate_closing', form.allow_change_rate_closing_entry ? '1' : '0')
+      formData.append('allow_bonus', form.allow_bonus ? '1' : '0')
+      formData.append('benefit_type', form.bonus_mode)
+      formData.append('benefit_mode', form.bonus_basis)
+      formData.append('bonus_effect_account', form.bonus_effect_account.trim() || '')
+      formData.append('remarks', form.remarks.trim() || '')
+      formData.append('lock_in_period_months', String(form.lock_in_period_months || 0))
+      formData.append('redemption_window_days', String(form.redemption_window_days || 365))
+      if (form.scheme_type === 'Weight') formData.append('booking_purity', form.booking_purity || '')
+      formData.append('allow_va_discount', form.allow_va_discount ? '1' : '0')
+      formData.append('va_discount_percentage', String(form.va_discount_percentage || 0))
+      formData.append('workflow_html', workflowEditor?.getHTML() || '')
+
+      if (bannerFile) {
+        formData.append('banner_image', bannerFile)
+      }
+
       const schemeResponse = await request<SchemeResponse>('/schemes', {
         method: 'POST',
-        body: JSON.stringify({
-          name: form.name.trim(),
-          code: normalizedCode,
-          description: form.description.trim() || null,
-          installment_value: Number(form.installment_value || 0),
-          min_installment_value: Number(form.min_installment_value || 0),
-          total_installments: Number(form.total_installments),
-          free_installments: Number(form.free_installments || 0),
-          scheme_type: form.scheme_type.trim(),
-          item_group: form.item_group.trim() || null,
-          start_date: null,
-          termination_date: null,
-          is_closed: !form.is_closed,
-          no_of_installment_type: form.installment_value_type,
-          min_no_of_installments: form.installment_value_type === 'Variable' ? 1 : Number(form.total_installments),
-          installment_duration: form.installment_duration.trim() || null,
-          grace_days: form.grace_days.trim() ? Number(form.grace_days) : 0,
-          closing_penalty: Number(form.closing_penalty || 0),
-          allow_overdue: form.allow_overdue,
-          late_fee_type: form.late_fee_type,
-          late_fee_value: Number(form.late_fee_value || 0),
-          late_fee_effect_account: form.late_fee_effect_account.trim() || null,
-          wt_booked_with_gst: form.wt_booked_with_gst,
-          gold_rate_policy: form.gold_rate_policy,
-          maturity_months_after_last_installment: form.maturity_months_after_last_inst.trim() ? Number(form.maturity_months_after_last_inst) : 0,
-          apply_rate: form.apply_rate.trim() || null,
-          allow_change_rate_closing: form.allow_change_rate_closing_entry,
-          advance_closure_account: form.name.trim() || null,
-          allow_bonus: form.allow_bonus,
-          benefit_type: form.bonus_mode,
-          benefit_mode: form.bonus_basis,
-          bonus_no_of_installments: form.bonus_installment_count.trim() ? Number(form.bonus_installment_count) : null,
-          bonus_effect_account: form.bonus_effect_account.trim() || null,
-          effect_to_account: form.name.trim() || null,
-          interest_receivable_account: 'Interest Receivable A/C',
-          advertisement_publicity_account: form.bonus_effect_account.trim() || null,
-          remarks: form.remarks.trim() || null
-        })
+        body: formData
       })
 
       let createdSchemeId = Number(schemeResponse.data?.id || schemeResponse.scheme_id || 0)
@@ -577,11 +751,31 @@ return
                           <MenuItem value='Amount'>Amount</MenuItem>
                           <MenuItem value='Weight'>Weight</MenuItem>
                         </TextField>
-                        <TextField select fullWidth label='Item Group' value={form.item_group} onChange={e => updateForm('item_group', e.target.value)} error={Boolean(fieldErrors.item_group)} helperText={fieldErrors.item_group} sx={fieldSx}>
-                          <MenuItem value='18DKT GOLD'>18DKT GOLD</MenuItem>
-                          <MenuItem value='22KT GOLD'>22KT GOLD</MenuItem>
-                          <MenuItem value='SILVER'>SILVER</MenuItem>
-                        </TextField>
+                        {form.scheme_type === 'Weight' && (
+                          <TextField
+                            select
+                            fullWidth
+                            label='Item Group'
+                            value={form.item_group}
+                            onChange={e => updateForm('item_group', e.target.value)}
+                            error={Boolean(fieldErrors.item_group)}
+                            helperText={fieldErrors.item_group || 'Metal group linked to this scheme'}
+                            sx={fieldSx}
+                          >
+                            <MenuItem value=''>-- Select Group --</MenuItem>
+                            {metalMasters.map(m => {
+                              const groupValue = m.purity ? `${m.purity} ${m.metal_name}` : m.metal_name
+                              return (
+                                <MenuItem key={m.id} value={groupValue}>
+                                  {m.metal_name} {m.purity ? `(${m.purity})` : ''}
+                                </MenuItem>
+                              )
+                            })}
+                            {form.item_group && !metalMasters.some(m => (m.purity ? `${m.purity} ${m.metal_name}` : m.metal_name) === form.item_group) && (
+                              <MenuItem value={form.item_group}>{form.item_group} (Existing)</MenuItem>
+                            )}
+                          </TextField>
+                        )}
                       </Stack>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -589,6 +783,12 @@ return
                         <TextField fullWidth multiline minRows={2} label='Description' value={form.description} onChange={e => updateForm('description', e.target.value)} placeholder='Short description shown to customers during enrollment' sx={fieldSx} />
                         <TextField fullWidth multiline label='Remarks' value={form.remarks} onChange={e => updateForm('remarks', e.target.value)} sx={fieldSx} slotProps={{ input: { sx: { alignItems: 'flex-start', '& textarea': { height: '80px !important', overflow: 'auto', resize: 'none' } } } }} />
                         <FormControlLabel control={<Checkbox checked={form.is_closed} onChange={e => updateForm('is_closed', e.target.checked)} />} label='Active' />
+                        {form.scheme_type === 'Weight' && (
+                          <FormControlLabel
+                            control={<Checkbox checked={form.wt_booked_with_gst} onChange={e => updateForm('wt_booked_with_gst', e.target.checked)} />}
+                            label='Wt. Booked With GST'
+                          />
+                        )}
                       </Stack>
                     </Grid>
                   </Grid>
@@ -602,25 +802,18 @@ return
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <Stack spacing={2.5}>
-                        <FormControl>
-                          <FormLabel>Installment Type</FormLabel>
-                          <RadioGroup row value={form.installment_value_type} onChange={e => updateForm('installment_value_type', e.target.value as SchemeFormState['installment_value_type'])}>
-                            <FormControlLabel value='Fix' control={<Radio />} label='Fix' />
-                            <FormControlLabel value='Variable' control={<Radio />} label='Variable' />
-                          </RadioGroup>
-                          <Typography variant='caption' color='text.secondary'>
-                            {form.installment_value_type === 'Fix' ? 'Fixed: Same value for every customer (e.g. ₹1000 x 11 months).' : 'Variable: Customer chooses value at enrollment.'}
-                          </Typography>
-                        </FormControl>
                         <TextField fullWidth type='number' label='No Of Installment' value={form.total_installments} onChange={e => updateForm('total_installments', e.target.value)} error={Boolean(fieldErrors.total_installments)} helperText={fieldErrors.total_installments} sx={fieldSx} />
-                        <TextField fullWidth type='number' label='Free Installments' value={form.free_installments} onChange={e => updateForm('free_installments', e.target.value)} sx={fieldSx} helperText='Number of free installments company gives (e.g. 1)' />
-                        <TextField fullWidth type='number' label={form.installment_value_type === 'Fix' ? 'Installment Value (₹)' : 'Minimum Installment Value (₹)'} value={form.installment_value_type === 'Fix' ? form.installment_value : form.min_installment_value} onChange={e => updateForm(form.installment_value_type === 'Fix' ? 'installment_value' : 'min_installment_value', e.target.value)} error={Boolean(fieldErrors.installment_value)} helperText={fieldErrors.installment_value} sx={fieldSx} />
                         <TextField select fullWidth label='Installment Duration' value={form.installment_duration} onChange={e => updateForm('installment_duration', e.target.value)} error={Boolean(fieldErrors.installment_duration)} helperText={fieldErrors.installment_duration} sx={fieldSx}>
                           <MenuItem value='Monthly'>Monthly</MenuItem>
                           <MenuItem value='Weekly'>Weekly</MenuItem>
                         </TextField>
                         <TextField fullWidth type='number' label='Grace Days' value={form.grace_days} onChange={e => updateForm('grace_days', e.target.value)} sx={fieldSx} />
                         <TextField fullWidth type='number' label='Closing Penalty (%)' value={form.closing_penalty} onChange={e => updateForm('closing_penalty', e.target.value)} sx={fieldSx} helperText='Penalty deducted if customer closes before completing all installments' />
+                        <TextField fullWidth type='number' label='Lock-in Period (Months)' value={form.lock_in_period_months} onChange={e => updateForm('lock_in_period_months', e.target.value)} sx={fieldSx} helperText='Customers cannot withdraw benefits before this period' />
+                        <FormControlLabel control={<Checkbox checked={form.allow_va_discount} onChange={e => updateForm('allow_va_discount', e.target.checked)} />} label='Allow Making Charge (VA) Discount' />
+                        {form.allow_va_discount && (
+                          <TextField fullWidth type='number' label='VA Discount (%)' value={form.va_discount_percentage} onChange={e => updateForm('va_discount_percentage', e.target.value)} sx={fieldSx} helperText='Discount on making charges given at maturity (e.g. 100 = 100%)' />
+                        )}
                       </Stack>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -638,12 +831,8 @@ return
                         </TextField>
                         <TextField fullWidth type='number' label={form.late_fee_type === 'percentage' ? 'Late Fee (%)' : 'Late Fee (₹)'} value={form.late_fee_value} onChange={e => updateForm('late_fee_value', e.target.value)} disabled={!form.allow_overdue} sx={fieldSx} />
                         <TextField fullWidth type='number' label='Maturity Months After Last Inst' value={form.maturity_months_after_last_inst} onChange={e => updateForm('maturity_months_after_last_inst', e.target.value)} sx={fieldSx} />
-                        <FormControlLabel control={<Checkbox checked={form.allow_change_rate_closing_entry} onChange={e => updateForm('allow_change_rate_closing_entry', e.target.checked)} />} label='Allow To Change Rate In Closing Entry' />
-                        <FormControlLabel control={<Checkbox checked={form.wt_booked_with_gst} onChange={e => updateForm('wt_booked_with_gst', e.target.checked)} />} label='Wt. Booked With GST' />
-                        <TextField select fullWidth label='Gold Rate Policy' value={form.gold_rate_policy} onChange={e => updateForm('gold_rate_policy', e.target.value as SchemeFormState['gold_rate_policy'])} sx={fieldSx}>
-                          <MenuItem value='closing_rate'>Closing Rate</MenuItem>
-                          <MenuItem value='enrollment_rate'>Enrollment Rate</MenuItem>
-                        </TextField>
+                        <TextField fullWidth type='number' label='Redemption Window (Days)' value={form.redemption_window_days} onChange={e => updateForm('redemption_window_days', e.target.value)} sx={fieldSx} helperText='Days customer has to redeem after scheme matures (regulatory compliance)' />
+                        {/* Booking Purity removed per user request */}
                       </Stack>
                     </Grid>
                   </Grid>
@@ -653,53 +842,126 @@ return
               {/* Bonus & Maturity Section */}
               <Box sx={sectionBoxSx}>
                 <Box sx={sectionHeaderSx}>
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent='space-between'>
-                    <FormControlLabel control={<Checkbox checked={form.allow_bonus} onChange={e => updateForm('allow_bonus', e.target.checked)} />} label='Allow For Bonus' />
-                    <RadioGroup row value={form.bonus_mode} onChange={e => updateForm('bonus_mode', e.target.value as SchemeFormState['bonus_mode'])}>
-                      <FormControlLabel value='Regular' control={<Radio />} label='Regular' />
-                      <FormControlLabel value='Maturity Benefit' control={<Radio />} label='Maturity Benefit' />
-                    </RadioGroup>
-                  </Stack>
+                  <Typography variant='subtitle1' fontWeight={700}>Bonus & Maturity Benefit</Typography>
                 </Box>
-                <Box sx={{ p: 3 }}>
-                  <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <Stack spacing={2.5}>
-                        <RadioGroup row value={form.bonus_basis} onChange={e => updateForm('bonus_basis', e.target.value as SchemeFormState['bonus_basis'])}>
-                          <FormControlLabel value='Weight' control={<Radio />} label='Weight' />
-                          <FormControlLabel value='Amount' control={<Radio />} label='Amount' />
-                        </RadioGroup>
-                        <TextField select fullWidth label='Apply Rate' value={form.apply_rate} onChange={e => updateForm('apply_rate', e.target.value)} sx={fieldSx}>
-                          <MenuItem value='As Of First Entry'>As Of First Entry</MenuItem>
-                          <MenuItem value='As Of Last Entry'>As Of Last Entry</MenuItem>
-                          <MenuItem value='As Of Closing'>As Of Closing</MenuItem>
-                        </TextField>
-                        <TextField fullWidth type='number' label='No.Of Installment' value={form.bonus_installment_count} onChange={e => updateForm('bonus_installment_count', e.target.value)} disabled={!form.allow_bonus || form.bonus_mode !== 'Regular'} error={Boolean(fieldErrors.bonus_installment_count)} helperText={fieldErrors.bonus_installment_count} sx={fieldSx} />
-                      </Stack>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <Box sx={{ height: '100%', minHeight: 220, border: '1px dashed', borderColor: 'divider', borderRadius: 1, bgcolor: theme => theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.5) : theme.palette.grey[50] }}>
-                        <Stack spacing={2} sx={{ p: 3 }}>
-                          <Stack direction='row' justifyContent='space-between' alignItems='center'>
-                            <Typography variant='subtitle2'>Maturity Benefit</Typography>
-                            <Button variant='outlined' color='secondary' onClick={addMaturityBenefit} disabled={!form.allow_bonus || form.bonus_mode !== 'Maturity Benefit'}>Add Benefit</Button>
+                <Box sx={{ p: { xs: 4, md: 6 } }}>
+                  <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: form.allow_bonus ? 4 : 0 }}>
+                    <Typography variant='body1' fontWeight={500}>Enable Maturity Benefits</Typography>
+                    <Stack direction='row' spacing={3} alignItems='center'>
+                      <Chip label={form.allow_bonus ? 'Enabled' : 'Disabled'} size='small' color={form.allow_bonus ? 'primary' : 'default'} variant='tonal' />
+                      <FormControlLabel
+                        control={<Switch checked={form.allow_bonus} onChange={e => updateForm('allow_bonus', e.target.checked)} />}
+                        label='Allow Bonus'
+                        sx={{ mr: 0 }}
+                      />
+                    </Stack>
+                  </Stack>
+                  <Collapse in={form.allow_bonus}>
+                    <Box sx={{ mt: 2 }}>
+                    <Grid container spacing={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <Stack spacing={3}>
+                          <Typography variant='subtitle2' color='text.secondary'>Maturity Settings</Typography>
+                          <TextField
+                            select
+                            fullWidth
+                            label='Apply Rate'
+                            value={form.apply_rate}
+                            onChange={e => updateForm('apply_rate', e.target.value)}
+                            sx={fieldSx}
+                            helperText='Rate to use for bonus calculation'
+                          >
+                            <MenuItem value='As Of First Entry'>As Of First Entry</MenuItem>
+                            <MenuItem value='As Of Last Entry'>As Of Last Entry</MenuItem>
+                            <MenuItem value='As Of Closing'>As Of Closing</MenuItem>
+                          </TextField>
+                          <Alert severity='info' icon={<i className='ri-information-line' />}>
+                            Bonus will be calculated based on the scheme type ({form.scheme_type}).
+                          </Alert>
+                        </Stack>
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 8 }}>
+                        <Box sx={{
+                          p: 3,
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: theme => theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.5) : theme.palette.grey[50]
+                        }}>
+                          <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 3 }}>
+                            <div>
+                              <Typography variant='subtitle2' fontWeight={600}>Maturity Schedule</Typography>
+                              <Button
+                                variant='text'
+                                size='small'
+                                startIcon={<i className='ri-lightbulb-line' />}
+                                onClick={() => setStandardSchedulesOpen(true)}
+                                sx={{ mt: -0.5, ml: -1 }}
+                              >
+                                View Suggestions
+                              </Button>
+                            </div>
+                            <Button
+                              variant='contained'
+                              size='small'
+                              startIcon={<i className='ri-add-line' />}
+                              onClick={addMaturityBenefit}
+                            >
+                              Add Row
+                            </Button>
                           </Stack>
-                          {fieldErrors.maturityBenefits ? <Alert severity='error'>{fieldErrors.maturityBenefits}</Alert> : null}
+
+                          {fieldErrors.maturityBenefits ? <Alert severity='error' sx={{ mb: 2 }}>{fieldErrors.maturityBenefits}</Alert> : null}
+
                           <Stack spacing={2}>
                             {maturityBenefits.map((benefit, index) => (
-                              <Grid container spacing={2} key={`${index}-${benefit.month}`}>
-                                <Grid size={{ xs: 12, md: 4 }}><TextField fullWidth type='number' label='Month' value={benefit.month} onChange={e => updateMaturityBenefit(index, 'month', e.target.value)} disabled={!form.allow_bonus || form.bonus_mode !== 'Maturity Benefit'} error={Boolean(fieldErrors[`maturityBenefits.${index}.month`])} helperText={fieldErrors[`maturityBenefits.${index}.month`]} sx={fieldSx} /></Grid>
-                                <Grid size={{ xs: 12, md: 5 }}><TextField fullWidth type='number' label='Percentage (%)' value={benefit.value} onChange={e => updateMaturityBenefit(index, 'value', e.target.value)} disabled={!form.allow_bonus || form.bonus_mode !== 'Maturity Benefit'} error={Boolean(fieldErrors[`maturityBenefits.${index}.value`])} helperText={fieldErrors[`maturityBenefits.${index}.value`]} sx={fieldSx} /></Grid>
-                                <Grid size={{ xs: 12, md: 1 }} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconButton color='error' onClick={() => removeMaturityBenefit(index)} disabled={maturityBenefits.length === 1 || !form.allow_bonus || form.bonus_mode !== 'Maturity Benefit'}><i className='ri-delete-bin-line' /></IconButton></Grid>
-                              </Grid>
+                              <Stack key={index} direction='row' spacing={2} alignItems='flex-start'>
+                                <TextField
+                                  label='Month'
+                                  type='number'
+                                  size='small'
+                                  value={benefit.month}
+                                  onChange={e => updateMaturityBenefit(index, 'month', e.target.value)}
+                                  error={Boolean(fieldErrors[`maturityBenefits.${index}.month`])}
+                                  helperText={fieldErrors[`maturityBenefits.${index}.month`]}
+                                  sx={{ width: 100 }}
+                                />
+                                <TextField
+                                  label='Percentage (%)'
+                                  type='number'
+                                  size='small'
+                                  value={benefit.value}
+                                  onChange={e => updateMaturityBenefit(index, 'value', e.target.value)}
+                                  error={Boolean(fieldErrors[`maturityBenefits.${index}.value`])}
+                                  helperText={fieldErrors[`maturityBenefits.${index}.value`]}
+                                  sx={{ flex: 1 }}
+                                  slotProps={{
+                                    input: {
+                                      endAdornment: <Typography variant='caption' color='text.disabled'>%</Typography>
+                                    }
+                                  }}
+                                />
+                                <IconButton
+                                  color='error'
+                                  onClick={() => removeMaturityBenefit(index)}
+                                  disabled={maturityBenefits.length === 1}
+                                  sx={{ mt: 0.5 }}
+                                >
+                                  <i className='ri-delete-bin-line' />
+                                </IconButton>
+                              </Stack>
                             ))}
                           </Stack>
-                          <Typography variant='body2' color='text.secondary'>Create a month-wise maturity schedule when the scheme uses maturity benefits.</Typography>
-                        </Stack>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </Box>
+                      </Grid>
+                    </Box>
+                  </Collapse>
                 </Box>
+                {!form.allow_bonus && (
+                  <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography color='text.secondary'>Bonus is currently disabled for this scheme.</Typography>
+                  </Box>
+                )}
               </Box>
 
               {/* Advanced Accounting Section (collapsed) */}
@@ -725,6 +987,29 @@ return
                     </Stack>
                   </Box>
                 </Collapse>
+              </Box>
+
+              {/* Media & Workflow Section */}
+              <Box sx={sectionBoxSx}>
+                <Box sx={sectionHeaderSx}><Typography variant='subtitle1' fontWeight={700}>Media & Workflow Document</Typography></Box>
+                <Box sx={{ p: 3 }}>
+                  <Stack spacing={3}>
+                    <BannerUpload bannerFile={bannerFile} bannerPreview={bannerPreview} setBannerFile={setBannerFile} setBannerPreview={setBannerPreview} />
+                    <div>
+                      <Typography variant='subtitle2' fontWeight={600} gutterBottom>Scheme Workflow / Terms &amp; Conditions</Typography>
+                      <Box sx={(theme) => ({
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.6) : theme.palette.background.paper
+                      })}>
+                        <SchemeEditorToolbar editor={workflowEditor} />
+                        <EditorContent editor={workflowEditor} style={{ minHeight: 200, padding: '12px 16px', fontSize: 14 }} />
+                      </Box>
+                      <Typography variant='caption' color='text.secondary'>This HTML content will be shown to customers as the scheme's terms, conditions, or brochure.</Typography>
+                    </div>
+                  </Stack>
+                </Box>
               </Box>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent='flex-end'>
@@ -755,13 +1040,9 @@ return
               <div>
                 <Typography variant='body2' color='text.secondary'>Plan</Typography>
                 <Typography fontWeight={600}>
-                  {form.scheme_type === 'Amount' ? 'INR ' : ''}{form.installment_value || '0'}{form.scheme_type === 'Weight' ? ' gm' : ''} x {form.total_installments || '0'} inst.
-                  {Number(form.free_installments || 0) > 0 ? ` (+ ${form.free_installments} free)` : ''}
+                  {form.total_installments || '0'} installments
                 </Typography>
-                <Typography variant='body2' color='text.secondary' fontWeight={500}>
-                  Total: {currencyFormatter.format(liveTotal)}{Number(form.free_installments || 0) > 0 ? ` + ${currencyFormatter.format(Number(form.installment_value || 0) * Number(form.free_installments || 0))} free` : ''}
-                </Typography>
-                <Typography variant='caption' color='text.secondary'>{form.installment_value_type} {form.scheme_type === 'Amount' ? 'amount' : 'weight'}</Typography>
+                <Typography variant='caption' color='text.secondary'>Fixed {form.scheme_type === 'Amount' ? 'amount' : 'weight'}</Typography>
               </div>
               <div>
                 <Typography variant='body2' color='text.secondary'>Penalties & Rate</Typography>

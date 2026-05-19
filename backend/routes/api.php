@@ -23,7 +23,7 @@ use App\Http\Controllers\API\SettingController;
 use App\Http\Controllers\API\TransactionController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\FeedbackController;
-use App\Http\Controllers\API\MetalMasterController;
+
 use App\Http\Controllers\Api\DigitalMetalMasterController;
 use App\Http\Controllers\Api\DigitalMetalSaleController;
 use App\Http\Controllers\Api\DigitalMetalPurchaseController;
@@ -50,9 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('reports/dashboard', [ReportController::class, 'dashboard'])
         ->middleware('role:super-admin,admin');
 
-    Route::get('metal-masters/logs', [MetalMasterController::class, 'getAllLogs']);
-    Route::get('metal-masters/{id}/logs', [MetalMasterController::class, 'getLogs']);
-    Route::post('metal-masters/bulk-rates', [MetalMasterController::class, 'bulkRateUpdate']);
+
     
     Route::get('digital-metal-masters/logs', [DigitalMetalMasterController::class, 'getAllLogs']);
     Route::get('digital-metal-masters/{id}/logs', [DigitalMetalMasterController::class, 'getLogs']);
@@ -78,7 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
         'products' => ProductController::class,
         'promotions' => PromotionController::class,
         'transactions' => TransactionController::class,
-        'metal-masters' => MetalMasterController::class,
+
         'digital-metal-masters' => DigitalMetalMasterController::class,
         'digital-metal-sales' => DigitalMetalSaleController::class,
         'digital-metal-purchases' => DigitalMetalPurchaseController::class,
@@ -87,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
+    Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 
     Route::prefix('customer-auth')->group(function () {
         Route::get('me', [CustomerPortalAuthController::class, 'me']);

@@ -57,6 +57,13 @@ class StoreSchemeRequest extends FormRequest
             'interest_receivable_account' => ['nullable', 'string', 'max:255'],
             'advertisement_publicity_account' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
+            'lock_in_period_months' => ['nullable', 'integer', 'min:0'],
+            'redemption_window_days' => ['nullable', 'integer', 'min:0'],
+            'booking_purity' => ['nullable', 'string', 'max:50'],
+            'allow_va_discount' => ['sometimes', 'boolean'],
+            'va_discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'workflow_html' => ['nullable', 'string'],
+            'banner_image' => ['nullable', 'image', 'max:5120'], // 5MB max
         ];
     }
 }
