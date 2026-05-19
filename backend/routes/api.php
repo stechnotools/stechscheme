@@ -17,6 +17,7 @@ use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\VoucherSetupController;
 use App\Http\Controllers\MetalBuyingOptionController;
+use App\Http\Controllers\MetalRedeemOptionController;
 use App\Http\Controllers\API\SchemeController;
 use App\Http\Controllers\API\SchemeMaturityBenefitController;
 use App\Http\Controllers\API\SettingController;
@@ -60,7 +61,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('voucher-setup/logs', [VoucherSetupController::class, 'logs']);
     Route::get('voucher-setup', [VoucherSetupController::class, 'index']);
+    Route::post('voucher-setup', [VoucherSetupController::class, 'store']);
     Route::put('voucher-setup/{id}', [VoucherSetupController::class, 'update']);
+    Route::delete('voucher-setup/{id}', [VoucherSetupController::class, 'destroy']);
+
+    Route::post('customers/{id}/regenerate-loyalty-card', [CustomerController::class, 'regenerateLoyaltyCard']);
+    Route::get('customers/next-loyalty-card-no', [CustomerController::class, 'getNextLoyaltyCardNo']);
 
     Route::apiResources([
         'chart-of-accounts' => ChartOfAccountController::class,
@@ -81,6 +87,8 @@ Route::middleware('auth:sanctum')->group(function () {
         'digital-metal-sales' => DigitalMetalSaleController::class,
         'digital-metal-purchases' => DigitalMetalPurchaseController::class,
         'metal-buying-options' => MetalBuyingOptionController::class,
+        'metal-redeem-options' => MetalRedeemOptionController::class,
+        'loyalty-programmes' => \App\Http\Controllers\LoyaltyProgrammeController::class,
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
@@ -107,6 +115,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('roles', RoleController::class)
         ->middleware('role:super-admin,admin');
 
+    Route::get('loyalty-card-categories/logs', [\App\Http\Controllers\LoyaltyCardCategoryController::class, 'logs']);
+    Route::apiResource('loyalty-card-categories', \App\Http\Controllers\LoyaltyCardCategoryController::class)
+        ->middleware('role:super-admin,admin');
+
+    Route::get('loyalty-setups/logs', [\App\Http\Controllers\LoyaltySetupController::class, 'logs']);
+    Route::apiResource('loyalty-setups', \App\Http\Controllers\LoyaltySetupController::class)
+        ->middleware('role:super-admin,admin');
+
     Route::get('settings/{section}', [SettingController::class, 'show'])
         ->middleware('role:super-admin,admin');
     Route::put('settings/{section}', [SettingController::class, 'update'])
@@ -123,6 +139,50 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     Route::apiResource('feedback-questions', \App\Http\Controllers\Api\FeedbackQuestionController::class);
+
+    // Loyalty Sale Import
+    Route::post('loyalty-sale-import/validate', [\App\Http\Controllers\LoyaltySaleImportController::class, 'validateImport']);
+    Route::post('loyalty-sale-import/validate-rows', [\App\Http\Controllers\LoyaltySaleImportController::class, 'validateRows']);
+    Route::post('loyalty-sale-import/import-rows', [\App\Http\Controllers\LoyaltySaleImportController::class, 'importRows']);
+    Route::post('loyalty-sale-import', [\App\Http\Controllers\LoyaltySaleImportController::class, 'import']);
+
+    Route::post('loyalty-sale-import/process', [\App\Http\Controllers\LoyaltySaleImportController::class, 'process']);
+    Route::get('loyalty-sale-import/batches', [\App\Http\Controllers\LoyaltySaleImportController::class, 'batches']);
+    Route::get('loyalty-sale-import/batches/{batch_id}', [\App\Http\Controllers\LoyaltySaleImportController::class, 'batchDetails']);
+    Route::delete('loyalty-sale-import/batches/{batch_id}', [\App\Http\Controllers\LoyaltySaleImportController::class, 'deleteBatch']);
+    Route::post('loyalty-sale-import/records/bulk-delete', [\App\Http\Controllers\LoyaltySaleImportController::class, 'bulkDeleteRecords']);
+    Route::get('loyalty-sale-import/records/{id}/logs', [\App\Http\Controllers\LoyaltySaleImportController::class, 'recordLogs']);
+    Route::delete('loyalty-sale-import/records/{id}', [\App\Http\Controllers\LoyaltySaleImportController::class, 'deleteRecord']);
+    Route::put('loyalty-sale-import/records/{id}', [\App\Http\Controllers\LoyaltySaleImportController::class, 'updateRecord']);
+
+    // Scheme Opening Entry
+    Route::get('scheme-openings', [\App\Http\Controllers\API\SchemeOpeningController::class, 'index']);
+    Route::post('scheme-openings/validate', [\App\Http\Controllers\API\SchemeOpeningController::class, 'validateImport']);
+    Route::post('scheme-openings/validate-rows', [\App\Http\Controllers\API\SchemeOpeningController::class, 'validateRows']);
+    Route::post('scheme-openings/import-rows', [\App\Http\Controllers\API\SchemeOpeningController::class, 'importRows']);
+    Route::post('scheme-openings/process', [\App\Http\Controllers\API\SchemeOpeningController::class, 'process']);
+    Route::get('scheme-openings/batches', [\App\Http\Controllers\API\SchemeOpeningController::class, 'batches']);
+    Route::get('scheme-openings/batches/{batch_id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'batchDetails']);
+    Route::delete('scheme-openings/batches/{batch_id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'deleteBatch']);
+    Route::post('scheme-openings/records', [\App\Http\Controllers\API\SchemeOpeningController::class, 'store']);
+    Route::delete('scheme-openings/records/{id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'destroy']);
+    Route::put('scheme-openings/records/{id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'update']);
+    Route::post('scheme-openings/records/bulk-delete', [\App\Http\Controllers\API\SchemeOpeningController::class, 'bulkDelete']);
+
+
+    Route::get('loyalty-point-adjustments', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'index']);
+    Route::get('loyalty-point-adjustments/next-voucher-no', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'getNextVoucherNo']);
+    Route::post('loyalty-point-adjustments', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'store']);
+    Route::get('loyalty-point-adjustments/{voucher_no}', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'show'])->where('voucher_no', '.*');
+    Route::put('loyalty-point-adjustments/{voucher_no}', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'update'])->where('voucher_no', '.*');
+    Route::delete('loyalty-point-adjustments/{voucher_no}', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'destroy'])->where('voucher_no', '.*');
+
+    Route::get('loyalty-reports/ledger', [\App\Http\Controllers\LoyaltyReportController::class, 'ledger']);
+    Route::get('loyalty-reports/ledger/{id}', [\App\Http\Controllers\LoyaltyReportController::class, 'ledgerDetails']);
+    Route::get('loyalty-reports/category-wise', [\App\Http\Controllers\LoyaltyReportController::class, 'categoryWise']);
+    Route::get('loyalty-reports/gift-achiever', [\App\Http\Controllers\LoyaltyReportController::class, 'giftAchiever']);
+    Route::post('loyalty-reports/gift-achiever/update-status', [\App\Http\Controllers\LoyaltyReportController::class, 'updateCustomerGiftStatus']);
+    Route::post('loyalty-reports/sync-balances', [\App\Http\Controllers\LoyaltyReportController::class, 'recalculateBalances']);
 });
 
 Route::get('feedback-questions', [\App\Http\Controllers\Api\FeedbackQuestionController::class, 'index']); // Public access to fetch questions for kiosk

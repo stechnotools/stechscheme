@@ -61,4 +61,22 @@ class CustomerController extends Controller
             'message' => 'Customer deleted successfully.',
         ]);
     }
+
+    public function regenerateLoyaltyCard(int $id): JsonResponse
+    {
+        $customer = Customer::query()->findOrFail($id);
+        $customer = $this->customerService->regenerateLoyaltyCard($customer);
+
+        return response()->json([
+            'message' => 'Loyalty card number regenerated successfully.',
+            'data' => $customer,
+        ]);
+    }
+
+    public function getNextLoyaltyCardNo(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->customerService->generateUniqueLoyaltyCardNo(),
+        ]);
+    }
 }

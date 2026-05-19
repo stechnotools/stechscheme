@@ -46,6 +46,16 @@ class PermissionSeeder extends Seeder
             'settings.payment-gateway',
             'settings.whatsapp-api',
             'settings.notifications',
+            'lc.category',
+            'lc.customers',
+            'lc.setup',
+            'lc.sale-import',
+            'lc.add-redeem',
+            'lc.reports',
+            'lc.reports.dashboard',
+            'lc.reports.ledger',
+            'lc.reports.category-wise',
+            'lc.reports.gift-achiever',
         ];
 
         foreach ($allPermissions as $permission) {
@@ -88,6 +98,14 @@ class PermissionSeeder extends Seeder
             'reports.revenue',
             'reports.customers',
             'reports.payments',
+            'lc.category',
+            'lc.customers',
+            'lc.setup',
+            'lc.sale-import',
+            'lc.add-redeem',
+            'lc.reports',
+            'lc.reports.dashboard',
+            'lc.reports.ledger',
         ];
 
         $customerPermissions = [];

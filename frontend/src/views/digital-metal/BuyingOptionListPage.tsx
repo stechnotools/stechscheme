@@ -41,13 +41,13 @@ const resolveBackendApiUrl = () => {
 const backendApiUrl = resolveBackendApiUrl()
 
 const BuyingOptionListPage = () => {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const accessToken = (session as any)?.accessToken
 
   const [data, setData] = useState([])
   const [metals, setMetals] = useState([])
   const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(status === 'loading')
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [openForm, setOpenForm] = useState(false)
@@ -107,8 +107,10 @@ const BuyingOptionListPage = () => {
   }, [accessToken])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (status === 'authenticated') {
+      fetchData()
+    }
+  }, [status, fetchData])
 
   const handleEdit = (item: any) => {
     setForm({

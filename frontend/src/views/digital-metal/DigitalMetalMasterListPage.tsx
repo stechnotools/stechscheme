@@ -60,7 +60,6 @@ const DigitalMetalMasterListPage = () => {
   const [metals, setMetals] = useState<DigitalMetalMaster[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [logs, setLogs] = useState<any[]>([])
 
   // Search and Pagination
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,30 +115,13 @@ const DigitalMetalMasterListPage = () => {
     }
   }, [accessToken, request])
 
-  const loadLogs = useCallback(async () => {
-    if (!accessToken) return
-    try {
-      const response = await fetch(`${resolveBackendApiUrl()}/digital-metal-masters/logs`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
-      const payload = await response.json()
-      if (payload.success) {
-        setLogs(payload.data)
-      }
-    } catch (err) {
-      console.error('Failed to load logs', err)
-    }
-  }, [accessToken])
+
 
   useEffect(() => {
     if (status === 'authenticated') {
       void loadMetals()
-      void loadLogs()
     }
-  }, [status, loadMetals, loadLogs])
+  }, [status, loadMetals])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -336,63 +318,7 @@ const DigitalMetalMasterListPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Global Activity History */}
-      <Card sx={{ mt: 8, borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-        <CardContent sx={{ p: 6 }}>
-          <Typography variant="h6" sx={{ mb: 6, color: '#6366f1', fontWeight: 500 }}>
-            Recent Activity History
-          </Typography>
-          <Divider sx={{ mb: 6 }} />
-          
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
-            <Table size="small">
-              <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Metal</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Old Markup (B/S)</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Markup (B/S)</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {logs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                      No recent activity found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{new Date(log.created_at).toLocaleString('en-GB')}</TableCell>
-                      <TableCell>{log.user?.name || 'System'}</TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>{log.digital_metal_master?.metal_name || '-'}</TableCell>
-                      <TableCell>Update</TableCell>
-                      <TableCell>{log.old_rate || '-'}</TableCell>
-                      <TableCell sx={{ 
-                        color: parseFloat(log.new_rate) > parseFloat(log.old_rate || '0') 
-                          ? 'success.main' 
-                          : parseFloat(log.new_rate) < parseFloat(log.old_rate || '0') 
-                            ? 'error.main' 
-                            : 'text.primary',
-                        fontWeight: parseFloat(log.new_rate) !== parseFloat(log.old_rate || '0') ? 'bold' : 'normal'
-                      }}>
-                        {log.new_rate || '-'}
-                      </TableCell>
-                      <TableCell>{log.old_buy_markup} / {log.old_sell_markup}</TableCell>
-                      <TableCell>{log.new_buy_markup} / {log.new_sell_markup}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+
     </Box>
   )
 }

@@ -14,12 +14,19 @@ class UpdateCustomerRequest extends FormRequest
 
     public function rules(): array
     {
-        $customerId = $this->route('customer') ?? $this->route('id');
-        $customer = \App\Models\Customer::query()->find($customerId);
-        $linkedUser = null;
+        // Try all possible route parameter names used in different parts of the app
+        $customerId = $this->route('customer') ?? $this->route('id') ?? $this->id;
+        
+        if ($customerId instanceof \App\Models\Customer) {
+            $customerId = $customerId->id;
+        }
 
-        if ($customer) {
-            $linkedUser = $customer->user_id ? \App\Models\User::query()->find($customer->user_id) : null;
+        $customer = $customerId ? \App\Models\Customer::query()->find($customerId) : null;
+        $linkedUserId = $customer ? $customer->user_id : null;
+
+        // If user_id is not linked yet, try to find a user with the current customer's mobile
+        if (!$linkedUserId && $customer && $customer->mobile) {
+            $linkedUserId = \App\Models\User::where('mobile', $customer->mobile)->value('id');
         }
 
         return [
@@ -29,14 +36,36 @@ class UpdateCustomerRequest extends FormRequest
                 'string',
                 'max:20',
                 Rule::unique('customers', 'mobile')->ignore($customerId),
-                Rule::unique('users', 'mobile')->ignore($linkedUser?->id),
+                Rule::unique('users', 'mobile')->ignore($linkedUserId),
             ],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($linkedUser?->id)],
+            'email' => [
+                'nullable', 
+                'email', 
+                'max:255', 
+                Rule::unique('users', 'email')->ignore($linkedUserId)
+            ],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
             'portal_enabled' => ['nullable', 'boolean'],
             'portal_password' => ['nullable', 'string', 'min:6'],
             'branch_id' => ['nullable', 'integer', Rule::exists('branches', 'id')],
             'feedback' => ['nullable', 'string'],
+            'loyalty_card_no' => ['nullable', 'string', 'max:255', Rule::unique('customers', 'loyalty_card_no')->ignore($customerId)],
+            'old_card_no' => ['nullable', 'string', 'max:255'],
+            'join_date' => ['nullable', 'date'],
+            'card_status' => ['nullable', 'string', 'max:50'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'card_issue_date' => ['nullable', 'date'],
+            'card_expiry_date' => ['nullable', 'date'],
+            'introducer_card_no' => ['nullable', 'string', 'max:255'],
+            'introducer_name' => ['nullable', 'string', 'max:255'],
+            'spouse_name' => ['nullable', 'string', 'max:255'],
+            'spouse_dob' => ['nullable', 'date'],
+            'child1_name' => ['nullable', 'string', 'max:255'],
+            'child1_dob' => ['nullable', 'date'],
+            'child2_name' => ['nullable', 'string', 'max:255'],
+            'child2_dob' => ['nullable', 'date'],
+            'image' => ['nullable', 'string', 'max:255'],
+            'opening_points' => ['nullable', 'numeric', 'min:0'],
             'kyc' => ['nullable', 'array'],
             'kyc.family_head' => ['nullable', 'string', 'max:255'],
             'kyc.contact_name_1' => ['nullable', 'string', 'max:255'],
