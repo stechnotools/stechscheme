@@ -55,6 +55,26 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
       ]
     },
     {
+      label: 'Loyalty Card',
+      icon: 'ri-medal-line',
+      children: [
+        { label: 'Loyalty Point Add/Redeem', href: '/loyalty-card/add-redeem' },
+        { label: 'Category Master', href: '/loyalty-card/category' },
+        { label: 'Customer', href: '/loyalty-card/customers' },
+        { label: 'Loyalty Setup Master', href: '/loyalty-card/setup' },
+        { label: 'Sale Data Import', href: '/loyalty-card/sale-import' },
+        {
+          label: 'Loyalty Card Reports',
+          children: [
+            { label: 'Dashboard', href: '/loyalty-card/reports' },
+            { label: 'Customer Loyalty Ledger', href: '/loyalty-card/reports/ledger' },
+            { label: 'Card Category Wise Report', href: '/loyalty-card/reports/category-wise' },
+            { label: 'Gift Achiver Report', href: '/loyalty-card/reports/gift-achiever' }
+          ]
+        }
+      ]
+    },
+    {
       label: 'Reports',
       icon: 'ri-file-chart-line',
       children: [

@@ -27,7 +27,9 @@ import {
   List,
   ListItem,
   ListItemText,
-  Paper
+  Paper,
+  Collapse,
+  IconButton
 } from '@mui/material'
 
 const resolveBackendApiUrl = () => {
@@ -79,6 +81,7 @@ const MetalRateListPage = () => {
   const [logs, setLogs] = useState<MetalRateLog[]>([])
   const [allLogs, setAllLogs] = useState<any[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
+  const [activityLogExpanded, setActivityLogExpanded] = useState(false)
 
   const fetchMetals = useCallback(async () => {
     if (!accessToken) return
@@ -363,54 +366,91 @@ const MetalRateListPage = () => {
 
         {/* Global Activity Log at Bottom */}
         <Box mt={10}>
-          <Typography variant="h6" sx={{ mb: 4, color: '#6366f1', fontWeight: 500 }}>
-            Recent Activity History
-          </Typography>
+          <Stack 
+            direction="row" 
+            justifyContent="space-between" 
+            alignItems="center" 
+            onClick={() => setActivityLogExpanded(!activityLogExpanded)}
+            sx={{ 
+              cursor: 'pointer', 
+              userSelect: 'none',
+              mb: 4, 
+              '&:hover': { opacity: 0.85 } 
+            }}
+          >
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Typography variant="h6" sx={{ color: '#6366f1', fontWeight: 500 }}>
+                Recent Activity History
+              </Typography>
+              {allLogs.length > 0 && (
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    backgroundColor: '#eef2ff', 
+                    color: '#6366f1', 
+                    px: 2.5, 
+                    py: 0.5, 
+                    borderRadius: '12px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 'bold',
+                    border: '1px solid #e0e7ff'
+                  }}
+                >
+                  {allLogs.length} Log Entries
+                </Paper>
+              )}
+            </Stack>
+            <IconButton size="small" sx={{ color: '#6366f1' }}>
+              <i className={activityLogExpanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} style={{ fontSize: '1.5rem' }} />
+            </IconButton>
+          </Stack>
           <Divider sx={{ mb: 4 }} />
           
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
-            <Table size="small">
-              <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Metal</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {allLogs.length === 0 ? (
+          <Collapse in={activityLogExpanded} timeout={300}>
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
+              <Table size="small">
+                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                      No recent activity found.
-                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Metal</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
                   </TableRow>
-                ) : (
-                  allLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{new Date(log.created_at).toLocaleString('en-GB')}</TableCell>
-                      <TableCell>{log.user?.name || 'System'}</TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>{log.metal_master?.metal_name || '-'}</TableCell>
-                      <TableCell>Update</TableCell>
-                      <TableCell>{log.old_rate || '0.00'}</TableCell>
-                      <TableCell sx={{ 
-                        color: parseFloat(log.new_rate) > parseFloat(log.old_rate || '0') 
-                          ? 'success.main' 
-                          : parseFloat(log.new_rate) < parseFloat(log.old_rate || '0') 
-                            ? 'error.main' 
-                            : 'text.primary',
-                        fontWeight: parseFloat(log.new_rate) !== parseFloat(log.old_rate || '0') ? 'bold' : 'normal'
-                      }}>
-                        {log.new_rate}
+                </TableHead>
+                <TableBody>
+                  {allLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                        No recent activity found.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    allLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{new Date(log.created_at).toLocaleString('en-GB')}</TableCell>
+                        <TableCell>{log.user?.name || 'System'}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{log.metal_master?.metal_name || '-'}</TableCell>
+                        <TableCell>Update</TableCell>
+                        <TableCell>{log.old_rate || '0.00'}</TableCell>
+                        <TableCell sx={{ 
+                          color: parseFloat(log.new_rate) > parseFloat(log.old_rate || '0') 
+                            ? 'success.main' 
+                            : parseFloat(log.new_rate) < parseFloat(log.old_rate || '0') 
+                              ? 'error.main' 
+                              : 'text.primary',
+                          fontWeight: parseFloat(log.new_rate) !== parseFloat(log.old_rate || '0') ? 'bold' : 'normal'
+                        }}>
+                          {log.new_rate}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Collapse>
         </Box>
       </CardContent>
 

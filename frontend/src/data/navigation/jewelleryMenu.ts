@@ -108,8 +108,31 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
       { id: 'dm-purchase', label: 'Digital Metal Purchase', href: '/digital-metal/purchase', permission: 'dm.purchase', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'dm-report-balance', label: 'Customer Digital Balance Report', href: '/digital-metal/reports/balance', permission: 'dm.reports', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'dm-redeem-options', label: 'Metal Defult Redeem Option List', href: '/digital-metal/redeem-options', permission: 'dm.redeem', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'dm-buying-options', label: 'Popular Buying Option', href: '/digital-metal/buying-options', permission: 'dm.buying', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'dm-voucher-setup', label: 'Voucher setup', href: '/digital-metal/voucher-setup', permission: 'dm.voucher-setup', roles: ['super-admin', 'admin', 'staff'] }
+      { id: 'dm-buying-options', label: 'Popular Buying Option', href: '/digital-metal/buying-options', permission: 'dm.buying', roles: ['super-admin', 'admin', 'staff'] }
+    ]
+  },
+  {
+    id: 'loyalty-card',
+    label: 'Loyalty Card',
+    icon: 'ri-medal-line',
+    roles: ['super-admin', 'admin', 'staff'],
+    children: [
+      { id: 'lc-add-redeem', label: 'Loyalty Point Add/Redeem', href: '/loyalty-card/add-redeem', permission: 'lc.add-redeem', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'lc-category', label: 'Category Master', href: '/loyalty-card/category', permission: 'lc.category', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'lc-customers', label: 'Customer', href: '/loyalty-card/customers', permission: 'lc.customers', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'lc-setup', label: 'Loyalty Setup Master', href: '/loyalty-card/setup', permission: 'lc.setup', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'lc-sale-import', label: 'Sale Data Import', href: '/loyalty-card/sale-import', permission: 'lc.sale-import', roles: ['super-admin', 'admin', 'staff'] },
+      {
+        id: 'lc-reports',
+        label: 'Loyalty Card Reports',
+        roles: ['super-admin', 'admin', 'staff'],
+        children: [
+          { id: 'lc-reports-dashboard', label: 'Dashboard', href: '/loyalty-card/reports', permission: 'lc.reports.dashboard', roles: ['super-admin', 'admin', 'staff'] },
+          { id: 'lc-reports-ledger', label: 'Customer Loyalty Ledger', href: '/loyalty-card/reports/ledger', permission: 'lc.reports.ledger', roles: ['super-admin', 'admin', 'staff'] },
+          { id: 'lc-reports-category-wise', label: 'Card Category Wise Report', href: '/loyalty-card/reports/category-wise', permission: 'lc.reports.category-wise', roles: ['super-admin', 'admin', 'staff'] },
+          { id: 'lc-reports-gift-achiever', label: 'Gift Achiver Report', href: '/loyalty-card/reports/gift-achiever', permission: 'lc.reports.gift-achiever', roles: ['super-admin', 'admin', 'staff'] }
+        ]
+      }
     ]
   },
   {
@@ -140,6 +163,7 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     roles: ['super-admin', 'admin'],
     children: [
       { id: 'settings-general', label: 'General setup', href: '/settings/general-settings', permission: 'settings.general', roles: ['super-admin', 'admin'] },
+      { id: 'dm-voucher-setup', label: 'Voucher setup', href: '/digital-metal/voucher-setup', permission: 'dm.voucher-setup', roles: ['super-admin', 'admin', 'staff'] },
       { id: 'settings-company', label: 'Company Info', href: '/settings/company-info', permission: 'settings.company-info', roles: ['super-admin', 'admin'] },
       { id: 'settings-payment-gateway', label: 'Payment Gateway', href: '/settings/payment-gateway', permission: 'settings.payment-gateway', roles: ['super-admin', 'admin'] },
       { id: 'settings-whatsapp', label: 'WhatsApp API', href: '/settings/whatsapp-api', permission: 'settings.whatsapp-api', roles: ['super-admin', 'admin'] },

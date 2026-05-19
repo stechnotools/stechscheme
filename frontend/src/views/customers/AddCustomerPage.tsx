@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
@@ -15,6 +16,9 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
 
 type CreateCustomerResponse = {
   data: {
@@ -173,6 +177,19 @@ const AddCustomerPage = () => {
   const [pincode, setPincode] = useState('')
   const [country, setCountry] = useState('')
 
+  // Loyalty Card Details
+  const [loyaltyCardNo, setLoyaltyCardNo] = useState('')
+  const [oldCardNo, setOldCardNo] = useState('')
+  const [joinDate, setJoinDate] = useState('')
+  const [cardStatus, setCardStatus] = useState('Active')
+  const [category, setCategory] = useState('')
+  const [cardIssueDate, setCardIssueDate] = useState('')
+  const [cardExpiryDate, setCardExpiryDate] = useState('')
+  const [introducerCardNo, setIntroducerCardNo] = useState('')
+  const [introducerName, setIntroducerName] = useState('')
+  const [openingPoints, setOpeningPoints] = useState('')
+
+
   // Identity & Verification
   const [aadhaarNumber, setAadhaarNumber] = useState('')
   const [panNumber, setPanNumber] = useState('')
@@ -213,6 +230,39 @@ const AddCustomerPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState<string | null>(null)
+  const [loadingNextId, setLoadingNextId] = useState(false)
+
+  // Accordion state
+  const [expanded, setExpanded] = useState<string | false>('basic-details')
+
+  const handleAccordionChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpanded(isExpanded ? panel : false)
+  }
+
+  const expandAll = () => setExpanded('all') // Use a special value or multi-state if needed
+  // For simplicity with MUI controlled accordion, I'll use a single string state or null.
+  // If user wants "all" expanded, I might need an array state.
+  // I'll stick to a flexible approach where sections can be individually toggled.
+  const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>({
+    'basic-details': true,
+    'personal-info': false,
+    'address-details': false,
+    'contact-info': false,
+    'loyalty-info': false,
+    'identity-info': false,
+    'nominee-details': false,
+    'references': false
+  })
+
+  const togglePanel = (panel: string) => {
+    setExpandedPanels(prev => ({ ...prev, [panel]: !prev[panel] }))
+  }
+
+  const setAllPanels = (value: boolean) => {
+    const next = { ...expandedPanels }
+    Object.keys(next).forEach(key => (next[key] = value))
+    setExpandedPanels(next)
+  }
 
   const request = useCallback(
     async <T,>(path: string, init?: RequestInit): Promise<T> => {
@@ -249,6 +299,15 @@ const AddCustomerPage = () => {
     [accessToken]
   )
 
+  const autoGenerateLoyaltyId = useCallback(async () => {
+    try {
+      const response = await request<{ data: string }>('/customers/next-loyalty-card-no')
+      return response.data
+    } catch (err) {
+      return ''
+    }
+  }, [request])
+
   useEffect(() => {
     return () => {
       if (photoPreview) URL.revokeObjectURL(photoPreview)
@@ -274,7 +333,65 @@ const AddCustomerPage = () => {
     }
 
     void loadBranches()
-  }, [accessToken, request])
+
+    // Auto-generate Loyalty Card No if empty
+    if (!loyaltyCardNo) {
+      const fetchNextId = async () => {
+        const nextId = await autoGenerateLoyaltyId()
+        setLoyaltyCardNo(nextId)
+      }
+      void fetchNextId()
+    }
+  }, [accessToken, request, autoGenerateLoyaltyId, loyaltyCardNo])
+
+  useEffect(() => {
+    if (!accessToken || !loyaltyCardNo || loyaltyCardNo.length < 5) return
+
+    const checkDuplicate = async () => {
+      try {
+        const response = await request<{ data: any[] }>(`/customers?search=${loyaltyCardNo}`)
+        const isDuplicate = response.data.some(c => c.loyalty_card_no === loyaltyCardNo)
+        
+        if (isDuplicate) {
+          setFieldErrors(prev => ({ ...prev, loyaltyCardNo: 'This card number is already assigned to another customer.' }))
+        } else {
+          setFieldErrors(prev => {
+            const next = { ...prev }
+            delete next.loyaltyCardNo
+            return next
+          })
+        }
+      } catch (err) {
+        // Silently fail
+      }
+    }
+
+    const timer = setTimeout(checkDuplicate, 500)
+    return () => clearTimeout(timer)
+  }, [accessToken, request, loyaltyCardNo])
+
+  useEffect(() => {
+    if (!accessToken || !introducerCardNo || introducerCardNo.length < 5) {
+      if (!introducerCardNo) setIntroducerName('')
+      return
+    }
+
+    const fetchIntroducer = async () => {
+      try {
+        const response = await request<{ data: any[] }>(`/customers?search=${introducerCardNo}`)
+        const match = response.data.find(c => c.loyalty_card_no === introducerCardNo)
+        if (match) {
+          const fullName = [match.first_name, match.middle_name, match.last_name].filter(Boolean).join(' ') || match.name || ''
+          setIntroducerName(fullName)
+        }
+      } catch (err) {
+        // Silently fail
+      }
+    }
+
+    const timer = setTimeout(fetchIntroducer, 500)
+    return () => clearTimeout(timer)
+  }, [accessToken, request, introducerCardNo])
 
   const handleFileChange = (
     event: ChangeEvent<HTMLInputElement>,
@@ -387,7 +504,17 @@ const AddCustomerPage = () => {
             reference_1: reference1.trim() || null,
             reference_2: reference2.trim() || null,
             remarks: remarks.trim() || null
-          }
+          },
+          loyalty_card_no: loyaltyCardNo.trim() || null,
+          old_card_no: oldCardNo.trim() || null,
+          join_date: joinDate || null,
+          card_status: cardStatus,
+          category: category.trim() || null,
+          card_issue_date: cardIssueDate || null,
+          card_expiry_date: cardExpiryDate || null,
+          introducer_card_no: introducerCardNo.trim() || null,
+          introducer_name: introducerName.trim() || null,
+          opening_points: Number(openingPoints) || 0
         })
       })
 
@@ -408,7 +535,7 @@ const AddCustomerPage = () => {
       }
 
       setSuccess('Customer and all KYC documents created successfully.')
-      router.push('/customers')
+      router.push('/loyalty-card/customers')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create customer.')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -452,11 +579,50 @@ const AddCustomerPage = () => {
           {error ? <Alert severity='error'>{error}</Alert> : null}
           {success ? <Alert severity='success'>{success}</Alert> : null}
 
+          <Card sx={{ borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
+            <Stack direction='row' spacing={1} sx={{ p: 1.5, bgcolor: 'grey.50' }}>
+              <Button
+                component={Link}
+                href='/loyalty-card/customers'
+                variant='outlined'
+                size='small'
+                startIcon={<i className='ri-list-check' />}
+                sx={{ borderRadius: '4px' }}
+              >
+                List
+              </Button>
+              <Button
+                variant='contained'
+                size='small'
+                onClick={() => void handleSubmit()}
+                disabled={saving}
+                startIcon={saving ? <i className='ri-loader-4-line ri-spin' /> : <i className='ri-save-3-line' />}
+                sx={{ borderRadius: '4px' }}
+              >
+                Save
+              </Button>
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={() => window.location.reload()}
+                startIcon={<i className='ri-add-line' />}
+                sx={{ borderRadius: '4px' }}
+              >
+                New
+              </Button>
+              <Box sx={{ flexGrow: 1 }} />
+              <Button size='small' onClick={() => setAllPanels(true)} sx={{ color: 'text.secondary' }}>Expand All</Button>
+              <Button size='small' onClick={() => setAllPanels(false)} sx={{ color: 'text.secondary' }}>Collapse All</Button>
+            </Stack>
+          </Card>
+
           {/* Basic Details */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['basic-details']} onChange={() => togglePanel('basic-details')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Basic & Login Details</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Basic & Login Details</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Customer Name' placeholder='Customer full name' value={name} onChange={e => setName(e.target.value)} />
@@ -491,14 +657,16 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Personal Info */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['personal-info']} onChange={() => togglePanel('personal-info')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Personal Information</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Personal Information</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Family Head' value={familyHead} onChange={e => setFamilyHead(e.target.value)} />
@@ -529,14 +697,16 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Address Info */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['address-details']} onChange={() => togglePanel('address-details')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Address Details</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Address Details</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Block No' value={blockNo} onChange={e => setBlockNo(e.target.value)} />
@@ -564,14 +734,16 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Contact Details */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['contact-info']} onChange={() => togglePanel('contact-info')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Additional Contact Information</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Additional Contact Information</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Alternate Mobile No 2' value={mobileNo2} onChange={e => setMobileNo2(e.target.value)} />
@@ -611,14 +783,100 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Loyalty Card Details */}
+          <Accordion expanded={expandedPanels['loyalty-info']} onChange={() => togglePanel('loyalty-info')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Loyalty Card Information</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={3}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField 
+                      fullWidth 
+                      label='Loyalty ID (Card No.)' 
+                      value={loyaltyCardNo} 
+                      onChange={e => setLoyaltyCardNo(e.target.value)}
+                      error={!!fieldErrors.loyaltyCardNo}
+                      helperText={fieldErrors.loyaltyCardNo}
+                      slotProps={{
+                        input: {
+                          endAdornment: (
+                            <Button 
+                              size='small' 
+                              disabled={loadingNextId}
+                              onClick={async () => {
+                                setLoadingNextId(true)
+                                const nextId = await autoGenerateLoyaltyId()
+                                if (nextId) setLoyaltyCardNo(nextId)
+                                setLoadingNextId(false)
+                              }}
+                              startIcon={loadingNextId ? <i className='ri-loader-4-line ri-spin' /> : null}
+                            >
+                              {loadingNextId ? '...' : 'Regenerate'}
+                            </Button>
+                          )
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label='Old Card No.' value={oldCardNo} onChange={e => setOldCardNo(e.target.value)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth type='date' label='Join Date' value={joinDate} onChange={e => setJoinDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField select fullWidth label='Card Status' value={cardStatus} onChange={e => setCardStatus(e.target.value)}>
+                      <MenuItem value='Active'>Active</MenuItem>
+                      <MenuItem value='Inactive'>Inactive</MenuItem>
+                      <MenuItem value='Suspended'>Suspended</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField select fullWidth label='Category' value={category} onChange={e => setCategory(e.target.value)}>
+                      <MenuItem value='SILVER'>SILVER</MenuItem>
+                      <MenuItem value='GOLD'>GOLD</MenuItem>
+                      <MenuItem value='PLATINUM'>PLATINUM</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth type='date' label='Card Issue Date' value={cardIssueDate} onChange={e => setCardIssueDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth type='date' label='Card Expiry Date' value={cardExpiryDate} onChange={e => setCardExpiryDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label='Introducer Card No.' value={introducerCardNo} onChange={e => setIntroducerCardNo(e.target.value)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label='Introducer Name' value={introducerName} onChange={e => setIntroducerName(e.target.value)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField 
+                      fullWidth 
+                      type='number' 
+                      label='Opening Points' 
+                      value={openingPoints} 
+                      onChange={e => setOpeningPoints(e.target.value)} 
+                      placeholder='0.00'
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Identity Info */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['identity-info']} onChange={() => togglePanel('identity-info')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Identity & Verification</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Identity & Verification</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Aadhaar Number' value={aadhaarNumber} onChange={e => setAadhaarNumber(e.target.value)} inputProps={{ maxLength: 12 }} />
@@ -637,14 +895,16 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Nominee Details */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['nominee-details']} onChange={() => togglePanel('nominee-details')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>Nominee Details</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>Nominee Details</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Nominee Name' value={nomineeName} onChange={e => setNomineeName(e.target.value)} />
@@ -687,14 +947,16 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
           {/* References & Remarks */}
-          <Card>
-            <CardContent>
+          <Accordion expanded={expandedPanels['references']} onChange={() => togglePanel('references')}>
+            <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+              <Typography variant='h5'>References & Remarks</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={3}>
-                <Typography variant='h5'>References & Remarks</Typography>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField fullWidth label='Reference 1' value={reference1} onChange={e => setReference1(e.target.value)} />
@@ -707,17 +969,9 @@ const AddCustomerPage = () => {
                   </Grid>
                 </Grid>
 
-                <Stack direction='row' justifyContent='flex-end' spacing={2} sx={{ mt: 2 }}>
-                  <Button variant='outlined' color='secondary' onClick={() => router.push('/customers')}>
-                    Cancel
-                  </Button>
-                  <Button variant='contained' onClick={() => void handleSubmit()} disabled={saving || loadingBranches} size='large'>
-                    {saving ? 'Saving...' : 'Save All Details'}
-                  </Button>
-                </Stack>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
 
         </Stack>
       </Grid>

@@ -18,7 +18,16 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  CircularProgress
+  CircularProgress,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Collapse,
+  IconButton
 } from '@mui/material'
 import Link from 'next/link'
 
@@ -39,6 +48,7 @@ const DigitalMetalMasterDetailPage = () => {
   const [metal, setMetal] = React.useState<any>(null)
   const [logs, setLogs] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [activityLogExpanded, setActivityLogExpanded] = React.useState(false)
 
   const loadMetal = React.useCallback(async () => {
     if (!accessToken || !id) return
@@ -257,49 +267,86 @@ const DigitalMetalMasterDetailPage = () => {
       {/* Activity Logs Section */}
       <Card sx={{ mt: 8, borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         <CardContent sx={{ p: 6 }}>
-          <Typography variant="h6" sx={{ mb: 6, color: '#6366f1', fontWeight: 500 }}>
-            Activity History
-          </Typography>
+          <Stack 
+            direction="row" 
+            justifyContent="space-between" 
+            alignItems="center" 
+            onClick={() => setActivityLogExpanded(!activityLogExpanded)}
+            sx={{ 
+              cursor: 'pointer', 
+              userSelect: 'none',
+              mb: 6, 
+              '&:hover': { opacity: 0.85 } 
+            }}
+          >
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Typography variant="h6" sx={{ color: '#6366f1', fontWeight: 500 }}>
+                Activity History
+              </Typography>
+              {logs.length > 0 && (
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    backgroundColor: '#eef2ff', 
+                    color: '#6366f1', 
+                    px: 2.5, 
+                    py: 0.5, 
+                    borderRadius: '12px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 'bold',
+                    border: '1px solid #e0e7ff'
+                  }}
+                >
+                  {logs.length} Log Entries
+                </Paper>
+              )}
+            </Stack>
+            <IconButton size="small" sx={{ color: '#6366f1' }}>
+              <i className={activityLogExpanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} style={{ fontSize: '1.5rem' }} />
+            </IconButton>
+          </Stack>
           <Divider sx={{ mb: 6 }} />
           
-          <TableContainer>
-            <Table size="small">
-              <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Old Markup (B/S)</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Markup (B/S)</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {logs.length === 0 ? (
+          <Collapse in={activityLogExpanded} timeout={300}>
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
+              <Table size="small">
+                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      No history found.
-                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Old Markup (B/S)</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>New Markup (B/S)</TableCell>
                   </TableRow>
-                ) : (
-                  logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{new Date(log.created_at).toLocaleString()}</TableCell>
-                      <TableCell>{log.user?.name || 'System'}</TableCell>
-                      <TableCell>Rate Update</TableCell>
-                      <TableCell>{log.old_rate}</TableCell>
-                      <TableCell sx={{ color: parseFloat(log.new_rate) > parseFloat(log.old_rate) ? 'success.main' : 'error.main' }}>
-                        {log.new_rate}
+                </TableHead>
+                <TableBody>
+                  {logs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        No history found.
                       </TableCell>
-                      <TableCell>{log.old_buy_markup} / {log.old_sell_markup}</TableCell>
-                      <TableCell>{log.new_buy_markup} / {log.new_sell_markup}</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    logs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{new Date(log.created_at).toLocaleString()}</TableCell>
+                        <TableCell>{log.user?.name || 'System'}</TableCell>
+                        <TableCell>Rate Update</TableCell>
+                        <TableCell>{log.old_rate}</TableCell>
+                        <TableCell sx={{ color: parseFloat(log.new_rate) > parseFloat(log.old_rate) ? 'success.main' : 'error.main' }}>
+                          {log.new_rate}
+                        </TableCell>
+                        <TableCell>{log.old_buy_markup} / {log.old_sell_markup}</TableCell>
+                        <TableCell>{log.new_buy_markup} / {log.new_sell_markup}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Collapse>
         </CardContent>
       </Card>
 

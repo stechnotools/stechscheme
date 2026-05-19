@@ -41,9 +41,8 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
         { label: 'DigiMetal Sale Entry', href: '/digital-metal/sales' },
         { label: 'Digital Metal Purchase', href: '/digital-metal/purchase' },
         { label: 'Customer Digital Balance Report', href: '/digital-metal/reports/balance' },
-        { label: 'Metal Defult Redeem Option List', href: '/digital-metal/redeem-options' },
-        { label: 'Popular Buying Option', href: '/digital-metal/buying-options' },
-        { label: 'Voucher setup', href: '/digital-metal/voucher-setup' }
+        { label: 'Metal Default Redeem Option List', href: '/digital-metal/redeem-options' },
+        { label: 'Popular Buying Option', href: '/digital-metal/buying-options' }
       ]
     },
     {
@@ -59,7 +58,28 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       icon: 'ri-file-list-3-line',
       children: [
         { label: 'Redeem Entry', href: '/subscriptions/redeemed' },
-        { label: 'Closing Entry', href: '/subscriptions/closed' }
+        { label: 'Closing Entry', href: '/subscriptions/closed' },
+        { label: 'Scheme Opening Entry', href: '/subscriptions/opening' }
+      ]
+    },
+    {
+      label: 'Loyalty Card',
+      icon: 'ri-medal-line',
+      children: [
+        { label: 'Loyalty Point Add/Redeem', href: '/loyalty-card/add-redeem' },
+        { label: 'Category Master', href: '/loyalty-card/category' },
+        { label: 'Customer', href: '/loyalty-card/customers' },
+        { label: 'Loyalty Setup Master', href: '/loyalty-card/setup' },
+        { label: 'Sale Data Import', href: '/loyalty-card/sale-import' },
+        {
+          label: 'Loyalty Card Reports',
+          children: [
+            { label: 'Dashboard', href: '/loyalty-card/reports' },
+            { label: 'Customer Loyalty Ledger', href: '/loyalty-card/reports/ledger' },
+            { label: 'Card Category Wise Report', href: '/loyalty-card/reports/category-wise' },
+            { label: 'Gift Achiver Report', href: '/loyalty-card/reports/gift-achiever' }
+          ]
+        }
       ]
     },
     {
@@ -102,6 +122,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       icon: 'ri-settings-3-line',
       children: [
         { label: 'General setup', href: '/settings/general-settings' },
+        { label: 'Voucher setup', href: '/digital-metal/voucher-setup' },
         { label: 'Company Info', href: '/settings/company-info' },
         { label: 'Payment Gateway', href: '/settings/payment-gateway' },
         { label: 'WhatsApp Service Setup', href: '/settings/whatsapp-api' },

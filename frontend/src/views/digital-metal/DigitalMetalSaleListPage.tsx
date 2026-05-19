@@ -23,7 +23,12 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  TablePagination
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
 } from '@mui/material'
 
 const resolveBackendApiUrl = () => {
@@ -44,6 +49,9 @@ const DigitalMetalSaleListPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+
+  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const loadSales = useCallback(async () => {
     if (!accessToken) return
@@ -72,6 +80,31 @@ const DigitalMetalSaleListPage = () => {
   useEffect(() => {
     void loadSales()
   }, [loadSales])
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !accessToken) return
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/digital-metal-sales/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      })
+      if (response.ok) {
+        setSales(sales.filter(s => s.id !== deleteTarget.id))
+        setDeleteTarget(null)
+      } else {
+        const json = await response.json()
+        setError(json.message || 'Failed to delete sale entry')
+      }
+    } catch (err) {
+      setError('An error occurred while deleting')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const filteredSales = sales.filter(sale => 
     sale.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -179,9 +212,17 @@ const DigitalMetalSaleListPage = () => {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton size="small" component={Link} href={`/digital-metal/sales/${sale.id}`} title="View Details">
-                          <i className="ri-eye-line" style={{ color: '#00cfe8' }} />
-                        </IconButton>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <IconButton size="small" component={Link} href={`/digital-metal/sales/${sale.id}`} title="View Details">
+                            <i className="ri-eye-line" style={{ color: '#00cfe8' }} />
+                          </IconButton>
+                          <IconButton size="small" component={Link} href={`/digital-metal/sales/${sale.id}/edit`} title="Edit">
+                            <i className="ri-edit-box-line" style={{ color: '#7367F0' }} />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => setDeleteTarget(sale)} title="Delete">
+                            <i className="ri-delete-bin-7-line" style={{ color: '#ea5455' }} />
+                          </IconButton>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))
@@ -203,6 +244,23 @@ const DigitalMetalSaleListPage = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
+        <DialogTitle>Delete Sale Entry?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the sale entry for <strong>{deleteTarget?.customer?.name}</strong>?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 4 }}>
+          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={isDeleting}>
+            {isDeleting ? <CircularProgress size={20} color="inherit" /> : 'Delete Entry'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

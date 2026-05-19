@@ -60,6 +60,22 @@ export type Customer = {
   email?: string | null
   status?: 'active' | 'inactive' | 'blocked' | null
   feedback?: string | null
+  loyalty_card_no?: string | null
+  old_card_no?: string | null
+  join_date?: string | null
+  card_status?: string | null
+  category?: string | null
+  card_issue_date?: string | null
+  card_expiry_date?: string | null
+  introducer_card_no?: string | null
+  introducer_name?: string | null
+  spouse_name?: string | null
+  spouse_dob?: string | null
+  child1_name?: string | null
+  child1_dob?: string | null
+  child2_name?: string | null
+  child2_dob?: string | null
+  image?: string | null
   created_at?: string | null
   user?: {
     id: number
