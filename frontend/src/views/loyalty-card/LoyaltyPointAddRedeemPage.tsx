@@ -292,7 +292,7 @@ const LoyaltyPointAddRedeemPage = ({
         ...prev,
         customerId: String(customer.id),
         cardNo: customer.loyalty_card_no || '',
-        customerName: customer.name,
+        customerName: customer.name || '',
         address: fullAddress,
         city: customer.kyc?.city || '',
         phone: customer.mobile || '',
@@ -429,7 +429,7 @@ const LoyaltyPointAddRedeemPage = ({
             {/* Vertical Column Layout for Main Fields */}
             <Grid container spacing={10}>
               {/* Left Column */}
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Stack spacing={8}>
                   <Stack direction='row' alignItems='center' spacing={6}>
                     <Typography sx={{ fontWeight: 500, color: '#555', minWidth: 100 }}>Voucher No.</Typography>
@@ -511,7 +511,7 @@ const LoyaltyPointAddRedeemPage = ({
               </Grid>
 
               {/* Right Column */}
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Stack spacing={8}>
                   <Stack direction='row' alignItems='center' spacing={6}>
                     <Typography sx={{ fontWeight: 500, color: '#555', minWidth: 100 }}>Voucher Date</Typography>
@@ -581,7 +581,7 @@ const LoyaltyPointAddRedeemPage = ({
                   { label: 'POINTS TO REDEEM', value: formData.redeemPoint, icon: 'ri-indeterminate-circle-line', color: '#ef4444', isEditable: true, field: 'redeemPoint' },
                   { label: 'FINAL BALANCE', value: formData.closingPoint, icon: 'ri-checkbox-circle-line', color: '#3b82f6' }
                 ].map((stat, idx) => (
-                  <Grid item xs={3} key={idx}>
+                  <Grid size={{ xs: 3 }} key={idx}>
                     <Paper
                       elevation={0}
                       sx={{
@@ -727,3 +727,4 @@ const LoyaltyPointAddRedeemPage = ({
 }
 
 export default LoyaltyPointAddRedeemPage
+

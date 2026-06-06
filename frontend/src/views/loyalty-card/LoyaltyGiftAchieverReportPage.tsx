@@ -20,6 +20,10 @@ import Paper from '@mui/material/Paper'
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
 import { resolveBackendApiUrl } from '../customers/customerData'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
 
 interface Achiever {
   id: number
@@ -129,7 +133,7 @@ const LoyaltyGiftAchieverReportPage = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card
           sx={{
             color: 'common.white',
@@ -161,7 +165,7 @@ const LoyaltyGiftAchieverReportPage = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card variant='outlined'>
           <CardContent>
             <Stack spacing={6}>
@@ -279,7 +283,7 @@ const LoyaltyGiftAchieverReportPage = () => {
                            </TableCell>
                            <TableCell align='center'>
                              <Button 
-                               variant='tonal' 
+                               variant='outlined' 
                                size='small' 
                                onClick={() => handleEditOpen(row)}
                                startIcon={<i className='ri-edit-line' />}
@@ -341,10 +345,5 @@ const LoyaltyGiftAchieverReportPage = () => {
     </Grid>
   )
 }
-
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
 
 export default LoyaltyGiftAchieverReportPage

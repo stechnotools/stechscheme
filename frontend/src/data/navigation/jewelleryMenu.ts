@@ -1,4 +1,4 @@
-export type AppRole = 'super-admin' | 'admin' | 'staff' | 'customer'
+export type AppRole = 'super-admin' | 'admin' | 'branch-manager' | 'staff' | 'customer'
 
 export type JewelleryMenuItem = {
   id: string
@@ -53,7 +53,8 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     icon: 'ri-vip-crown-line',
     children: [
       { id: 'subscriptions-all', label: 'Subscription Master', href: '/subscriptions', permission: 'membership.active', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'subscriptions-create', label: 'Create Subscription', href: '/subscriptions/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] }
+      { id: 'subscriptions-create', label: 'Create Subscription', href: '/subscriptions/create', permission: 'membership.create', roles: ['super-admin', 'admin', 'staff'] },
+      { id: 'subscriptions-lifecycle', label: 'Scheme Lifecycle', href: '/subscriptions/lifecycle', permission: 'membership.lifecycle', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] }
     ]
   },
   {
@@ -139,10 +140,64 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     id: 'reports',
     label: 'Reports',
     icon: 'ri-file-chart-line',
-    roles: ['super-admin', 'admin', 'staff'],
+    roles: ['super-admin', 'admin', 'branch-manager', 'staff'],
     children: [
-      { id: 'reports-revenue', label: 'Revenue', href: '/reports/revenue', permission: 'reports.revenue', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'reports-payments', label: 'Payments', href: '/reports/payments', permission: 'reports.payments', roles: ['super-admin', 'admin', 'staff'] }
+      { id: 'reports-dashboard', label: 'Dashboard', href: '/reports/dashboard', permission: 'reports.dashboard', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] },
+      { id: 'reports-daily-collection', label: 'Daily Collection', href: '/reports/daily-collection', permission: 'reports.daily-collection', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] },
+      {
+        id: 'reports-customer',
+        label: 'Customer Reports',
+        roles: ['super-admin', 'admin', 'branch-manager', 'staff'],
+        children: [
+          { id: 'reports-customer-ledger', label: 'Customer Ledger', href: '/reports/customer-ledger', permission: 'reports.customer-ledger', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] },
+          { id: 'reports-customer-statement', label: 'Customer Statement', href: '/reports/customer-statement', permission: 'reports.customer-statement', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] }
+        ]
+      },
+      {
+        id: 'reports-installment',
+        label: 'Installment Reports',
+        roles: ['super-admin', 'admin', 'branch-manager', 'staff'],
+        children: [
+          { id: 'reports-installments-pending', label: 'Pending Installment Report', href: '/reports/installments/pending', permission: 'reports.installments.pending', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] },
+          { id: 'reports-installments-overdue', label: 'Overdue Installment Report', href: '/reports/installments/overdue', permission: 'reports.installments.overdue', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] }
+        ]
+      },
+      {
+        id: 'reports-receipt',
+        label: 'Receipt Reports',
+        roles: ['super-admin', 'admin', 'branch-manager', 'staff'],
+        children: [
+          { id: 'reports-receipts-register', label: 'Receipt Register', href: '/reports/receipts/register', permission: 'reports.receipts.register', roles: ['super-admin', 'admin', 'branch-manager', 'staff'] }
+        ]
+      },
+      {
+        id: 'reports-branch',
+        label: 'Branch Reports',
+        roles: ['super-admin', 'admin', 'branch-manager'],
+        children: [
+          { id: 'reports-branches-collection', label: 'Branch-wise Collection', href: '/reports/branches/collection', permission: 'reports.branches.collection', roles: ['super-admin', 'admin', 'branch-manager'] }
+        ]
+      },
+      {
+        id: 'reports-gold',
+        label: 'Gold Reports',
+        roles: ['super-admin', 'admin', 'branch-manager'],
+        children: [
+          { id: 'reports-gold-liability', label: 'Gold Liability Report', href: '/reports/gold/liability', permission: 'reports.gold.liability', roles: ['super-admin', 'admin', 'branch-manager'] }
+        ]
+      },
+      {
+        id: 'reports-accounting',
+        label: 'Accounting Reports',
+        roles: ['super-admin', 'admin'],
+        children: [
+          { id: 'reports-accounting-cash-book', label: 'Cash Book', href: '/reports/accounting/cash-book', permission: 'reports.accounting.cash-book', roles: ['super-admin', 'admin'] },
+          { id: 'reports-accounting-bank-book', label: 'Bank Book', href: '/reports/accounting/bank-book', permission: 'reports.accounting.bank-book', roles: ['super-admin', 'admin'] },
+          { id: 'reports-accounting-trial-balance', label: 'Trial Balance', href: '/reports/accounting/trial-balance', permission: 'reports.accounting.trial-balance', roles: ['super-admin', 'admin'] },
+          { id: 'reports-accounting-profit-loss', label: 'Profit & Loss', href: '/reports/accounting/profit-loss', permission: 'reports.accounting.profit-loss', roles: ['super-admin', 'admin'] },
+          { id: 'reports-accounting-balance-sheet', label: 'Balance Sheet', href: '/reports/accounting/balance-sheet', permission: 'reports.accounting.balance-sheet', roles: ['super-admin', 'admin'] }
+        ]
+      }
     ]
   },
   {

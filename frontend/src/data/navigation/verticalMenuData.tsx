@@ -46,15 +46,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
         { label: 'Subscription List', href: '/subscriptions' }
       ]
     },
-    {
-      label: 'Scheme Entry',
-      icon: 'ri-file-list-3-line',
-      children: [
-        { label: 'Redeem Entry', href: '/subscriptions/redeemed' },
-        { label: 'Closing Entry', href: '/subscriptions/closed' },
-        { label: 'Scheme Opening Entry', href: '/subscriptions/opening' }
-      ]
-    },
+
     {
       label: 'Loyalty Card',
       icon: 'ri-medal-line',
@@ -97,8 +89,50 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       label: 'Reports',
       icon: 'ri-file-chart-line',
       children: [
-        { label: 'Revenue', href: '/reports/revenue' },
-        { label: 'Payments', href: '/reports/payments' }
+        { label: 'Dashboard', href: '/reports/dashboard' },
+        { label: 'Daily Collection', href: '/reports/daily-collection' },
+        {
+          label: 'Customer Reports',
+          children: [
+            { label: 'Customer Ledger', href: '/reports/customer-ledger' },
+            { label: 'Customer Statement', href: '/reports/customer-statement' }
+          ]
+        },
+        {
+          label: 'Installment Reports',
+          children: [
+            { label: 'Pending Installment Report', href: '/reports/installments/pending' },
+            { label: 'Overdue Installment Report', href: '/reports/installments/overdue' }
+          ]
+        },
+        {
+          label: 'Receipt Reports',
+          children: [
+            { label: 'Receipt Register', href: '/reports/receipts/register' }
+          ]
+        },
+        {
+          label: 'Branch Reports',
+          children: [
+            { label: 'Branch-wise Collection', href: '/reports/branches/collection' }
+          ]
+        },
+        {
+          label: 'Gold Reports',
+          children: [
+            { label: 'Gold Liability Report', href: '/reports/gold/liability' }
+          ]
+        },
+        {
+          label: 'Accounting Reports',
+          children: [
+            { label: 'Cash Book', href: '/reports/accounting/cash-book' },
+            { label: 'Bank Book', href: '/reports/accounting/bank-book' },
+            { label: 'Trial Balance', href: '/reports/accounting/trial-balance' },
+            { label: 'Profit & Loss', href: '/reports/accounting/profit-loss' },
+            { label: 'Balance Sheet', href: '/reports/accounting/balance-sheet' }
+          ]
+        }
       ]
     },
     {

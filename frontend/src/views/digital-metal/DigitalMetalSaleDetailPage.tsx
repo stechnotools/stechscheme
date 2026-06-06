@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -76,7 +76,7 @@ const DigitalMetalSaleDetailPage = () => {
   return (
     <Box sx={{ p: 4, bgcolor: '#f1f5f9', minHeight: '100vh' }}>
       <Grid container spacing={6}>
-        <Grid item xs={12} md={9}>
+        <Grid size={{ xs: 12, md: 9 }}>
           <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
             <CardContent sx={{ p: 6 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
@@ -97,13 +97,13 @@ const DigitalMetalSaleDetailPage = () => {
               </Box>
 
               <Grid container spacing={6} sx={{ mb: 6 }}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>Customer Information</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>{sale.customer?.name}</Typography>
                   <Typography variant="body2">{sale.customer?.mobile}</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{sale.customer?.kyc?.address || 'No address provided'}</Typography>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>Sales Representative</Typography>
                   <Typography variant="body1">{sale.salesman || 'N/A'}</Typography>
                 </Grid>
@@ -146,7 +146,7 @@ const DigitalMetalSaleDetailPage = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Card sx={{ height: '100%', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
             <Box sx={{ bgcolor: '#fbbf24', py: 3, color: 'black', textAlign: 'center' }}>
               <Typography variant="h6" sx={{ fontWeight: 900, textTransform: 'uppercase' }}>Payment Summary</Typography>
@@ -176,3 +176,4 @@ const DigitalMetalSaleDetailPage = () => {
 }
 
 export default DigitalMetalSaleDetailPage
+

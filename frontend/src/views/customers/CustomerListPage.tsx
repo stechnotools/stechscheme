@@ -19,6 +19,15 @@ import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Paper from '@mui/material/Paper'
+import Tooltip from '@mui/material/Tooltip'
+import IconButton from '@mui/material/IconButton'
 import {
   getCustomerLocationLabel,
   getCustomerName,
@@ -372,96 +381,102 @@ const CustomerListPage = () => {
               {loading ? <SkeletonCard count={6} /> : !filteredCustomers.length ? (
                 <Alert severity='info'>No customers found for the current filters.</Alert>
               ) : (
-                <Grid container spacing={3}>
-                  {filteredCustomers.map(customer => {
-                    const location = getCustomerLocationLabel(customer)
-                    const joinedOn = customer.created_at ? new Date(customer.created_at).toLocaleDateString('en-IN') : 'Unknown'
-                    const kycStatus = customer.kyc?.status || 'pending'
+                <TableContainer component={Paper} variant='outlined' sx={{ borderRadius: 1 }}>
+                  <Table size="small">
+                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                      <TableRow>
+                        <TableCell>Customer</TableCell>
+                        <TableCell>Contact Info</TableCell>
+                        <TableCell>Status & KYC</TableCell>
+                        <TableCell>Location</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filteredCustomers.map(customer => {
+                        const location = getCustomerLocationLabel(customer)
+                        const joinedOn = customer.created_at ? new Date(customer.created_at).toLocaleDateString('en-IN') : 'Unknown'
+                        const kycStatus = customer.kyc?.status || 'pending'
 
-                    return (
-                      <Grid key={customer.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                        <Card
-                          variant='outlined'
-                          sx={{
-                            height: '100%',
-                            borderColor: 'divider',
-                            background: 'linear-gradient(135deg, rgba(15,23,42,0.015) 0%, rgba(13,148,136,0.04) 100%)'
-                          }}
-                        >
-                          <CardContent>
-                            <Stack spacing={2.5}>
-                              <Stack direction='row' justifyContent='space-between' spacing={2} alignItems='flex-start'>
-                                <Stack direction='row' spacing={2} alignItems='center' sx={{ minWidth: 0 }}>
-                                  <Avatar
-                                    src={customer.kyc?.photo || undefined}
-                                    alt={getCustomerName(customer)}
-                                    sx={{ width: 56, height: 56 }}
-                                  >
-                                    {getCustomerName(customer).charAt(0).toUpperCase()}
-                                  </Avatar>
-                                  <div>
-                                    <Typography variant='h5'>{getCustomerName(customer)}</Typography>
-                                    <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
-                                      Joined on {joinedOn}
-                                    </Typography>
-                                  </div>
-                                </Stack>
+                        return (
+                          <TableRow key={customer.id} hover>
+                            <TableCell>
+                              <Stack direction='row' spacing={2} alignItems='center'>
+                                <Avatar
+                                  src={customer.kyc?.photo || undefined}
+                                  alt={getCustomerName(customer)}
+                                  sx={{ width: 40, height: 40 }}
+                                >
+                                  {getCustomerName(customer).charAt(0).toUpperCase()}
+                                </Avatar>
+                                <div>
+                                  <Typography variant='subtitle2' fontWeight={600}>
+                                    {getCustomerName(customer)}
+                                  </Typography>
+                                  <Typography variant='caption' color='text.secondary'>
+                                    ID #{customer.id} • Joined {joinedOn}
+                                  </Typography>
+                                </div>
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
+                              <Stack spacing={0.5}>
+                                <Typography variant='body2' fontWeight={500}>
+                                  {customer.mobile}
+                                </Typography>
+                                {customer.email && (
+                                  <Typography variant='caption' color='text.secondary'>
+                                    {customer.email}
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
+                              <Stack direction='row' spacing={1} alignItems='center'>
                                 <Chip
                                   label={customer.status || 'blocked'}
                                   color={getCustomerStatusColor(customer.status)}
                                   size='small'
                                   variant='tonal'
+                                  sx={{ height: 24 }}
                                 />
-                              </Stack>
-
-                              <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
                                 <Chip
                                   label={kycStatus === 'pending' ? 'KYC Pending' : `KYC ${kycStatus}`}
                                   color={getKycStatusColor(kycStatus)}
                                   size='small'
-                                  variant='tonal'
+                                  variant='outlined'
+                                  sx={{ height: 24 }}
                                 />
-                                <Chip label={location} size='small' variant='outlined' />
                               </Stack>
-
-                              <Grid container spacing={2.5}>
-                                <Grid size={{ xs: 12 }}>
-                                  <Typography variant='body2' color='text.secondary'>
-                                    Mobile
-                                  </Typography>
-                                  <Typography fontWeight={700}>{customer.mobile}</Typography>
-                                </Grid>
-                                <Grid size={{ xs: 12 }}>
-                                  <Typography variant='body2' color='text.secondary'>
-                                    Email
-                                  </Typography>
-                                  <Typography fontWeight={700}>{customer.email || 'Not provided'}</Typography>
-                                </Grid>
-                              </Grid>
-
-                              <Stack direction='row' justifyContent='space-between' alignItems='center' flexWrap='wrap' useFlexGap spacing={1.5}>
-                                <Typography variant='body2' color='text.secondary'>
-                                  Customer ID #{customer.id}
-                                </Typography>
-                                <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
-                                  <Button component={Link} href={`/customers/${customer.id}`} variant='text'>
-                                    View
-                                  </Button>
-                                  <Button component={Link} href={`/customers/${customer.id}/edit`} variant='outlined'>
-                                    Edit
-                                  </Button>
-                                  <Button variant='outlined' color='error' onClick={() => void handleDeleteCustomer(customer)}>
-                                    Delete
-                                  </Button>
-                                </Stack>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant='body2'>{location}</Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Stack direction='row' spacing={0.5} justifyContent='flex-end'>
+                                <Tooltip title="View Details">
+                                  <IconButton component={Link} href={`/customers/${customer.id}`} size="small" color="primary">
+                                    <i className='ri-eye-line' />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Edit">
+                                  <IconButton component={Link} href={`/customers/${customer.id}/edit`} size="small" color="info">
+                                    <i className='ri-edit-line' />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete">
+                                  <IconButton size="small" color="error" onClick={() => void handleDeleteCustomer(customer)}>
+                                    <i className='ri-delete-bin-line' />
+                                  </IconButton>
+                                </Tooltip>
                               </Stack>
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    )
-                  })}
-                </Grid>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               )}
             </Stack>
           </CardContent>

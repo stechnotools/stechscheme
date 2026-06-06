@@ -681,7 +681,7 @@ const SaleDataImportPage = () => {
           <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)' }}>
             <CardContent sx={{ p: 6 }}>
               <Grid container spacing={6}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant='subtitle1' sx={{ mb: 2, fontWeight: 600 }}>
                     Upload Sale Data File
                   </Typography>
@@ -816,7 +816,7 @@ const SaleDataImportPage = () => {
                   )}
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Divider sx={{ my: 4 }} />
                   <Stack direction='row' spacing={4} justifyContent='space-between' alignItems='center'>
                     <Stack direction='row' spacing={2} alignItems="center">
@@ -895,7 +895,7 @@ const SaleDataImportPage = () => {
                 Column Rules & Format
               </Typography>
               <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--mui-palette-text-secondary)', lineHeight: '1.8' }}>
                     <li><strong>1. Vou. Date:</strong> Format <code>DD-MM-YYYY</code> or <code>DD/MM/YYYY</code> (Mandatory)</li>
                     <li><strong>2. Vou. No:</strong> Unique Invoice Number (No duplicates)</li>
@@ -905,7 +905,7 @@ const SaleDataImportPage = () => {
                     <li><strong>6. Carat:</strong> Format: <code>22K, 18K, 24K, 925, sil</code> (Must match Carat/Purity Master)</li>
                   </ul>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--mui-palette-text-secondary)', lineHeight: '1.8' }}>
                     <li><strong>7. Net Wt.:</strong> Numeric, up to 3 decimal places (Required for weight-based loyalty)</li>
                     <li><strong>8. Total Amt:</strong> Numeric (Required for value-based loyalty)</li>
@@ -922,7 +922,7 @@ const SaleDataImportPage = () => {
         </>
       ) : (
         <Grid container spacing={6}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ borderRadius: '12px' }}>
               <Box sx={{ p: 4, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography variant='subtitle2' sx={{ fontWeight: 700, mb: 3 }}>Recent Import Batches</Typography>
@@ -966,7 +966,7 @@ const SaleDataImportPage = () => {
               )}
             </Card>
           </Grid>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             {selectedBatch ? (
               <Card sx={{ borderRadius: '12px' }}>
                 <Box sx={{ p: 4, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -976,7 +976,7 @@ const SaleDataImportPage = () => {
                   <Stack direction='row' spacing={2}>
                     <Button 
                       size='small' 
-                      variant='tonal' 
+                      variant='contained' 
                       color='secondary' 
                       startIcon={<i className='ri-download-line' />}
                       onClick={handleDownloadBatch}
@@ -1118,19 +1118,19 @@ const SaleDataImportPage = () => {
         <DialogContent>
           {editData && (
             <Grid container spacing={4} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Vou. Date" type="date" InputLabelProps={{ shrink: true }} value={editData.vou_date ? editData.vou_date.substring(0, 10) : ''} onChange={(e) => setEditData({...editData, vou_date: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Vou. No" value={editData.vou_no || ''} onChange={(e) => setEditData({...editData, vou_no: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Mobile No" value={editData.mobile_no || ''} onChange={(e) => setEditData({...editData, mobile_no: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Party Name" value={editData.party_name || ''} onChange={(e) => setEditData({...editData, party_name: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Metal Name" value={editData.metal_name || ''} onChange={(e) => setEditData({...editData, metal_name: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Carat" value={editData.carat || ''} onChange={(e) => setEditData({...editData, carat: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Net Wt." type="number" value={editData.net_wt || ''} onChange={(e) => setEditData({...editData, net_wt: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Total Amt" type="number" value={editData.total_amt || ''} onChange={(e) => setEditData({...editData, total_amt: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="GST Taxable Amt" type="number" value={editData.gst_taxable_amt || ''} onChange={(e) => setEditData({...editData, gst_taxable_amt: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Salesman" value={editData.salesman_name || ''} onChange={(e) => setEditData({...editData, salesman_name: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Branch Name" value={editData.branch_name || ''} onChange={(e) => setEditData({...editData, branch_name: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Loyalty Card No." value={editData.loyalty_card_no || ''} onChange={(e) => setEditData({...editData, loyalty_card_no: e.target.value})} /></Grid>
-              <Grid item xs={12} sm={6} md={4}><TextField fullWidth label="Introducer" value={editData.introducer || ''} onChange={(e) => setEditData({...editData, introducer: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Vou. Date" type="date" InputLabelProps={{ shrink: true }} value={editData.vou_date ? editData.vou_date.substring(0, 10) : ''} onChange={(e) => setEditData({...editData, vou_date: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Vou. No" value={editData.vou_no || ''} onChange={(e) => setEditData({...editData, vou_no: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Mobile No" value={editData.mobile_no || ''} onChange={(e) => setEditData({...editData, mobile_no: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Party Name" value={editData.party_name || ''} onChange={(e) => setEditData({...editData, party_name: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Metal Name" value={editData.metal_name || ''} onChange={(e) => setEditData({...editData, metal_name: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Carat" value={editData.carat || ''} onChange={(e) => setEditData({...editData, carat: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Net Wt." type="number" value={editData.net_wt || ''} onChange={(e) => setEditData({...editData, net_wt: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Total Amt" type="number" value={editData.total_amt || ''} onChange={(e) => setEditData({...editData, total_amt: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="GST Taxable Amt" type="number" value={editData.gst_taxable_amt || ''} onChange={(e) => setEditData({...editData, gst_taxable_amt: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Salesman" value={editData.salesman_name || ''} onChange={(e) => setEditData({...editData, salesman_name: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Branch Name" value={editData.branch_name || ''} onChange={(e) => setEditData({...editData, branch_name: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Loyalty Card No." value={editData.loyalty_card_no || ''} onChange={(e) => setEditData({...editData, loyalty_card_no: e.target.value})} /></Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}><TextField fullWidth label="Introducer" value={editData.introducer || ''} onChange={(e) => setEditData({...editData, introducer: e.target.value})} /></Grid>
             </Grid>
           )}
         </DialogContent>
@@ -1194,7 +1194,7 @@ const SaleDataImportPage = () => {
         <DialogContent dividers>
           <Grid container spacing={4} sx={{ mt: 1 }}>
             {previewHeader.map((header, idx) => (
-              <Grid item xs={12} md={6} key={idx}>
+              <Grid size={{ xs: 12, md: 6 }} key={idx}>
                 <TextField
                   fullWidth
                   label={header}
@@ -1220,3 +1220,4 @@ const SaleDataImportPage = () => {
 }
 
 export default SaleDataImportPage
+

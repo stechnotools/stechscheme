@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
@@ -357,7 +357,7 @@ const VoucherSetupListPage = () => {
         </Card>
       ) : (
         <Grid container spacing={6}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card variant="outlined" sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
               <CardContent sx={{ p: 6 }}>
                 <Stack spacing={6}>
@@ -389,7 +389,7 @@ const VoucherSetupListPage = () => {
                   </TextField>
 
                   <Grid container spacing={4}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Voucher Prefix"
@@ -398,7 +398,7 @@ const VoucherSetupListPage = () => {
                         onChange={(e) => setFormData({ ...formData, prefix: e.target.value })}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Start Number"
@@ -452,7 +452,7 @@ const VoucherSetupListPage = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: 'grey.50' }}>
               <CardContent sx={{ p: 5 }}>
                 <Typography variant="subtitle2" fontWeight={700} gutterBottom>Live Preview</Typography>
@@ -549,3 +549,4 @@ const VoucherSetupListPage = () => {
 }
 
 export default VoucherSetupListPage
+

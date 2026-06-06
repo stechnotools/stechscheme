@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -262,7 +262,7 @@ const AddDigitalMetalSalePage = () => {
     <Box sx={{ p: 4, bgcolor: '#f1f5f9', minHeight: '100vh' }}>
       <Grid container spacing={6}>
         {/* Left Side: Entry Form (75%) */}
-        <Grid item xs={12} md={9}>
+        <Grid size={{ xs: 12, md: 9 }}>
           <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
             <CardContent sx={{ p: 6 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
@@ -274,7 +274,7 @@ const AddDigitalMetalSalePage = () => {
               {/* Customer Selection */}
               <Box sx={{ mb: 6 }}>
                 <Grid container spacing={4}>
-                  <Grid item xs={12} md={12}>
+                  <Grid size={{ xs: 12, md: 12 }}>
                     <Autocomplete
                       options={customers}
                       getOptionLabel={(o) => `${o.name} (${o.mobile})`}
@@ -283,7 +283,7 @@ const AddDigitalMetalSalePage = () => {
                       renderInput={(params) => <TextField {...params} label="Search Customer (Name or Mobile)" placeholder="Enter name or mobile..." variant="outlined" size="small" fullWidth required />}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       label="Mobile Number"
                       value={customerMobile}
@@ -293,7 +293,7 @@ const AddDigitalMetalSalePage = () => {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       select
                       fullWidth
@@ -317,7 +317,7 @@ const AddDigitalMetalSalePage = () => {
                         ))}
                     </TextField>
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       label="Customer Address (Optional)"
                       value={customerAddress}
@@ -397,7 +397,7 @@ const AddDigitalMetalSalePage = () => {
         </Grid>
 
         {/* Right Side: Summary & Payment (25%) - Matching Left Panel Height */}
-        <Grid item xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Box sx={{ position: 'sticky', top: 24 }}>
             <Card sx={{ borderRadius: '16px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
               <Box sx={{ bgcolor: '#1e293b', py: 3, color: 'white', textAlign: 'center' }}>
@@ -487,12 +487,12 @@ const AddDigitalMetalSalePage = () => {
                         {payments.map((p, i) => (
                           <Box key={i} sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', position: 'relative' }}>
                             <Grid container spacing={1} alignItems="center">
-                              <Grid item xs={6}>
+                              <Grid size={{ xs: 6 }}>
                                 <TextField select fullWidth size="small" value={p.mode} onChange={e => updatePayment(i, 'mode', e.target.value)} variant="standard" InputProps={{ disableUnderline: true, sx: { fontSize: '0.875rem', fontWeight: 600 } }}>
                                   {paymentModes.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
                                 </TextField>
                               </Grid>
-                              <Grid item xs={6}>
+                              <Grid size={{ xs: 6 }}>
                                 <TextField fullWidth size="small" type="number" value={p.amount} onChange={e => updatePayment(i, 'amount', e.target.value)} variant="standard" placeholder="0.00" InputProps={{ disableUnderline: true, sx: { textAlign: 'right', fontSize: '0.875rem', fontWeight: 700 } }} />
                               </Grid>
                             </Grid>
@@ -547,3 +547,4 @@ const AddDigitalMetalSalePage = () => {
 }
 
 export default AddDigitalMetalSalePage
+

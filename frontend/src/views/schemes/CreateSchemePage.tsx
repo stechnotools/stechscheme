@@ -100,9 +100,6 @@ const BannerUpload = ({ bannerFile, bannerPreview, setBannerFile, setBannerPrevi
   )
 }
 
-    </div>
-  )
-}
 
 const SchemeEditorToolbar = ({ editor }: { editor: Editor | null }) => {
   if (!editor) return null
@@ -954,8 +951,9 @@ return
                           </Stack>
                         </Box>
                       </Grid>
-                    </Box>
-                  </Collapse>
+                    </Grid>
+                  </Box>
+                </Collapse>
                 </Box>
                 {!form.allow_bonus && (
                   <Box sx={{ p: 4, textAlign: 'center' }}>

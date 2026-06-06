@@ -48,7 +48,7 @@ const BuyingOptionListPage = () => {
   const [metals, setMetals] = useState([])
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(status === 'loading')
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [openForm, setOpenForm] = useState(false)
   const [showLogs, setShowLogs] = useState(true)
@@ -215,12 +215,12 @@ const BuyingOptionListPage = () => {
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
           <Grid container spacing={6} sx={{ mt: 1 }}>
             {/* Left Column */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Grid container alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Metal Name</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <TextField
                     select
                     fullWidth
@@ -239,10 +239,10 @@ const BuyingOptionListPage = () => {
               </Grid>
 
               <Grid container alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Option Name</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -265,10 +265,10 @@ const BuyingOptionListPage = () => {
               </Grid>
 
               <Grid container alignItems="center" spacing={2}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Display Text</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <TextField
                     select
                     fullWidth
@@ -287,12 +287,12 @@ const BuyingOptionListPage = () => {
             </Grid>
 
             {/* Right Column */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Grid container alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Status</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <Box display="flex" alignItems="center">
                     <Switch 
                       checked={form.status === 'Active'}
@@ -307,10 +307,10 @@ const BuyingOptionListPage = () => {
               </Grid>
 
               <Grid container alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Purity</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -323,10 +323,10 @@ const BuyingOptionListPage = () => {
               </Grid>
 
               <Grid container alignItems="center" spacing={2}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography sx={{ fontWeight: 600 }}>Option Value</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -474,3 +474,4 @@ const BuyingOptionListPage = () => {
 }
 
 export default BuyingOptionListPage
+

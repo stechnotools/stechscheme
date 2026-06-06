@@ -249,7 +249,7 @@ const LoyaltySetupPage = () => {
       group_wise_points_setup: Array.isArray(setup.group_wise_points_setup) ? setup.group_wise_points_setup : [],
       category_level_setup: Array.isArray(setup.category_level_setup) ? setup.category_level_setup : [],
       excluded_categories: Array.isArray(setup.excluded_categories) ? setup.excluded_categories : [],
-      points_for_every_wt_global: setup.points_for_every_wt_global !== null ? Number(setup.points_for_every_wt_global).toFixed(3) : null,
+      points_for_every_wt_global: setup.points_for_every_wt_global !== null ? Number(setup.points_for_every_wt_global) : null,
       points_to_be_earned_wt_global: setup.points_to_be_earned_wt_global ?? null,
       introducer_benefit_setup: Array.isArray(setup.introducer_benefit_setup) ? setup.introducer_benefit_setup : [],
       allow_introducer_points: setup.allow_introducer_points ?? false
@@ -466,7 +466,7 @@ const LoyaltySetupPage = () => {
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={6} sx={{ p: 0 }}>
-                      <SkeletonTable rows={5} columns={6} />
+                      <SkeletonTable rows={5} cols={6} />
                     </TableCell>
                   </TableRow>
                 ) : setups.length === 0 ? (
@@ -519,7 +519,7 @@ const LoyaltySetupPage = () => {
           <Card sx={{ mb: 6, borderRadius: '12px' }}>
             <CardContent>
               <Grid container spacing={4}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <TextField
                     fullWidth
                     label='Setup Code'
@@ -528,7 +528,7 @@ const LoyaltySetupPage = () => {
                     placeholder='LOYALTY-001'
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
                     fullWidth
                     label='Setup Name'
@@ -537,7 +537,7 @@ const LoyaltySetupPage = () => {
                     placeholder='Default Loyalty Program'
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={2}>
+                <Grid size={{ xs: 12, sm: 6, md: 2 }}>
                   <TextField
                     select
                     fullWidth
@@ -549,7 +549,7 @@ const LoyaltySetupPage = () => {
                     <MenuItem value='Inactive'>Inactive</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={6} md={1.5}>
+                <Grid size={{ xs: 12, sm: 6, md: 1.5 }}>
                   <TextField
                     type='date'
                     fullWidth
@@ -559,7 +559,7 @@ const LoyaltySetupPage = () => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={1.5}>
+                <Grid size={{ xs: 12, sm: 6, md: 1.5 }}>
                   <TextField
                     type='date'
                     fullWidth
@@ -603,9 +603,9 @@ const LoyaltySetupPage = () => {
                   <Box sx={{ p: 6 }}>
                     <Grid container spacing={8}>
                       {/* Left: Basic Inputs */}
-                      <Grid item xs={12} lg={6}>
+                      <Grid size={{ xs: 12, lg: 6 }}>
                         <Grid container spacing={4}>
-                          <Grid item xs={12} sm={8}>
+                          <Grid size={{ xs: 12, sm: 8 }}>
                             <TextField 
                               select 
                               fullWidth 
@@ -618,7 +618,7 @@ const LoyaltySetupPage = () => {
                               <MenuItem value='Premium Program'>Premium Program</MenuItem>
                             </TextField>
                           </Grid>
-                          <Grid item xs={12} sm={4}>
+                          <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField 
                               select 
                               fullWidth 
@@ -631,7 +631,7 @@ const LoyaltySetupPage = () => {
                               <MenuItem value='USD'>USD</MenuItem>
                             </TextField>
                           </Grid>
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField 
                               select 
                               fullWidth 
@@ -645,7 +645,7 @@ const LoyaltySetupPage = () => {
                               <MenuItem value='Round Down'>Round Down</MenuItem>
                             </TextField>
                           </Grid>
-                          <Grid item xs={12}>
+                          <Grid size={{ xs: 12 }}>
                             <TextField 
                               fullWidth 
                               multiline 
@@ -661,7 +661,7 @@ const LoyaltySetupPage = () => {
                       </Grid>
 
                       {/* Center: Control Options */}
-                      <Grid item xs={12} sm={6} lg={3}>
+                      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                         <Stack spacing={1}>
                           <FormControlLabel 
                             control={<Checkbox size='small' checked={formData.enable_loyalty_program} onChange={e => setFormData({ ...formData, enable_loyalty_program: e.target.checked })} />} 
@@ -696,7 +696,7 @@ const LoyaltySetupPage = () => {
                       </Grid>
 
                       {/* Right: Point Calculation */}
-                      <Grid item xs={12} sm={6} lg={3}>
+                      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                         <Box sx={{ 
                           p: 4, 
                           border: '1px solid', 
@@ -1312,7 +1312,7 @@ const LoyaltySetupPage = () => {
                 </Box>
                 <Box sx={{ p: 6 }}>
                   <Grid container spacing={6}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <Stack spacing={4}>
                         <TextField 
                           fullWidth 
@@ -1341,7 +1341,7 @@ const LoyaltySetupPage = () => {
                         />
                       </Stack>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <Stack spacing={2}>
                         <FormControlLabel 
                           control={<Checkbox size='small' checked={formData.allow_partial_redemption} onChange={e => setFormData({ ...formData, allow_partial_redemption: e.target.checked })} />} 
@@ -1383,7 +1383,7 @@ const LoyaltySetupPage = () => {
                     </Box>
                     <Box sx={{ p: 6 }}>
                       <Grid container spacing={6}>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                           <Typography variant='caption' sx={{ mb: 2, display: 'block', fontWeight: 700, color: 'text.secondary' }}>Excluded Categories</Typography>
                           <Box sx={{ p: 4, border: '1px solid', borderColor: 'divider', borderRadius: '4px' }}>
                             <Stack spacing={1}>
@@ -1402,7 +1402,7 @@ const LoyaltySetupPage = () => {
                             </Stack>
                           </Box>
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                           <Typography variant='caption' sx={{ mb: 2, display: 'block', fontWeight: 700, color: 'text.secondary' }}>Notification Settings</Typography>
                           <Stack spacing={1}>
                             <FormControlLabel control={<Checkbox size='small' checked={formData.notify_on_credit} onChange={e => setFormData({ ...formData, notify_on_credit: e.target.checked })} />} label={<Typography variant='body2'>Notify on Point Credit</Typography>} />
@@ -1575,7 +1575,7 @@ const LoyaltySetupPage = () => {
                     </Box>
                     <Box sx={{ p: 6 }}>
                       <Grid container spacing={6}>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                           <TextField 
                             fullWidth 
                             label='Points For Every (Weight Gram)' 
@@ -1587,7 +1587,7 @@ const LoyaltySetupPage = () => {
                             onChange={e => setFormData({ ...formData, points_for_every_wt_global: parseFloat(e.target.value) || null })}
                           />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                           <TextField 
                             fullWidth 
                             label='Points To Be Earned (Weight)' 
@@ -1672,3 +1672,4 @@ const LoyaltySetupPage = () => {
 }
 
 export default LoyaltySetupPage
+

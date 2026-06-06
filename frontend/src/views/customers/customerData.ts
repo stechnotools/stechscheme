@@ -69,6 +69,8 @@ export type Customer = {
   card_expiry_date?: string | null
   introducer_card_no?: string | null
   introducer_name?: string | null
+  opening_points?: number | null
+  loyalty_points_balance?: number | null
   spouse_name?: string | null
   spouse_dob?: string | null
   child1_name?: string | null

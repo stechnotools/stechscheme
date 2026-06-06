@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -139,7 +139,7 @@ const DigitalMetalSaleListPage = () => {
       <Card sx={{ borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         <CardContent sx={{ p: 6 }}>
           <Grid container spacing={4} alignItems="center" mb={6}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 size="small"
@@ -266,3 +266,4 @@ const DigitalMetalSaleListPage = () => {
 }
 
 export default DigitalMetalSaleListPage
+

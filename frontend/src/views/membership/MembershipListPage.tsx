@@ -25,6 +25,9 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
 import IconButton from '@mui/material/IconButton'
+import MenuItem from '@mui/material/MenuItem'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
 
 const MembershipSkeleton = () => (
   <Grid container spacing={6}>
@@ -105,6 +108,7 @@ const getStatusColor = (status: string) => {
   if (s === 'matured') return 'warning'
   if (s === 'redeemed') return 'info'
   if (s === 'closed') return 'error'
+  if (s === 'settled') return 'secondary'
   return 'default'
 }
 
@@ -115,12 +119,13 @@ const MembershipListPage = ({
   statusGroup: 'active' | 'matured' | 'redeemed' | 'closed'
   title: string
 }) => {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
   
+  const [statusFilter, setStatusFilter] = useState('all')
   const [memberships, setMemberships] = useState<MembershipItem[]>([])
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const request = useCallback(
@@ -137,34 +142,46 @@ const MembershipListPage = ({
   )
 
   const load = useCallback(async () => {
+    if (!accessToken) return
     setLoading(true)
     setError(null)
     try {
-      const response = await request<MembershipsResponse>(`/memberships?per_page=500&status_group=${statusGroup}`)
+      const response = await request<MembershipsResponse>('/memberships?per_page=500')
       setMemberships(response.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load memberships.')
     } finally {
       setLoading(false)
     }
-  }, [request, statusGroup])
+  }, [accessToken, request])
 
   useEffect(() => {
-    if (accessToken) void load()
-  }, [accessToken, load])
+    if (status === 'authenticated' && !accessToken) {
+      setError('Login session token is missing. Please logout and login again.')
+      return
+    }
+
+    if (status === 'authenticated') {
+      void load()
+    }
+  }, [status, accessToken, load])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return memberships.filter(
-      item =>
-        !q ||
-        (item.customer?.name || '').toLowerCase().includes(q) ||
-        (item.customer?.mobile || '').toLowerCase().includes(q) ||
-        (item.scheme?.name || '').toLowerCase().includes(q) ||
-        (item.scheme?.code || '').toLowerCase().includes(q) ||
-        String(item.id).includes(q)
+      item => {
+        const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase()
+        const matchesSearch =
+          !q ||
+          (item.customer?.name || '').toLowerCase().includes(q) ||
+          (item.customer?.mobile || '').toLowerCase().includes(q) ||
+          (item.scheme?.name || '').toLowerCase().includes(q) ||
+          (item.scheme?.code || '').toLowerCase().includes(q) ||
+          String(item.id).includes(q)
+        return matchesStatus && matchesSearch
+      }
     )
-  }, [memberships, search])
+  }, [memberships, search, statusFilter])
 
   const metrics = useMemo(() => {
     const totalCount = memberships.length
@@ -240,6 +257,19 @@ const MembershipListPage = ({
                   >
                     New Enrollment
                   </Button>
+                  <Button
+                    component={Link}
+                    href='/subscriptions/lifecycle'
+                    variant='outlined'
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.55)',
+                      color: 'common.white',
+                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                    startIcon={<i className='ri-shuffle-line' />}
+                  >
+                    Lifecycle
+                  </Button>
                 </Stack>
               </Stack>
 
@@ -313,22 +343,46 @@ const MembershipListPage = ({
         {error && <Alert severity='error' sx={{ mb: 6 }}>{error}</Alert>}
 
         <Stack spacing={6}>
-          {/* Search Bar */}
+          {/* Search & Filter Bar */}
           <Card>
-            <CardContent sx={{ py: 3 }}>
-              <TextField
-                fullWidth
-                placeholder='Search by customer name, mobile, scheme code or ID...'
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position='start'>
-                      <i className='ri-search-2-line' />
-                    </InputAdornment>
-                  )
-                }}
-              />
+            <CardContent sx={{ py: 4 }}>
+              <Grid container spacing={4}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <TextField
+                    fullWidth
+                    label='Search subscriptions'
+                    placeholder='Search by customer name, mobile, scheme code or ID...'
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='ri-search-2-line' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label='Filter by status'
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                  >
+                    <MenuItem value='all'>All Statuses</MenuItem>
+                    <MenuItem value='active'>Active</MenuItem>
+                    <MenuItem value='paused'>Paused</MenuItem>
+                    <MenuItem value='matured'>Matured</MenuItem>
+                    <MenuItem value='completed'>Completed</MenuItem>
+                    <MenuItem value='redeemed'>Redeemed</MenuItem>
+                    <MenuItem value='settled'>Settled</MenuItem>
+                    <MenuItem value='cancelled'>Cancelled</MenuItem>
+                    <MenuItem value='closed'>Closed</MenuItem>
+                  </TextField>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
 

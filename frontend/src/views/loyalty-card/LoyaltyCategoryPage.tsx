@@ -37,7 +37,7 @@ import {
 import Link from 'next/link'
 import { LoyaltyCardCategory, resolveBackendApiUrl } from './loyaltyCardCategoryData'
 
-const CardPreview = ({ color, name, code, prefix }: { color: string; name: string; code: string; prefix: string }) => {
+const CardPreview = ({ color, name, code, prefix }: { color?: string | null; name?: string | null; code?: string | null; prefix?: string | null }) => {
   const getGradient = () => {
     switch (color?.toLowerCase()) {
       case 'gold': return 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)'
@@ -519,12 +519,12 @@ const LoyaltyCategoryPage = () => {
             
             {/* Record Title */}
             <Grid container spacing={6}>
-              <Grid item xs={12} md={9}>
+              <Grid size={{ xs: 12, md: 9 }}>
                 <Card variant="outlined" sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'visible' }}>
                   <CardContent sx={{ p: 6 }}>
                     <Grid container spacing={8}>
                       {/* Section 1: Identity */}
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <Stack spacing={4}>
                           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                             <Box sx={{ p: 1.5, bgcolor: 'primary.lighter', borderRadius: 1.5, color: 'primary.main' }}>
@@ -564,7 +564,7 @@ const LoyaltyCategoryPage = () => {
                       </Grid>
 
                       {/* Section 2: Card Appearance */}
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <Stack spacing={4}>
                           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                             <Box sx={{ p: 1.5, bgcolor: 'warning.lighter', borderRadius: 1.5, color: 'warning.main' }}>
@@ -620,7 +620,7 @@ const LoyaltyCategoryPage = () => {
                       </Grid>
 
                       {/* Section 3: Lifecycle */}
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <Stack spacing={4}>
                           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                             <Box sx={{ p: 1.5, bgcolor: 'success.lighter', borderRadius: 1.5, color: 'success.main' }}>
@@ -674,7 +674,7 @@ const LoyaltyCategoryPage = () => {
               </Grid>
 
               {/* Preview Column */}
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Stack spacing={6}>
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mb: 3, textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -787,3 +787,4 @@ const LoyaltyCategoryPage = () => {
 }
 
 export default LoyaltyCategoryPage
+

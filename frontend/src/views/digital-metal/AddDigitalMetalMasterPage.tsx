@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react'
 import {
   Card,
   CardContent,
-  Grid,
   Typography,
   TextField,
   MenuItem,
@@ -14,24 +13,12 @@ import {
   Box,
   Select,
   Alert,
-    CircularProgress,
-    Switch,
-    Stack,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogContentText,
-    DialogActions,
-    Breadcrumbs,
-    Divider,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper
-  } from '@mui/material'
+  CircularProgress,
+  Switch,
+  Stack,
+  Breadcrumbs
+} from '@mui/material'
+import Grid from '@mui/material/Grid'
 import Link from 'next/link'
 
 const resolveBackendApiUrl = () => {
@@ -67,7 +54,6 @@ const AddDigitalMetalMasterPage = () => {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [logs, setLogs] = useState<any[]>([])
 
   const handleSubmit = useCallback(async () => {
     if (!metalName) {
@@ -84,7 +70,6 @@ const AddDigitalMetalMasterPage = () => {
     setError(null)
 
     try {
-      const isEdit = Boolean(id)
       const url = isEdit ? `${resolveBackendApiUrl()}/digital-metal-masters/${id}` : `${resolveBackendApiUrl()}/digital-metal-masters`
       const method = isEdit ? 'PUT' : 'POST'
 
@@ -127,7 +112,7 @@ const AddDigitalMetalMasterPage = () => {
       setSaving(false)
     }
   }, [
-    id, metalName, purity, displayText, minPurchaseWeight, minPurchaseAmount, maxPurchaseAmount,
+    id, isEdit, metalName, purity, displayText, minPurchaseWeight, minPurchaseAmount, maxPurchaseAmount,
     ratePer, ratePerUnit, ratePerDisplayText, rateFrom, erpMetalId, buyMarkupAmount,
     sellMarkupAmount, isDecimalAllow, statusValue, accessToken, router
   ])
@@ -161,22 +146,6 @@ const AddDigitalMetalMasterPage = () => {
         setIsDecimalAllow(Boolean(m.is_decimal_allow))
         setStatusValue(m.status || 'Active')
       }
-
-      // Fetch logs
-      try {
-        const logResponse = await fetch(`${resolveBackendApiUrl()}/digital-metal-masters/${id}/logs`, {
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          }
-        })
-        const logPayload = await logResponse.json()
-        if (logPayload.success) {
-          setLogs(logPayload.data)
-        }
-      } catch (logErr) {
-        console.error('Failed to load logs', logErr)
-      }
     } catch (err) {
       console.error('Failed to load metal', err)
     }
@@ -188,39 +157,39 @@ const AddDigitalMetalMasterPage = () => {
     }
   }, [id, loadMetal])
 
-  const labelSx = { fontWeight: 'bold', mb: 1, display: 'block' }
+  const labelSx = { fontWeight: 600, mb: 1.5, display: 'block' }
 
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: '#6366f1' }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
             Digital Metal Master
           </Typography>
           <Breadcrumbs aria-label="breadcrumb" sx={{ mt: 1 }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6366f1', textDecoration: 'none' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
               <i className="ri-home-fill" />
             </Link>
-            <Link href="/digital-metal/master" style={{ color: '#6366f1', textDecoration: 'none' }}>
+            <Link href="/digital-metal/master" style={{ color: 'inherit', textDecoration: 'none' }}>
               Digital Metal Master
             </Link>
-            <Typography color="text.primary">Digital Metal Master Detail</Typography>
+            <Typography color="text.primary">{isEdit ? 'Edit' : 'Create'} Digital Metal Master</Typography>
           </Breadcrumbs>
         </Box>
       </Stack>
 
-      <Card sx={{ borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-        <CardContent sx={{ p: 8 }}>
-          <Typography variant="h6" sx={{ mb: 8, color: '#8b5cf6', fontWeight: 500 }}>
-            Digital Metal Master Detail
+      <Card variant="outlined">
+        <CardContent sx={{ p: { xs: 4, md: 6 } }}>
+          <Typography variant="h6" sx={{ mb: 6, fontWeight: 600 }}>
+            {isEdit ? 'Edit' : 'Create'} Digital Metal Master Details
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-          <Grid container spacing={10}>
+          <Grid container spacing={6}>
             {/* Left Column */}
-            <Grid item xs={12} md={6}>
-              <Stack spacing={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Stack spacing={4}>
                 <Box>
                   <Typography sx={labelSx}>Metal Name</Typography>
                   <TextField
@@ -320,8 +289,8 @@ const AddDigitalMetalMasterPage = () => {
             </Grid>
 
             {/* Right Column */}
-            <Grid item xs={12} md={6}>
-              <Stack spacing={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Stack spacing={4}>
                 <Box>
                   <Typography sx={labelSx}>Purity</Typography>
                   <TextField
@@ -402,98 +371,26 @@ const AddDigitalMetalMasterPage = () => {
             </Grid>
           </Grid>
 
-          <Box mt={12} display="flex" justifyContent="space-between">
+          <Box mt={8} display="flex" justifyContent="space-between">
             <Button
               variant="outlined"
               onClick={() => router.back()}
-              sx={{ 
-                borderColor: '#6366f1', 
-                color: '#6366f1', 
-                '&:hover': { borderColor: '#4f46e5', backgroundColor: 'rgba(99, 102, 241, 0.04)' },
-                textTransform: 'none', 
-                px: 8 
-              }}
+              color="secondary"
+              sx={{ textTransform: 'none', px: 8 }}
             >
               Back
             </Button>
-            <Stack direction="row" spacing={4}>
-
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={saving}
-                sx={{
-                  backgroundColor: '#7367F0',
-                  '&:hover': { backgroundColor: '#5e54d6' },
-                  textTransform: 'none',
-                  px: 12
-                }}
-              >
-                {saving ? <CircularProgress size={24} color="inherit" /> : isEdit ? 'Update Digital Metal Master' : 'Save Digital Metal Master'}
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={saving}
+              sx={{ textTransform: 'none', px: 12 }}
+            >
+              {saving ? <CircularProgress size={24} color="inherit" /> : isEdit ? 'Update Digital Metal Master' : 'Save Digital Metal Master'}
+            </Button>
           </Box>
         </CardContent>
       </Card>
-
-      {isEdit && (
-        <Card sx={{ mt: 8, borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-          <CardContent sx={{ p: 6 }}>
-            <Typography variant="h6" sx={{ mb: 6, color: '#6366f1', fontWeight: 500 }}>
-              Recent Activity History
-            </Typography>
-            <Divider sx={{ mb: 6 }} />
-            
-            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
-              <Table size="small">
-                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Metal</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Old Markup (B/S)</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>New Markup (B/S)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {logs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                        No history found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>{new Date(log.created_at).toLocaleString('en-GB')}</TableCell>
-                        <TableCell>{log.user?.name || 'System'}</TableCell>
-                        <TableCell>{metalName}</TableCell>
-                        <TableCell>Update</TableCell>
-                        <TableCell>{log.old_rate}</TableCell>
-                        <TableCell sx={{ 
-                          color: parseFloat(log.new_rate) > parseFloat(log.old_rate) 
-                            ? 'success.main' 
-                            : parseFloat(log.new_rate) < parseFloat(log.old_rate) 
-                              ? 'error.main' 
-                              : 'text.primary',
-                          fontWeight: parseFloat(log.new_rate) !== parseFloat(log.old_rate) ? 'bold' : 'normal'
-                        }}>
-                          {log.new_rate}
-                        </TableCell>
-                        <TableCell>{log.old_buy_markup} / {log.old_sell_markup}</TableCell>
-                        <TableCell>{log.new_buy_markup} / {log.new_sell_markup}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
     </Box>
   )
 }

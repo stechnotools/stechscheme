@@ -57,9 +57,17 @@ const CustomerMembershipDetailPage = ({ membershipId }: { membershipId: number }
     void load()
   }, [membershipId])
 
-  if (!membership) {
+  if (loading) {
     return (
-      <Stack sx={{ minHeight: '100vh', p: 4 }}>
+      <Box display="flex" justifyContent="center" alignItems="center" sx={{ minHeight: '100vh', bgcolor: '#f8fafc' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error || !membership) {
+    return (
+      <Stack sx={{ minHeight: '100vh', p: 4, bgcolor: '#f8fafc' }}>
         <Alert severity='error'>{error || 'Membership not found.'}</Alert>
       </Stack>
     )

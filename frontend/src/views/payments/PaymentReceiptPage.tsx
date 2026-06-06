@@ -46,6 +46,61 @@ type PaymentReceipt = {
     installment_no: number
     amount?: string | number | null
     penalty?: string | number | null
+    due_date?: string | null
+  } | null
+  receipt?: {
+    id?: number
+    receipt_no?: string | null
+    total_amount?: string | number | null
+    payment_date?: string | null
+    receipt_date?: string | null
+    customer?: {
+      id?: number
+      name?: string | null
+      mobile: string
+    } | null
+    payments?: Array<{
+      id?: number
+      method?: string | null
+      amount?: string | number | null
+      transaction_id?: string | null
+      payment_date?: string | null
+    }>
+    details?: Array<{
+      id?: number
+      amount?: string | number | null
+      late_fee?: string | number | null
+      remarks?: string | null
+      installment?: {
+        id?: number
+        installment_no: number
+        due_date?: string | null
+        amount?: string | number | null
+        penalty?: string | number | null
+        paid_amount?: string | number | null
+        balance_amount?: string | number | null
+        membership?: {
+          id?: number
+          membership_no?: string | null
+          customer?: {
+            id?: number
+            name?: string | null
+            mobile: string
+          } | null
+          scheme?: {
+            id?: number
+            name: string
+            code: string
+          } | null
+        } | null
+      } | null
+    }>
+    voucher?: {
+      id?: number
+      voucher_no?: string | null
+      voucher_date?: string | null
+      narration?: string | null
+    } | null
   } | null
 }
 
@@ -150,7 +205,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         remainingHeight -= printableHeight
       }
 
-      pdf.save(`payment-receipt-${paymentId}.pdf`)
+      pdf.save(`receipt-${paymentId}.pdf`)
     } catch (err) {
       document.body.classList.remove('pdf-capture')
       setError(err instanceof Error ? err.message : 'Failed to download receipt PDF.')
@@ -197,16 +252,38 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
   }
 
   const payment = payments[0]
-  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
-  const installmentBase = payments.reduce((sum, p) => sum + Number(p.installment?.amount || 0), 0)
-  const installmentPenalty = payments.reduce((sum, p) => sum + Number(p.installment?.penalty || 0), 0)
-  
-  const receiptDate = new Date(payment.payment_date).toLocaleDateString('en-IN')
-  const customerName = payment.membership?.customer?.name || 'Unknown customer'
-  const customerMobile = payment.membership?.customer?.mobile || '-'
+  const receipt = payment.receipt
+  const receiptPayments = receipt?.payments?.length
+    ? receipt.payments
+    : payments.map(p => ({
+        id: p.id,
+        method: p.gateway || 'manual',
+        amount: p.amount,
+        transaction_id: p.transaction_id || null,
+        payment_date: p.payment_date
+      }))
+  const receiptDetails = receipt?.details?.length
+    ? receipt.details
+    : payments.map(p => ({
+        id: p.installment?.id,
+        amount: p.installment?.amount ?? p.amount,
+        late_fee: p.installment?.penalty ?? 0,
+        installment: p.installment
+      }))
+  const totalPaid = Number(receipt?.total_amount ?? receiptPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0))
+  const receiptDate = new Date(receipt?.receipt_date || receipt?.payment_date || payment.payment_date).toLocaleDateString('en-IN')
+  const customerName = receipt?.customer?.name || payment.membership?.customer?.name || 'Unknown customer'
+  const customerMobile = receipt?.customer?.mobile || payment.membership?.customer?.mobile || '-'
   const schemeName = payment.membership?.scheme?.name || '-'
   const schemeCode = payment.membership?.scheme?.code || '-'
-  const gatewayNames = Array.from(new Set(payments.map(p => p.gateway || 'manual'))).join(', ')
+  const installmentNumbers = Array.from(
+    new Set(
+      receiptDetails
+        .map(item => item.installment?.installment_no)
+        .filter((value): value is number => typeof value === 'number')
+    )
+  ).sort((a, b) => a - b)
+  const gatewayNames = Array.from(new Set(receiptPayments.map(p => p.method || 'manual'))).join(', ')
 
   return (
     <Stack spacing={4}>
@@ -244,7 +321,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
           </Stack>
           <Stack spacing={0.5} alignItems='flex-end'>
             <Typography variant='body2' sx={labelSx}>Receipt No</Typography>
-            <Typography fontWeight={600}>#{payment.id}</Typography>
+            <Typography fontWeight={600}>#{receipt?.receipt_no || payment.id}</Typography>
             <Typography variant='body2' sx={labelSx}>Date</Typography>
             <Typography fontWeight={600}>{receiptDate}</Typography>
             <Chip label={payment.status} color={getStatusColor(payment.status)} size='small' sx={{ textTransform: 'capitalize', mt: 0.5 }} />
@@ -266,7 +343,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
             <Typography fontWeight={600}>{schemeName}</Typography>
             <Typography variant='body2' color='text.secondary'>{schemeCode}</Typography>
             <Typography variant='body2' color='text.secondary'>
-              Installment(s): {Array.from(new Set(payments.map(p => p.installment?.installment_no).filter(Boolean))).sort((a, b) => (a as any) - (b as any)).join(', ')}
+              Installment(s): {installmentNumbers.length ? installmentNumbers.join(', ') : '-'}
             </Typography>
           </Stack>
         </Stack>
@@ -278,26 +355,35 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
           <Table size='small' sx={{ '& .MuiTableCell-root': { py: 1.5 } }}>
             <TableHead>
               <TableRow sx={{ bgcolor: alpha(theme.palette.text.primary, 0.04) }}>
-                <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Installment</TableCell>
                 <TableCell align='right' sx={{ fontWeight: 700 }}>Base</TableCell>
                 <TableCell align='right' sx={{ fontWeight: 700 }}>Penalty</TableCell>
                 <TableCell align='right' sx={{ fontWeight: 700 }}>Total</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {payments.map((p, idx) => (
-                <TableRow key={idx}>
+              {receiptDetails.map((detail, idx) => {
+                const installment = detail.installment
+                const lineBase = Number(detail.amount ?? installment?.amount ?? 0)
+                const linePenalty = Number(detail.late_fee ?? installment?.penalty ?? 0)
+                const lineTotal = lineBase + linePenalty
+
+                return (
+                <TableRow key={detail.id ?? idx}>
                   <TableCell>
-                    <Typography fontWeight={600}>{schemeName} installment collection</Typography>
+                    <Typography fontWeight={600}>
+                      {schemeName} installment collection
+                    </Typography>
                     <Typography variant='caption' color='text.secondary'>
-                      Installment #{p.installment?.installment_no || '-'} &middot; {p.gateway}
+                      Installment #{installment?.installment_no || '-'}
+                      {installment?.due_date ? ` • Due ${new Date(installment.due_date).toLocaleDateString('en-IN')}` : ''}
                     </Typography>
                   </TableCell>
-                  <TableCell align='right'>{currencyFormatter.format(Number(p.installment?.amount || 0))}</TableCell>
-                  <TableCell align='right'>{currencyFormatter.format(Number(p.installment?.penalty || 0))}</TableCell>
-                  <TableCell align='right' sx={{ fontWeight: 700 }}>{currencyFormatter.format(Number(p.amount || 0))}</TableCell>
+                  <TableCell align='right'>{currencyFormatter.format(lineBase)}</TableCell>
+                  <TableCell align='right'>{currencyFormatter.format(linePenalty)}</TableCell>
+                  <TableCell align='right' sx={{ fontWeight: 700 }}>{currencyFormatter.format(lineTotal)}</TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </TableContainer>
@@ -328,17 +414,22 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         {/* Payment Method & Reference */}
         <Stack direction='row' justifyContent='space-between' sx={{ mb: 4 }}>
           <Typography variant='body2' color='text.secondary'>
-            Payment Method: <strong>{gatewayNames}</strong>
+            Payment Method: <strong>{gatewayNames || 'N/A'}</strong>
           </Typography>
+          {receipt?.voucher?.voucher_no && (
+            <Typography variant='body2' color='text.secondary'>
+              Voucher No: <strong>{receipt.voucher.voucher_no}</strong>
+            </Typography>
+          )}
           <Typography variant='body2' color='text.secondary'>
-            Reference: <strong>{payment.transaction_id || 'N/A'}</strong>
+            Reference: <strong>{receiptPayments.map(item => item.transaction_id).filter(Boolean).join(', ') || payment.transaction_id || 'N/A'}</strong>
           </Typography>
         </Stack>
 
         {/* Footer */}
         <Stack direction='row' justifyContent='space-between' alignItems='flex-end'>
           <Typography variant='body2' color='text.secondary' sx={{ maxWidth: 320 }}>
-            This receipt confirms the above amount has been recorded against the mapped membership and installment in the jewellery savings system.
+            This receipt confirms the above amount has been recorded against the mapped membership and listed installments in the jewellery savings system.
           </Typography>
           <Stack alignItems='center' spacing={0.5}>
             <Typography variant='body2' color='text.secondary'>Authorized Signatory</Typography>
@@ -380,3 +471,4 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
 }
 
 export default PaymentReceiptPage
+

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from 'react'
 import React from 'react'
@@ -97,7 +97,7 @@ export default function FeedbackDashboardPage() {
       
       {/* KPIs */}
       <Grid container spacing={4} sx={{ mb: 6 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={3} sx={{ borderRadius: 3 }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>Overall NPS</Typography>
@@ -107,7 +107,7 @@ export default function FeedbackDashboardPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={3} sx={{ borderRadius: 3 }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>Avg Rating (out of 5)</Typography>
@@ -115,7 +115,7 @@ export default function FeedbackDashboardPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={3} sx={{ borderRadius: 3 }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>Total Feedback</Typography>
@@ -123,7 +123,7 @@ export default function FeedbackDashboardPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={3} sx={{ borderRadius: 3, bgcolor: stats?.pending_follow_ups > 0 ? 'error.light' : 'success.light', color: 'white' }}>
             <CardContent>
               <Typography sx={{ color: 'white', opacity: 0.8 }} gutterBottom>Pending Follow-ups</Typography>
@@ -135,7 +135,7 @@ export default function FeedbackDashboardPage() {
 
       <Grid container spacing={6}>
         {/* Staff Performance */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="h6" gutterBottom>Staff Performance (Feedback Based)</Typography>
           <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 3 }}>
             <Table>
@@ -168,7 +168,7 @@ export default function FeedbackDashboardPage() {
         </Grid>
 
         {/* Action Center */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="h6" gutterBottom>Action Center (Requires Follow-up)</Typography>
           <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 3 }}>
             <Table>
@@ -208,7 +208,7 @@ export default function FeedbackDashboardPage() {
         </Grid>
 
         {/* All Recent Responses */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Typography variant="h6" gutterBottom>All Recent Responses</Typography>
           <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 3 }}>
             <Table>
@@ -374,3 +374,4 @@ export default function FeedbackDashboardPage() {
     </Box>
   )
 }
+

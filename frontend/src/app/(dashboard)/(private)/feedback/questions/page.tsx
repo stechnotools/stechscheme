@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from 'react'
 import {
@@ -313,7 +313,7 @@ export default function ManageQuestionsPage() {
         <DialogTitle>{isEditing ? 'Edit Question' : 'Add New Question'}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={4}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Question Text"
@@ -322,7 +322,7 @@ export default function ManageQuestionsPage() {
                 required
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 select
                 fullWidth
@@ -337,7 +337,7 @@ export default function ManageQuestionsPage() {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -347,7 +347,7 @@ export default function ManageQuestionsPage() {
                 helperText="Lower numbers appear first"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 select
                 fullWidth
@@ -366,7 +366,7 @@ export default function ManageQuestionsPage() {
 
             {/* Options Management for Multiple Choice */}
             {needsOptions && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" gutterBottom>Choice Options</Typography>
                 <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
                   <Box display="flex" gap={2} mb={2}>
@@ -399,20 +399,20 @@ export default function ManageQuestionsPage() {
             )}
 
             {/* Switches */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControlLabel
                 control={<Switch checked={formData.is_required} onChange={e => setFormData({ ...formData, is_required: e.target.checked })} />}
                 label="Required Question"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControlLabel
                 control={<Switch checked={formData.is_nps_driver} onChange={e => setFormData({ ...formData, is_nps_driver: e.target.checked })} />}
                 label="Is NPS Driver (Overall Score)"
               />
             </Grid>
             {formData.question_type === 'yes_no' && (
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControlLabel
                   control={<Switch checked={formData.ask_reason_if_no} onChange={e => setFormData({ ...formData, ask_reason_if_no: e.target.checked })} />}
                   label="Ask reason if answered No"
@@ -420,14 +420,14 @@ export default function ManageQuestionsPage() {
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle2" gutterBottom>Conditional Logic (Optional)</Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Only show this question if a previous question was answered a certain way.
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 select
                 fullWidth
@@ -443,7 +443,7 @@ export default function ManageQuestionsPage() {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="If Answer Is"
@@ -469,3 +469,4 @@ export default function ManageQuestionsPage() {
     </Box>
   )
 }
+

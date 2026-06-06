@@ -121,7 +121,7 @@ const LoyaltyReportPage = () => {
   return (
     <Grid container spacing={6}>
       {/* Filters & Actions Header */}
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={3}>
@@ -139,7 +139,7 @@ const LoyaltyReportPage = () => {
             </Box>
             <Divider sx={{ my: 4 }} />
             <Grid container spacing={4}>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth
                   size="small"
@@ -155,7 +155,7 @@ const LoyaltyReportPage = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <TextField
                   fullWidth
                   select
@@ -171,13 +171,13 @@ const LoyaltyReportPage = () => {
                   <MenuItem value="West End">West End</MenuItem>
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid size={{ xs: 12, sm: 2 }}>
                 <TextField fullWidth size="small" type="date" label="From Date" InputLabelProps={{ shrink: true }} />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid size={{ xs: 12, sm: 2 }}>
                 <TextField fullWidth size="small" type="date" label="To Date" InputLabelProps={{ shrink: true }} />
               </Grid>
-              <Grid item xs={12} sm={1}>
+              <Grid size={{ xs: 12, sm: 1 }}>
                 <Button fullWidth variant="contained" color="primary" sx={{ height: '100%' }}>
                   <i className="ri-filter-3-line" />
                 </Button>
@@ -189,7 +189,7 @@ const LoyaltyReportPage = () => {
 
       {/* KPI Cards */}
       {kpiData.map((kpi, index) => (
-        <Grid item xs={12} sm={6} md={3} key={index}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -221,7 +221,7 @@ const LoyaltyReportPage = () => {
       ))}
 
       {/* Charts Section */}
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <Card sx={{ height: '100%' }}>
           <CardHeader title="Points Added vs Redeemed (Monthly)" />
           <CardContent sx={{ height: 300 }}>
@@ -240,7 +240,7 @@ const LoyaltyReportPage = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12} md={3}>
+      <Grid size={{ xs: 12, md: 3 }}>
         <Card sx={{ height: '100%' }}>
           <CardHeader title="Points by Branch" />
           <CardContent sx={{ height: 300 }}>
@@ -257,7 +257,7 @@ const LoyaltyReportPage = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12} md={3}>
+      <Grid size={{ xs: 12, md: 3 }}>
         <Card sx={{ height: '100%' }}>
           <CardHeader title="Points Distribution" />
           <CardContent sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -285,7 +285,7 @@ const LoyaltyReportPage = () => {
       </Grid>
 
       {/* Detailed Report Table */}
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card>
           <Box display="flex" justifyContent="space-between" alignItems="center" p={4} pb={0}>
             <CardHeader title="Detailed Points Report" sx={{ p: 0 }} />
@@ -406,3 +406,4 @@ const LoyaltyReportPage = () => {
 }
 
 export default LoyaltyReportPage
+

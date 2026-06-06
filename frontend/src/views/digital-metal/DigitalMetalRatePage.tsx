@@ -160,114 +160,110 @@ const DigitalMetalRatePage = () => {
     }
   }
 
+  const headCellSx = { fontWeight: 700, whiteSpace: 'nowrap' as const }
+
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: '#6366f1' }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
             Digital Metal Rate
           </Typography>
           <Breadcrumbs aria-label="breadcrumb" sx={{ mt: 1 }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6366f1', textDecoration: 'none' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
               <i className="ri-home-fill" />
             </Link>
             <Typography color="text.primary">Digital Metal Rate</Typography>
           </Breadcrumbs>
         </Box>
         <Box display="flex" alignItems="center" gap={4}>
-          <Box sx={{ 
-            backgroundColor: '#f3f4ff', 
-            border: '1px solid #d1d5db', 
-            borderRadius: '4px', 
-            px: 3, 
-            py: 1,
-            color: '#4b5563',
-            fontSize: '0.875rem'
-          }}>
-            <strong>Last Update :</strong> {lastUpdate}
-          </Box>
+          <Chip
+            label={<><strong>Last Update :</strong> {lastUpdate}</>}
+            variant='outlined'
+            color='info'
+            sx={{ fontSize: '0.8rem', py: 0.5 }}
+          />
           <Button 
             variant="outlined" 
             component={Link}
             href="/digital-metal/master"
-            sx={{ 
-                borderColor: '#6366f1', 
-                color: '#6366f1', 
-                textTransform: 'none',
-                px: 6
-            }}
+            color="secondary"
+            sx={{ textTransform: 'none', px: 6 }}
           >
             Cancel
           </Button>
         </Box>
       </Stack>
 
-      <Card sx={{ borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-        <CardContent sx={{ p: 6 }}>
-          <Typography variant="h6" sx={{ mb: 6, color: '#8b5cf6', fontWeight: 500 }}>
+      <Card variant='outlined'>
+        <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+          <Typography variant="h6" sx={{ mb: 4, fontWeight: 600 }}>
             Metal Rate List
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-          <TableContainer sx={{ border: '1px solid #eaeaea', borderRadius: '4px' }}>
+          <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f3f4ff' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Metal Name</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Display Text</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Purity</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Rate from</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Current Customer Buy Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Current Customer Sell Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Customer Buy Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>New Customer Sell Rate</TableCell>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell sx={headCellSx}>Metal Name</TableCell>
+                  <TableCell sx={headCellSx}>Display Text</TableCell>
+                  <TableCell sx={headCellSx}>Purity</TableCell>
+                  <TableCell sx={headCellSx}>Rate from</TableCell>
+                  <TableCell sx={headCellSx}>Updated By</TableCell>
+                  <TableCell sx={headCellSx}>New Customer Buy Rate</TableCell>
+                  <TableCell sx={headCellSx}>New Customer Sell Rate</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
                       <CircularProgress size={40} />
                     </TableCell>
                   </TableRow>
                 ) : rates.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 10, color: 'text.secondary' }}>
                       No metal rates found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   rates.map(rate => (
                     <TableRow key={rate.id} hover>
-                      <TableCell>{rate.metal_name}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, textTransform: 'uppercase' }}>{rate.metal_name}</TableCell>
                       <TableCell>{rate.display_text}</TableCell>
                       <TableCell>{rate.purity}</TableCell>
-                      <TableCell>{rate.rate_from}</TableCell>
-                      <TableCell>{rate.updated_by || '-'}</TableCell>
-                      <TableCell>{rate.current_buy_rate}{rate.unit}</TableCell>
-                      <TableCell>{rate.current_sell_rate}{rate.unit}</TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center">
+                        <Chip
+                          label={rate.rate_from === 'API' ? 'ERP API' : 'Manual'}
+                          size='small'
+                          color={rate.rate_from === 'API' ? 'info' : 'default'}
+                          variant='tonal'
+                        />
+                      </TableCell>
+                      <TableCell>{rate.updated_by || '-'}</TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
                           <TextField
                             size="small"
                             value={rate.new_buy_rate}
                             onChange={(e) => handleRateChange(rate.id, 'new_buy_rate', e.target.value)}
-                            sx={{ width: '100px' }}
+                            sx={{ width: 110 }}
                           />
-                          <Typography sx={{ ml: 1, color: 'text.secondary', fontSize: '0.875rem' }}>{rate.unit}</Typography>
+                          <Typography variant='body2' color='text.secondary'>{rate.unit}</Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center">
+                        <Box display="flex" alignItems="center" gap={1}>
                           <TextField
                             size="small"
                             value={rate.new_sell_rate}
                             onChange={(e) => handleRateChange(rate.id, 'new_sell_rate', e.target.value)}
-                            sx={{ width: '100px' }}
+                            sx={{ width: 110 }}
                           />
-                          <Typography sx={{ ml: 1, color: 'text.secondary', fontSize: '0.875rem' }}>{rate.unit}</Typography>
+                          <Typography variant='body2' color='text.secondary'>{rate.unit}</Typography>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -277,18 +273,12 @@ const DigitalMetalRatePage = () => {
             </Table>
           </TableContainer>
 
-          <Box mt={8} display="flex" justifyContent="flex-end">
+          <Box mt={4} display="flex" justifyContent="flex-end">
             <Button
               variant="contained"
               onClick={handleSave}
               disabled={saving}
-              sx={{
-                backgroundColor: '#7367F0',
-                '&:hover': { backgroundColor: '#5e54d6' },
-                textTransform: 'none',
-                px: 10,
-                py: 2
-              }}
+              sx={{ textTransform: 'none', px: 8, py: 1.5 }}
             >
               {saving ? <CircularProgress size={24} color="inherit" /> : 'Update Rates'}
             </Button>
@@ -297,8 +287,8 @@ const DigitalMetalRatePage = () => {
       </Card>
 
       {/* Activity History at Bottom */}
-      <Card sx={{ mt: 8, borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-        <CardContent sx={{ p: 6 }}>
+      <Card variant='outlined' sx={{ mt: 6 }}>
+        <CardContent sx={{ p: { xs: 3, md: 6 } }}>
           <Stack 
             direction="row" 
             justifyContent="space-between" 
@@ -307,66 +297,57 @@ const DigitalMetalRatePage = () => {
             sx={{ 
               cursor: 'pointer', 
               userSelect: 'none',
-              mb: 6, 
+              mb: 4, 
               '&:hover': { opacity: 0.85 } 
             }}
           >
-            <Stack direction="row" spacing={3} alignItems="center">
-              <Typography variant="h6" sx={{ color: '#6366f1', fontWeight: 500 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="h6" fontWeight={600}>
                 Recent Activity History
               </Typography>
               {logs.length > 0 && (
-                <Paper 
-                  elevation={0} 
-                  sx={{ 
-                    backgroundColor: '#eef2ff', 
-                    color: '#6366f1', 
-                    px: 2.5, 
-                    py: 0.5, 
-                    borderRadius: '12px', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 'bold',
-                    border: '1px solid #e0e7ff'
-                  }}
-                >
-                  {logs.length} Log Entries
-                </Paper>
+                <Chip
+                  label={`${logs.length} Log Entries`}
+                  size='small'
+                  color='secondary'
+                  variant='tonal'
+                />
               )}
             </Stack>
-            <IconButton size="small" sx={{ color: '#6366f1' }}>
+            <IconButton size="small">
               <i className={activityLogExpanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} style={{ fontSize: '1.5rem' }} />
             </IconButton>
           </Stack>
-          <Divider sx={{ mb: 6 }} />
+          <Divider sx={{ mb: 4 }} />
           
           <Collapse in={activityLogExpanded} timeout={300}>
-            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px' }}>
+            <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
               <Table size="small">
-                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Metal</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Old Rate</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>New Rate</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Old Markup (B/S)</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>New Markup (B/S)</TableCell>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell sx={headCellSx}>Date & Time</TableCell>
+                    <TableCell sx={headCellSx}>Updated By</TableCell>
+                    <TableCell sx={headCellSx}>Metal</TableCell>
+                    <TableCell sx={headCellSx}>Action</TableCell>
+                    <TableCell sx={headCellSx}>Old Rate</TableCell>
+                    <TableCell sx={headCellSx}>New Rate</TableCell>
+                    <TableCell sx={headCellSx}>Old Markup (B/S)</TableCell>
+                    <TableCell sx={headCellSx}>New Markup (B/S)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {logs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                         No recent activity found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     logs.map((log) => (
-                      <TableRow key={log.id}>
+                      <TableRow key={log.id} hover>
                         <TableCell>{new Date(log.created_at).toLocaleString('en-GB')}</TableCell>
                         <TableCell>{log.user?.name || 'System'}</TableCell>
-                        <TableCell>{log.digital_metal_master?.metal_name || '-'}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{log.digital_metal_master?.metal_name || '-'}</TableCell>
                         <TableCell>Update</TableCell>
                         <TableCell>{log.old_rate}</TableCell>
                         <TableCell sx={{ 

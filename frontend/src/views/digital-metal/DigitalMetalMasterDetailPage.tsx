@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
@@ -145,26 +145,26 @@ const DigitalMetalMasterDetailPage = () => {
             ) : (
               <Grid container spacing={10}>
                 {/* Left Column */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={8}>
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Metal Name</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.metal_name}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Metal Name</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.metal_name}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Display Text</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.display_text}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Display Text</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.display_text}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Minimum Purchase Amount</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.min_purchase_amount}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Minimum Purchase Amount</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.min_purchase_amount}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Rate Per</Typography></Grid>
-                      <Grid item xs={7}>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Rate Per</Typography></Grid>
+                      <Grid size={{ xs: 7 }}>
                         <Box display="flex" justifyContent="space-between" sx={valueSx}>
                           <Typography>{metal.rate_per}</Typography>
                           <Typography>{metal.rate_per_unit}</Typography>
@@ -173,58 +173,58 @@ const DigitalMetalMasterDetailPage = () => {
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Rate from</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.rate_from}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Rate from</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.rate_from}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Buy Markup Amount</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.buy_markup_amount}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Buy Markup Amount</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.buy_markup_amount}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Is Decimal Allow</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.is_decimal_allow ? 'Yes' : 'No'}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Is Decimal Allow</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.is_decimal_allow ? 'Yes' : 'No'}</Typography></Grid>
                     </Grid>
                   </Stack>
                 </Grid>
 
                 {/* Right Column */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={8}>
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Purity</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.purity}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Purity</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.purity}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Min Purchase Weight</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.min_purchase_weight}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Min Purchase Weight</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.min_purchase_weight}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Max Purchase Amount</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.max_purchase_amount}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Max Purchase Amount</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.max_purchase_amount}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Rate Per Display Text</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.rate_per_display_text}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Rate Per Display Text</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.rate_per_display_text}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>ERP Metal Id</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.erp_metal_id}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>ERP Metal Id</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.erp_metal_id}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Sell Markup Amount</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx}>{metal.sell_markup_amount}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Sell Markup Amount</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.sell_markup_amount}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
-                      <Grid item xs={5}><Typography sx={labelSx}>Status</Typography></Grid>
-                      <Grid item xs={7}><Typography sx={valueSx} style={{ color: metal.status === 'Active' ? '#28a745' : '#6c757d' }}>{metal.status}</Typography></Grid>
+                      <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Status</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx} style={{ color: metal.status === 'Active' ? '#28a745' : '#6c757d' }}>{metal.status}</Typography></Grid>
                     </Grid>
                   </Stack>
                 </Grid>
@@ -375,3 +375,4 @@ const DigitalMetalMasterDetailPage = () => {
 }
 
 export default DigitalMetalMasterDetailPage
+

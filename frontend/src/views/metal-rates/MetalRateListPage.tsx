@@ -52,6 +52,7 @@ type MetalMaster = {
   last_rate_log?: {
     user?: { name: string } | null
     created_at: string
+    new_rate: string
   } | null
 }
 
@@ -515,3 +516,4 @@ const MetalRateListPage = () => {
 }
 
 export default MetalRateListPage
+

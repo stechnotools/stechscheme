@@ -8,6 +8,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
+import CardMedia from '@mui/material/CardMedia'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -35,6 +36,7 @@ type Scheme = {
   grace_days?: number | null
   allow_overdue: boolean
   memberships?: Array<unknown>
+  banner_image_path?: string | null
 }
 
 type SchemesResponse = {
@@ -391,9 +393,30 @@ const SchemeListPage = () => {
                       sx={{
                         height: '100%',
                         borderColor: 'divider',
-                        background: 'linear-gradient(180deg, rgba(245,158,11,0.06) 0%, rgba(255,255,255,0) 100%)'
+                        overflow: 'hidden'
                       }}
                     >
+                      {scheme.banner_image_path ? (
+                        <CardMedia
+                          component='img'
+                          height='160'
+                          image={scheme.banner_image_path}
+                          alt={`${scheme.name} banner`}
+                          sx={{ objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            height: 100,
+                            background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.08) 50%, rgba(251,191,36,0.12) 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <i className='ri-vip-diamond-line' style={{ fontSize: 32, opacity: 0.18 }} />
+                        </Box>
+                      )}
                       <CardContent>
                         <Stack spacing={2.5}>
                           <Stack direction='row' justifyContent='space-between' spacing={2} alignItems='flex-start'>

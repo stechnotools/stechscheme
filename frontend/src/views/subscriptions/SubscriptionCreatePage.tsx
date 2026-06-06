@@ -5,10 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
-import { CustomerAddForm } from '../customers/CustomerAddForm'
+import { CustomerModalForm } from '../customers/CustomerModalForm'
 
 import { usePageLoading } from '@/contexts/pageLoadingContext'
 import Alert from '@mui/material/Alert'
+import Backdrop from '@mui/material/Backdrop'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -43,6 +44,8 @@ type InstallmentItem = {
   paid_date?: string | null
   amount?: string | number
   penalty?: string | number
+  paid_amount?: string | number
+  balance_amount?: string | number
 }
 
 type SchemeOption = {
@@ -54,6 +57,7 @@ type SchemeOption = {
   installment_code?: string | null
   is_closed?: boolean
   no_of_installment_type?: string | null
+  scheme_type?: string | null
 }
 
 type MembershipLookup = {
@@ -257,7 +261,7 @@ const inputSx = {
 const summaryPair = (label: string, value: string | number) => ({ label, value })
 
 const SubscriptionCreatePage = () => {
-  const customerFormRef = useRef<import('../customers/CustomerAddForm').CustomerAddFormHandle>(null)
+  const customerFormRef = useRef<import('../customers/CustomerModalForm').CustomerModalFormHandle>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialMembershipId = searchParams.get('membership_id')
@@ -281,6 +285,7 @@ const SubscriptionCreatePage = () => {
   const [weight, setWeight] = useState('0.000')
   const [isBonus, setIsBonus] = useState(false)
   const [editableInstallmentValue, setEditableInstallmentValue] = useState('')
+  const [payableAmount, setPayableAmount] = useState('')
   const [passbookNumber, setPassbookNumber] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
 
@@ -331,7 +336,7 @@ const SubscriptionCreatePage = () => {
   }, [customerInlineOpen, customerMobile, customerName, lookupCustomer])
 
   const [lastSavedPaymentId, setLastSavedPaymentId] = useState<string | null>(null)
-  const [, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -411,12 +416,26 @@ const SubscriptionCreatePage = () => {
           request<{ success: boolean; data: any[] }>('/digital-metal-masters')
         ])
 
-        const goldMaster = metalResponse.data.find((m: any) => m.metal_name?.toLowerCase().includes('gold'))
+        const activeMetals = (metalResponse.data || []).filter((m: any) => m.status !== 'inactive')
+        const mappedMetalRates = activeMetals.map((m: any) => {
+          const baseRate = m.last_log ? parseFloat(m.last_log.new_rate) : parseFloat(m.rate_per || '0')
+          const buyMarkup = m.last_log ? parseFloat(m.last_log.new_buy_markup) : parseFloat(m.buy_markup_amount || '0')
+          const buyRate = baseRate + buyMarkup
+          return {
+            ...m,
+            rate_per: buyRate
+          }
+        })
+
+        const goldMaster = mappedMetalRates.find((m: any) => m.metal_name?.toLowerCase().includes('gold'))
         if (goldMaster) {
-          setTodayRate(Number(goldMaster.rate_per || 0).toFixed(2))
+          const originalGold = activeMetals.find((m: any) => m.metal_name?.toLowerCase().includes('gold'))
+          const ratePerNum = parseFloat(originalGold?.rate_per || '10')
+          const perGramRate = goldMaster.rate_per / (ratePerNum > 0 ? ratePerNum : 10)
+          setTodayRate(perGramRate.toFixed(2))
         }
 
-        setMetalRates(metalResponse.data.filter((m: any) => m.status !== 'inactive'))
+        setMetalRates(mappedMetalRates)
 
         setSchemes(schemeResponse.data.filter(item => !item.is_closed))
         setSalesmen(userResponse.data)
@@ -463,12 +482,114 @@ const SubscriptionCreatePage = () => {
 
   const isFirstMembershipMode = !activeMembership && Boolean(customerMobile.trim() || accountSearch.trim() || lookupCustomer)
   const isVariableScheme = (selectedScheme?.no_of_installment_type || '').toLowerCase() === 'variable'
+  const isWeightScheme = (selectedScheme?.scheme_type || '').toLowerCase() === 'weight'
+  const activeInstallmentValue = useMemo(() => {
+    if (!activeMembership?.installments?.length) return null
+
+    const sortedInstallments = [...activeMembership.installments].sort((a, b) => a.installment_no - b.installment_no)
+    const installment = sortedInstallments.find(item => !item.paid) || sortedInstallments[0]
+
+    return installment?.amount != null ? Number(installment.amount) : null
+  }, [activeMembership])
+  const currentInstallmentValue = activeMembership
+    ? Number(activeInstallmentValue ?? selectedScheme?.installment_value ?? 0)
+    : Number(editableInstallmentValue || selectedScheme?.installment_value || 0)
+
+  const remainingPayableAmount = useMemo(() => {
+    if (!activeMembership?.installments?.length) return 0
+
+    return activeMembership.installments.reduce((sum, installment) => {
+      const amount = Number(installment.amount || 0)
+      const penalty = Number(installment.penalty || 0)
+      const paidAmount = Number(installment.paid_amount || 0)
+
+      return sum + Math.max(0, amount + penalty - paidAmount)
+    }, 0)
+  }, [activeMembership])
+
+  const payableLimit = activeMembership
+    ? remainingPayableAmount
+    : Number(selectedScheme?.total_installments || 0) * currentInstallmentValue
+
+  const payableAmountError = useMemo(() => {
+    if (!selectedScheme || isWeightScheme || !payableAmount) return null
+
+    const enteredAmount = Number(payableAmount || 0)
+
+    if (enteredAmount > payableLimit) {
+      const label = activeMembership ? 'remaining payable amount' : 'total installment amount'
+      return `Payable amount (${currencyFormatter.format(enteredAmount)}) cannot be greater than the ${label} (${currencyFormatter.format(payableLimit)}).`
+    }
+
+    const installmentVal = currentInstallmentValue
+
+    if (installmentVal > 0 && enteredAmount % installmentVal !== 0) {
+      return `Payable amount (${currencyFormatter.format(enteredAmount)}) must be a multiple of the scheme installment value (${currencyFormatter.format(installmentVal)}).`
+    }
+
+    return null
+  }, [activeMembership, currentInstallmentValue, payableAmount, payableLimit, selectedScheme, isWeightScheme])
 
   useEffect(() => {
     if (selectedScheme) {
-      setEditableInstallmentValue(Number(selectedScheme.installment_value || 0).toFixed(2))
+      const val = Number(activeMembership ? activeInstallmentValue ?? selectedScheme.installment_value ?? 0 : selectedScheme.installment_value || 0).toFixed(2)
+
+      setEditableInstallmentValue(val)
+      setPayableAmount(val)
     }
-  }, [selectedScheme])
+  }, [activeInstallmentValue, activeMembership, selectedScheme])
+
+  // Auto-sync first payment method amount when payableAmount changes
+  useEffect(() => {
+    if (payableAmount && paymentMethods.length > 0) {
+      setPaymentMethods(prev => {
+        if (prev.length === 1) {
+          return [{ ...prev[0], amount: payableAmount }]
+        }
+        return prev
+      })
+    }
+  }, [payableAmount])
+
+  // On-the-fly validation for payment amounts
+  const paymentTotalAllocated = useMemo(
+    () => paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+    [paymentMethods]
+  )
+
+  const paymentAmountErrors = useMemo(() => {
+    const payable = Number(payableAmount || 0)
+    const errors: (string | null)[] = paymentMethods.map(p => {
+      const amt = Number(p.amount || 0)
+      if (payable > 0 && amt > payable) {
+        return `Amount cannot exceed payable amount (${currencyFormatter.format(payable)})`
+      }
+      return null
+    })
+    return errors
+  }, [paymentMethods, payableAmount])
+
+  const paymentTotalError = useMemo(() => {
+    const payable = Number(payableAmount || 0)
+    if (payable > 0 && Math.abs(payable - paymentTotalAllocated) > 0.01) {
+      return `Total allocated (${currencyFormatter.format(paymentTotalAllocated)}) must equal payable amount (${currencyFormatter.format(payable)}). Difference: ${currencyFormatter.format(payable - paymentTotalAllocated)}`
+    }
+    return null
+  }, [payableAmount, paymentTotalAllocated])
+
+  // Auto-calculate weight for weight-based schemes
+  useEffect(() => {
+    if (isWeightScheme) {
+      const rate = Number(todayRate)
+      const amount = Number(payableAmount || 0)
+
+      if (rate > 0 && amount > 0) {
+        setWeight((amount / rate).toFixed(3))
+      } else {
+        setWeight('0.000')
+      }
+    }
+  }, [isWeightScheme, payableAmount, todayRate])
 
   const pendingInstallments = useMemo(() => {
     if (!activeMembership?.installments) return []
@@ -477,9 +598,36 @@ const SubscriptionCreatePage = () => {
   }, [activeMembership])
 
   const tableRows = useMemo(() => {
-    if (activeMembership) return pendingInstallments
+    if (!selectedScheme) return []
 
-    if (!isFirstMembershipMode || !selectedScheme) return []
+    const installmentVal = currentInstallmentValue
+    const enteredAmount = Number(payableAmount || 0)
+
+    if (activeMembership) {
+      if (installmentVal > 0 && enteredAmount > 0) {
+        const numInstallments = Math.max(1, Math.floor(enteredAmount / installmentVal))
+        return pendingInstallments.slice(0, numInstallments)
+      }
+      return pendingInstallments.slice(0, 1)
+    }
+
+    if (!isFirstMembershipMode) return []
+
+    if (installmentVal > 0 && enteredAmount > 0) {
+      const numInstallments = Math.max(1, Math.floor(enteredAmount / installmentVal))
+      const rows = []
+      for (let i = 0; i < numInstallments; i++) {
+        rows.push({
+          id: -(i + 1),
+          installment_no: i + 1,
+          due_date: addMonthsToDate(paymentDate, i),
+          paid: false,
+          amount: installmentVal,
+          penalty: 0
+        })
+      }
+      return rows
+    }
 
     return [
       {
@@ -487,11 +635,11 @@ const SubscriptionCreatePage = () => {
         installment_no: 1,
         due_date: paymentDate,
         paid: false,
-        amount: Number(editableInstallmentValue || selectedScheme.installment_value || 0),
+        amount: Number(payableAmount || editableInstallmentValue || selectedScheme.installment_value || 0),
         penalty: 0
       }
     ]
-  }, [activeMembership, editableInstallmentValue, isFirstMembershipMode, paymentDate, pendingInstallments, selectedScheme])
+  }, [activeMembership, currentInstallmentValue, editableInstallmentValue, isFirstMembershipMode, payableAmount, paymentDate, pendingInstallments, selectedScheme])
 
   const selectedRows = useMemo(() => tableRows.filter(item => selectedInstallmentIds.includes(item.id)), [selectedInstallmentIds, tableRows])
 
@@ -506,12 +654,29 @@ const SubscriptionCreatePage = () => {
     }
   }, [selectedRows])
 
+  useEffect(() => {
+    if (tableRows.length > 0) {
+      const ids = tableRows.map(item => item.id)
+      const isDifferent =
+        ids.length !== selectedInstallmentIds.length ||
+        !ids.every(id => selectedInstallmentIds.includes(id))
+
+      if (isDifferent) {
+        setSelectedInstallmentIds(ids)
+      }
+    } else {
+      if (selectedInstallmentIds.length > 0) {
+        setSelectedInstallmentIds([])
+      }
+    }
+  }, [tableRows, selectedInstallmentIds])
+
   const paidInstallments = activeMembership?.installments?.filter(item => item.paid).length || 0
   const totalInstallments = activeMembership?.installments?.length || Number(selectedScheme?.total_installments || 0)
   const firstPendingInstallment = pendingInstallments[0] || null
   const maturityDate = activeMembership?.maturity_date || (selectedScheme?.total_installments ? addMonthsToDate(paymentDate, Math.max(Number(selectedScheme.total_installments) - 1, 0)) : '')
   const installmentCode = selectedScheme?.installment_code || selectedScheme?.code || ''
-  const lotNo = activeMembership?.id || 0
+  const lotNo = activeMembership ? (paidInstallments + 1) : 1
 
   const ticketSearchResults = useMemo(() => {
     const query = ticketSearchText.trim().toLowerCase()
@@ -682,18 +847,13 @@ const SubscriptionCreatePage = () => {
     setCustomerInlineOpen(false)
     setCustomerInlineSearch(customer.name || customer.mobile || '')
     setLoading(true)
+    setError(null)
+    setSuccess(null)
+    setLastSavedPaymentId(null)
 
     try {
       const full = await request<CustomerDetailResponse>(`/customers/${customer.id}`)
       const data = full.data
-
-      setLookupCustomer(data)
-      setCustomerName(data.name || '')
-      setCustomerMobile(data.mobile || '')
-      setCustomerEmail(data.email || '')
-      setCustomerInlineSearch(data.name || data.mobile || '')
-      setAccountSearch(data.mobile || '')
-
       const activeMembershipSummaries = (data.memberships || []).filter(item => item.status === 'active')
 
       if (activeMembershipSummaries.length) {
@@ -701,13 +861,19 @@ const SubscriptionCreatePage = () => {
         const selected = memberships.sort((a, b) => a.id - b.id)[0]
         await applyMembershipSelection(selected)
       } else {
+        setLookupCustomer(data)
+        setCustomerName(data.name || '')
+        setCustomerMobile(data.mobile || '')
+        setCustomerEmail(data.email || '')
+        setCustomerInlineSearch(data.name || data.mobile || '')
+        setAccountSearch(data.mobile || '')
         setCustomerMemberships([])
         setSelectedMembershipId('')
         setSelectedSchemeId('')
         setSelectedInstallmentIds([])
       }
-    } catch {
-      //
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load customer.')
     } finally {
       setLoading(false)
     }
@@ -762,9 +928,23 @@ const SubscriptionCreatePage = () => {
     setSuccess(null)
 
     try {
-      const allocatedTotal = paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0)
-      if (Math.abs(totals.total - allocatedTotal) > 0.01) {
-        throw new Error(`Total allocated (${allocatedTotal.toFixed(2)}) must match total due (${totals.total.toFixed(2)}).`)
+      if (payableAmountError) {
+        throw new Error(payableAmountError)
+      }
+
+      if (activeMembership && payableAmount && Number(payableAmount) > remainingPayableAmount + 0.01) {
+        throw new Error(
+          `Payable amount cannot exceed the remaining balance of ${currencyFormatter.format(remainingPayableAmount)}.`
+        )
+      }
+
+      const rowError = paymentAmountErrors.find(e => e !== null)
+      if (rowError) {
+        throw new Error(rowError)
+      }
+
+      if (paymentTotalError) {
+        throw new Error(paymentTotalError)
       }
 
       if (!activeMembership) {
@@ -782,6 +962,7 @@ const SubscriptionCreatePage = () => {
               status: 'active'
             },
             scheme_id: selectedScheme.id,
+            installment_value: Number(editableInstallmentValue || selectedScheme.installment_value || 0),
             start_date: paymentDate,
             payment: {
               amount: paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0),
@@ -829,12 +1010,11 @@ const SubscriptionCreatePage = () => {
 
         const refreshedMembership = await loadMembership(activeMembership.id)
         await applyMembershipSelection(refreshedMembership)
-        const paymentIds = response.data.map((p: any) => p.id).join(',')
-        setLastSavedPaymentId(paymentIds || null)
+        setLastSavedPaymentId(response.data[0]?.id?.toString() || null)
         setSuccess(response.message || 'Installment saved successfully.')
       }
 
-      setTransactionId('')
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save entry.')
     } finally {
@@ -866,6 +1046,17 @@ const SubscriptionCreatePage = () => {
 
   return (
     <>
+      <Backdrop
+        open={loading}
+        sx={{
+          zIndex: theme => theme.zIndex.modal + 1,
+          color: 'common.white',
+          bgcolor: 'rgba(15, 23, 42, 0.48)'
+        }}
+      >
+        <CircularProgress color='inherit' />
+      </Backdrop>
+
       <Grid container spacing={6}>
         <Grid size={{ xs: 12 }}>
           <Card
@@ -910,8 +1101,8 @@ const SubscriptionCreatePage = () => {
 
         <Grid size={{ xs: 12, lg: 8.5 }}>
           <Stack spacing={4}>
-            <Card sx={cardSx}>
-              <CardContent sx={{ p: 3 }}>
+            <Card sx={{ ...cardSx, overflow: 'visible' }}>
+              <CardContent sx={{ p: 3, overflow: 'visible' }}>
                 <Stack spacing={3}>
                   <div>
                     <Typography variant='h6'>Customer</Typography>
@@ -924,7 +1115,7 @@ const SubscriptionCreatePage = () => {
                     <Grid size={{ xs: 12 }}>
                       <Stack spacing={1.5}>
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems='center'>
-                          <Box ref={customerDropdownRef as React.Ref<HTMLDivElement>} sx={{ flex: 1 }}>
+                          <Box ref={customerDropdownRef as React.Ref<HTMLDivElement>} sx={{ flex: 1, position: 'relative' }}>
                             <TextField
                               fullWidth
                               placeholder='Search customer name'
@@ -942,7 +1133,21 @@ const SubscriptionCreatePage = () => {
                                   <InputAdornment position='end'>
                                     <Box
                                       onClick={() => {
-                                        setCustomerInlineOpen(current => !current)
+                                        if (lookupCustomer) {
+                                          setLookupCustomer(null)
+                                          setCustomerInlineSearch('')
+                                          setCustomerInlineResults([])
+                                          setCustomerInlineOpen(false)
+                                          setCustomerName('')
+                                          setCustomerMobile('')
+                                          setCustomerEmail('')
+                                          setCustomerMemberships([])
+                                          setSelectedMembershipId('')
+                                          setSelectedSchemeId('')
+                                          setSelectedInstallmentIds([])
+                                        } else {
+                                          setCustomerInlineOpen(current => !current)
+                                        }
                                       }}
                                       sx={{
                                         display: 'flex',
@@ -952,19 +1157,25 @@ const SubscriptionCreatePage = () => {
                                         pr: 0.5
                                       }}
                                     >
-                                      {customerInlineSearching ? <CircularProgress size={18} /> : <i className='ri-arrow-down-s-line' />}
+                                      {customerInlineSearching ? (
+                                        <CircularProgress size={18} />
+                                      ) : lookupCustomer ? (
+                                        <i className='ri-close-line' style={{ fontSize: 20 }} />
+                                      ) : (
+                                        <i className='ri-arrow-down-s-line' />
+                                      )}
                                     </Box>
                                   </InputAdornment>
                                 )
                               }}
                             />
 
-                            {customerInlineOpen && (customerInlineSearch.trim().length > 0 || customerInlineResults.length > 0) ? (
+                            {customerInlineOpen && (customerInlineSearch.trim().length > 0 || customerInlineResults.length > 0) && (!lookupCustomer || (customerInlineSearch !== lookupCustomer.name && customerInlineSearch !== lookupCustomer.mobile)) ? (
                               <Paper
                                 elevation={0}
                                 sx={{
                                   position: 'absolute',
-                                  zIndex: 10,
+                                  zIndex: 9999,
                                   mt: 0.5,
                                   width: '100%',
                                   borderRadius: 0,
@@ -1099,27 +1310,55 @@ const SubscriptionCreatePage = () => {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
-                        label='Payable Amount'
-                        value={totals.amount.toFixed(2)}
-                        InputProps={{ readOnly: true }}
+                        label='Scheme Value'
+                        type='number'
+                        disabled={!selectedScheme}
+                        value={activeMembership ? currentInstallmentValue.toFixed(2) : editableInstallmentValue}
+                        onChange={!activeMembership ? (event => {
+                          setEditableInstallmentValue(event.target.value)
+                          setPayableAmount(event.target.value)
+                        }) : undefined}
+                        InputProps={{
+                          readOnly: Boolean(activeMembership),
+                          startAdornment: <InputAdornment position='start'>₹</InputAdornment>
+                        }}
+                        helperText={activeMembership ? 'Locked to scheme plan for repayment' : 'Editable for first subscription'}
                         sx={inputSx}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
-                        label='Scheme Value'
-                        value={activeMembership ? Number(selectedScheme?.installment_value || 0).toFixed(2) : editableInstallmentValue}
-                        onChange={isVariableScheme || !activeMembership ? (event => setEditableInstallmentValue(event.target.value)) : undefined}
-                        InputProps={{ readOnly: isVariableScheme || !activeMembership ? false : true }}
+                        label='Payable Amount'
+                        type='number'
+                        disabled={!selectedScheme}
+                        value={payableAmount}
+                        onChange={event => setPayableAmount(event.target.value)}
+                        error={Boolean(payableAmountError)}
+                        helperText={payableAmountError || 'Amount to be collected from customer'}
+                        InputProps={{
+                          startAdornment: <InputAdornment position='start'>₹</InputAdornment>
+                        }}
                         sx={inputSx}
                       />
                     </Grid>
+                    {isWeightScheme && (
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label='Weight (gm)'
+                          value={weight}
+                          InputProps={{
+                            readOnly: true,
+                            endAdornment: <InputAdornment position='end'>gm</InputAdornment>
+                          }}
+                          helperText={`Auto-calculated: ₹${payableAmount || '0'} ÷ ₹${todayRate}/gm`}
+                          sx={inputSx}
+                        />
+                      </Grid>
+                    )}
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField fullWidth label='Weight' value={weight} onChange={event => setWeight(event.target.value)} sx={inputSx} />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField fullWidth label='Late Fee' value={totals.lateFee.toFixed(2)} sx={inputSx} />
+                      <TextField fullWidth label='Late Fee' value={totals.lateFee.toFixed(2)} InputProps={{ readOnly: true }} sx={inputSx} />
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
                       <TextField select fullWidth label='Salesman' value={salesman} onChange={event => setSalesman(event.target.value)} sx={inputSx}>
@@ -1167,12 +1406,18 @@ const SubscriptionCreatePage = () => {
                           <TextField
                             fullWidth
                             label='Amount'
+                            type='number'
                             value={method.amount}
-                            placeholder={index === 0 ? totals.total.toFixed(2) : '0.00'}
+                            placeholder={index === 0 ? Number(payableAmount || 0).toFixed(2) : '0.00'}
                             onChange={event => {
                               const newMethods = [...paymentMethods]
                               newMethods[index].amount = event.target.value
                               setPaymentMethods(newMethods)
+                            }}
+                            error={Boolean(paymentAmountErrors[index])}
+                            helperText={paymentAmountErrors[index] || ''}
+                            InputProps={{
+                              startAdornment: <InputAdornment position='start'>₹</InputAdornment>
                             }}
                             sx={inputSx}
                           />
@@ -1209,7 +1454,7 @@ const SubscriptionCreatePage = () => {
                                 variant='outlined'
                                 onClick={() => {
                                   const currentTotal = paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0)
-                                  const remaining = Math.max(0, totals.total - currentTotal)
+                                  const remaining = Math.max(0, Number(payableAmount || 0) - currentTotal)
                                   setPaymentMethods([...paymentMethods, { gateway: 'cash', amount: remaining > 0 ? remaining.toFixed(2) : '', transaction_id: '' }])
                                 }}
                                 sx={{ minWidth: 44, height: 56 }}
@@ -1222,13 +1467,13 @@ const SubscriptionCreatePage = () => {
                       </Grid>
                     ))}
 
-                    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant='subtitle2' color='text.secondary'>
-                        Total Allocated: {currencyFormatter.format(paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0))}
+                    <Box sx={{ p: 2, bgcolor: paymentTotalError ? 'error.main' : 'action.hover', borderRadius: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: paymentTotalError ? 'error.contrastText' : 'text.secondary' }}>
+                      <Typography variant='subtitle2' color='inherit'>
+                        Total Allocated: {currencyFormatter.format(paymentTotalAllocated)} / Payable: {currencyFormatter.format(Number(payableAmount || 0))}
                       </Typography>
-                      {Math.abs(totals.total - paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0)) > 0.01 && (
-                        <Typography variant='caption' color='error.main' fontWeight={700}>
-                          Difference: {currencyFormatter.format(totals.total - paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0))}
+                      {paymentTotalError && (
+                        <Typography variant='caption' color='inherit' fontWeight={700}>
+                          {paymentTotalError}
                         </Typography>
                       )}
                     </Box>
@@ -1239,61 +1484,125 @@ const SubscriptionCreatePage = () => {
 
             <Card sx={cardSx}>
               <CardContent sx={{ p: 3 }}>
-                <Stack spacing={3}>
+                <Stack spacing={3.5}>
                   <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' spacing={2}>
                     <div>
                       <Typography variant='h6'>Table List</Typography>
                       <Typography color='text.secondary'>
-                        Receipt-wise entry selection for first subscription or pending installments.
+                        Receipt-wise entry selection and metadata summary.
                       </Typography>
                     </div>
-                    <Stack direction='row' spacing={1}>
-                      <Button variant='outlined' onClick={() => setSelectedInstallmentIds(tableRows[0] ? [tableRows[0].id] : [])} disabled={!tableRows.length}>
-                        First
-                      </Button>
-                      <Button variant='outlined' onClick={() => setSelectedInstallmentIds(tableRows.map(item => item.id))} disabled={!tableRows.length}>
-                        All
-                      </Button>
-                    </Stack>
                   </Stack>
 
-                  <TableContainer sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                  <Box
+                    sx={{
+                      p: 3.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                      gap: 4,
+                      position: 'relative',
+                      bgcolor: 'background.paper'
+                    }}
+                  >
+                    {/* Vertical line divider for md and above */}
+                    <Box
+                      sx={{
+                        display: { xs: 'none', md: 'block' },
+                        position: 'absolute',
+                        left: '50%',
+                        top: '12%',
+                        bottom: '12%',
+                        width: '1px',
+                        bgcolor: 'divider'
+                      }}
+                    />
+                    
+                    <Stack spacing={2.5}>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>Receipt NO :</Typography>
+                        <Typography fontWeight={600}>
+                          {activeMembership?.membership_no || (lastSavedPaymentId ? `REC-${lastSavedPaymentId}` : 'NEW')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>Receipt Date :</Typography>
+                        <Typography fontWeight={600}>
+                          {formatDate(paymentDate)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>Sales Man :</Typography>
+                        <Typography fontWeight={600}>
+                          {salesman || 'None'}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Stack spacing={2.5} sx={{ pl: { md: 4 } }}>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>Total Amount :</Typography>
+                        <Typography fontWeight={600}>
+                          {currencyFormatter.format(totals.total)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>No of Installment :</Typography>
+                        <Typography fontWeight={600}>
+                          {selectedRows.length}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography color='text.secondary' fontWeight={500}>Late Fee :</Typography>
+                        <Typography fontWeight={600}>
+                          {currencyFormatter.format(totals.lateFee)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                  <Typography variant='h6' sx={{ mt: 1 }}>Installment Details</Typography>
+
+                  <TableContainer sx={{ borderRadius: 0, border: '1px solid', borderColor: 'divider' }}>
                     <Table>
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'action.hover' }}>
-                          <TableCell />
-                          <TableCell>Receipt No</TableCell>
-                          <TableCell>Receipt Date</TableCell>
-                          <TableCell>Gold Rate</TableCell>
-                          <TableCell>Total Amount</TableCell>
-                          <TableCell>Late Fee</TableCell>
-                          <TableCell>Total Weight</TableCell>
-                          <TableCell>Remarks</TableCell>
+                          <TableCell>Installment NO</TableCell>
+                          <TableCell>Installment Amount</TableCell>
+                          <TableCell>Date</TableCell>
+                          {isWeightScheme && <TableCell>Weight (gm)</TableCell>}
+                          <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {tableRows.length ? (
                           tableRows.map(item => {
-                            const isSelected = selectedInstallmentIds.includes(item.id)
-
                             return (
-                              <TableRow key={item.id} hover selected={isSelected} sx={{ cursor: 'pointer' }} onClick={() => handleToggleRow(item.id)}>
-                                <TableCell padding='checkbox'>
-                                  <Checkbox checked={isSelected} />
+                              <TableRow key={item.id} hover>
+                                <TableCell>{item.installment_no}</TableCell>
+                                <TableCell>{(Number(item.amount || 0)).toFixed(2)}</TableCell>
+                                <TableCell>{formatDate(item.due_date)}</TableCell>
+                                {isWeightScheme && (
+                                  <TableCell>
+                                    {(Number(item.amount || 0) / Number(todayRate || 1)).toFixed(3)}
+                                  </TableCell>
+                                )}
+                                <TableCell>
+                                  <Chip 
+                                    label={item.paid ? 'Paid' : 'Pending'} 
+                                    size='small' 
+                                    color={item.paid ? 'success' : 'warning'} 
+                                    variant='outlined'
+                                  />
                                 </TableCell>
-                                <TableCell>{activeMembership?.membership_no || 'NEW'}</TableCell>
-                                <TableCell>{formatDate(paymentDate)}</TableCell>
-                                <TableCell>{todayRate}</TableCell>
-                                <TableCell>{(Number(item.amount || 0) + Number(item.penalty || 0)).toFixed(2)}</TableCell>
-                                <TableCell>{Number(item.penalty || 0).toFixed(2)}</TableCell>
-                                <TableCell>{weight}</TableCell>
-                                <TableCell>{remark || (activeMembership ? `Installment ${item.installment_no}` : 'First subscription entry')}</TableCell>
                               </TableRow>
                             )
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={8} sx={{ py: 8, textAlign: 'center', color: 'text.secondary' }}>
+                            <TableCell colSpan={isWeightScheme ? 5 : 4} sx={{ py: 8, textAlign: 'center', color: 'text.secondary' }}>
                               Search by customer to start entry.
                             </TableCell>
                           </TableRow>
@@ -1577,9 +1886,8 @@ const SubscriptionCreatePage = () => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
-          <CustomerAddForm 
+          <CustomerModalForm 
             ref={customerFormRef}
-            embedded 
             onSuccess={(id) => {
               setCustomerFormModalOpen(false)
               setSuccess('Customer created successfully.')

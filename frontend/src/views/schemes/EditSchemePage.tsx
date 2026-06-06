@@ -981,6 +981,7 @@ const EditSchemePage = () => {
                           </Stack>
                         </Box>
                       </Grid>
+                    </Grid>
                     </Box>
                   </Collapse>
                 </Box>

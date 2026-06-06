@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
@@ -129,7 +129,7 @@ const LoyaltyCategoryWiseReportPage = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card
           sx={{
             color: 'common.white',
@@ -161,7 +161,7 @@ const LoyaltyCategoryWiseReportPage = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card variant='outlined'>
           <CardContent>
             <Stack spacing={6}>
@@ -388,3 +388,4 @@ const LoyaltyCategoryWiseReportPage = () => {
 }
 
 export default LoyaltyCategoryWiseReportPage
+

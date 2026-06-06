@@ -963,7 +963,7 @@ const SchemeOpeningEntryPage = () => {
               { label: 'Installment Amount', index: 13 },
               { label: 'Number of Months', index: 14 }
             ].map((col) => (
-              <Grid item xs={12} sm={4} key={col.index}>
+              <Grid size={{ xs: 12, sm: 4 }} key={col.index}>
                 <TextField
                   fullWidth
                   size="small"
@@ -997,48 +997,48 @@ const SchemeOpeningEntryPage = () => {
           {selectedRow && (
             <Grid container spacing={4}>
               {/* General & Customer Details */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Customer & General Details
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Account Name"
                   value={selectedRow.account_name || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Mobile No"
                   value={selectedRow.mobile_no || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="City"
                   value={selectedRow.city || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Opening Date (DD-MM-YYYY)"
                   value={selectedRow.opening_date ? new Date(selectedRow.opening_date).toLocaleDateString('en-GB') : ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Salesman"
                   value={selectedRow.salesman || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Branch Name"
                   value={selectedRow.branch_name || ''}
@@ -1047,20 +1047,20 @@ const SchemeOpeningEntryPage = () => {
               </Grid>
 
               {/* Scheme & Transaction Configuration */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Scheme & Transaction Configuration
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Scheme Name"
                   value={selectedRow.scheme_name || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small" disabled>
                   <InputLabel>Scheme Type</InputLabel>
                   <Select
@@ -1073,7 +1073,7 @@ const SchemeOpeningEntryPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small" disabled>
                   <InputLabel>Deposit Or Redeem</InputLabel>
                   <Select
@@ -1086,35 +1086,35 @@ const SchemeOpeningEntryPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Total Amount"
                   value={selectedRow.total_amount || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Installment Amount"
                   value={selectedRow.installment_amount || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Number of Months"
                   value={selectedRow.number_of_months || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Total Weight (g)"
                   value={selectedRow.total_weight || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Ticket No"
                   value={selectedRow.ticket_no || ''}
@@ -1123,20 +1123,20 @@ const SchemeOpeningEntryPage = () => {
               </Grid>
 
               {/* Additional References */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Additional References
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Lot No"
                   value={selectedRow.lot_no || ''}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={8}>
+              <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField
                   fullWidth size="small" label="Narration"
                   value={selectedRow.narration || ''}
@@ -1171,13 +1171,13 @@ const SchemeOpeningEntryPage = () => {
           {selectedRow && (
             <Grid container spacing={4}>
               {/* General & Customer Details */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Customer & General Details
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Autocomplete
                   size="small"
                   options={customers}
@@ -1195,28 +1195,28 @@ const SchemeOpeningEntryPage = () => {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Mobile No"
                   value={selectedRow.mobile_no || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, mobile_no: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="City"
                   value={selectedRow.city || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, city: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Opening Date (DD-MM-YYYY)"
                   value={selectedRow.opening_date || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, opening_date: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Salesman</InputLabel>
                   <Select
@@ -1231,7 +1231,7 @@ const SchemeOpeningEntryPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Branch Name</InputLabel>
                   <Select
@@ -1248,20 +1248,20 @@ const SchemeOpeningEntryPage = () => {
               </Grid>
 
               {/* Scheme & Transaction Configuration */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Scheme & Transaction Configuration
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Scheme Name"
                   value={selectedRow.scheme_name || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, scheme_name: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Scheme Type</InputLabel>
                   <Select
@@ -1274,7 +1274,7 @@ const SchemeOpeningEntryPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Deposit Or Redeem</InputLabel>
                   <Select
@@ -1287,35 +1287,35 @@ const SchemeOpeningEntryPage = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Total Amount" type="number"
                   value={selectedRow.total_amount || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, total_amount: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Installment Amount" type="number"
                   value={selectedRow.installment_amount || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, installment_amount: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Number of Months" type="number"
                   value={selectedRow.number_of_months || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, number_of_months: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Total Weight (g)" type="number"
                   value={selectedRow.total_weight || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, total_weight: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Ticket No"
                   value={selectedRow.ticket_no || ''}
@@ -1324,20 +1324,20 @@ const SchemeOpeningEntryPage = () => {
               </Grid>
 
               {/* Additional References */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Additional References
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth size="small" label="Lot No"
                   value={selectedRow.lot_no || ''}
                   onChange={(e) => setSelectedRow({ ...selectedRow, lot_no: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={8}>
+              <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField
                   fullWidth size="small" label="Narration"
                   value={selectedRow.narration || ''}
@@ -1361,13 +1361,13 @@ const SchemeOpeningEntryPage = () => {
         <DialogContent sx={{ p: 6 }}>
           <Grid container spacing={4}>
             {/* General & Customer Details */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Customer & General Details
               </Typography>
               <Divider sx={{ mb: 2 }} />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Autocomplete
                 size="small"
                 options={customers}
@@ -1386,28 +1386,28 @@ const SchemeOpeningEntryPage = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Mobile No" required
                 value={manualData.mobile_no}
                 onChange={(e) => setManualData({ ...manualData, mobile_no: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="City"
                 value={manualData.city}
                 onChange={(e) => setManualData({ ...manualData, city: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Opening Date (DD-MM-YYYY)" placeholder="12-05-2026"
                 value={manualData.opening_date}
                 onChange={(e) => setManualData({ ...manualData, opening_date: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Salesman (Staff List)</InputLabel>
                 <Select
@@ -1422,7 +1422,7 @@ const SchemeOpeningEntryPage = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Branch Name (Branch Master)</InputLabel>
                 <Select
@@ -1439,20 +1439,20 @@ const SchemeOpeningEntryPage = () => {
             </Grid>
 
             {/* Scheme & Transaction Configuration */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
+            <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Scheme & Transaction Configuration
               </Typography>
               <Divider sx={{ mb: 2 }} />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Scheme Name" required
                 value={manualData.scheme_name}
                 onChange={(e) => setManualData({ ...manualData, scheme_name: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Scheme Type</InputLabel>
                 <Select
@@ -1465,7 +1465,7 @@ const SchemeOpeningEntryPage = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Deposit Or Redeem</InputLabel>
                 <Select
@@ -1478,35 +1478,35 @@ const SchemeOpeningEntryPage = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Total Amount" type="number"
                 value={manualData.total_amount}
                 onChange={(e) => setManualData({ ...manualData, total_amount: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Installment Amount" type="number"
                 value={manualData.installment_amount}
                 onChange={(e) => setManualData({ ...manualData, installment_amount: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Number of Months" type="number"
                 value={manualData.number_of_months}
                 onChange={(e) => setManualData({ ...manualData, number_of_months: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Total Weight (g)" type="number"
                 value={manualData.total_weight}
                 onChange={(e) => setManualData({ ...manualData, total_weight: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Ticket No"
                 value={manualData.ticket_no}
@@ -1515,20 +1515,20 @@ const SchemeOpeningEntryPage = () => {
             </Grid>
 
             {/* Additional References */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
+            <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Additional References
               </Typography>
               <Divider sx={{ mb: 2 }} />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 fullWidth size="small" label="Lot No"
                 value={manualData.lot_no}
                 onChange={(e) => setManualData({ ...manualData, lot_no: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={8}>
+            <Grid size={{ xs: 12, sm: 8 }}>
               <TextField
                 fullWidth size="small" label="Narration"
                 value={manualData.narration}
@@ -1562,3 +1562,4 @@ const SchemeOpeningEntryPage = () => {
 }
 
 export default SchemeOpeningEntryPage
+

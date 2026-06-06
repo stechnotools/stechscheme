@@ -298,8 +298,8 @@ export default function FeedbackCapturePage() {
               value={answers[q.id] || ''} 
               onChange={e => handleAnswerChange(q.id, e.target.value)}
             >
-              <FormControlLabel value="Yes" control={<Radio size="large" />} label="Yes" />
-              <FormControlLabel value="No" control={<Radio size="large" />} label="No" />
+              <FormControlLabel value="Yes" control={<Radio size="medium" />} label="Yes" />
+              <FormControlLabel value="No" control={<Radio size="medium" />} label="No" />
             </RadioGroup>
             {q.ask_reason_if_no && answers[q.id] === 'No' && (
               <Box mt={2}>

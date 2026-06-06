@@ -159,7 +159,7 @@ const GeneralSetupForm = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center">
+      <Grid size={{ xs: 12 }} display="flex" justifyContent="space-between" alignItems="center">
         <Box>
           <Typography variant='h4' sx={{ mb: 1, fontWeight: 600 }}>General setup</Typography>
           <Typography color='text.secondary'>Manage core application preferences used across branches and operations.</Typography>
@@ -176,7 +176,7 @@ const GeneralSetupForm = () => {
         </Button>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
           <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} aria-label="settings tabs">
             <Tab label="GST & KYC Setup" sx={{ fontWeight: 600 }} />
@@ -186,7 +186,7 @@ const GeneralSetupForm = () => {
         </Box>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         {error && <Alert severity='error' sx={{ mb: 4, borderRadius: '8px' }}>{error}</Alert>}
         {success && <Alert severity='success' sx={{ mb: 4, borderRadius: '8px' }}>{success}</Alert>}
       </Grid>
@@ -194,7 +194,7 @@ const GeneralSetupForm = () => {
       {/* Tab 1: GST & KYC */}
       {activeTab === 0 && (
         <>
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
               <CardContent sx={{ p: 6 }}>
                 <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
@@ -204,17 +204,17 @@ const GeneralSetupForm = () => {
                   <Typography variant='h6' sx={{ fontWeight: 600 }}>Digi Gold GST Setup</Typography>
                 </Box>
                 <Grid container spacing={5}>
-                  <Grid item xs={12} sm={6}><TextField fullWidth label="GST % 1" value={form.gst_rate_1 ?? ''} onChange={e => setForm({ ...form, gst_rate_1: e.target.value })} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField fullWidth label="GST % 2" value={form.gst_rate_2 ?? ''} onChange={e => setForm({ ...form, gst_rate_2: e.target.value })} /></Grid>
-                  <Grid item xs={12}><TextField fullWidth label="GST Display Text For Invoice" value={form.gst_invoice_text ?? ''} onChange={e => setForm({ ...form, gst_invoice_text: e.target.value })} /></Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="GST % 1" value={form.gst_rate_1 ?? ''} onChange={e => setForm({ ...form, gst_rate_1: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="GST % 2" value={form.gst_rate_2 ?? ''} onChange={e => setForm({ ...form, gst_rate_2: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12 }}><TextField fullWidth label="GST Display Text For Invoice" value={form.gst_invoice_text ?? ''} onChange={e => setForm({ ...form, gst_invoice_text: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField select fullWidth label="GST Rounding By" value={form.gst_rounding ?? ''} onChange={e => setForm({ ...form, gst_rounding: e.target.value })}>
                       <MenuItem value='Regular (round)'>Regular (round)</MenuItem>
                       <MenuItem value='Up'>Up</MenuItem>
                       <MenuItem value='Down'>Down</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl component="fieldset" fullWidth sx={{ pt: 1 }}>
                       <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>Required IGST For Inter State</Typography>
                       <RadioGroup row value={form.igst_required ?? 'No'} onChange={e => setForm({ ...form, igst_required: e.target.value })}>
@@ -223,19 +223,19 @@ const GeneralSetupForm = () => {
                       </RadioGroup>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12} sm={6}><TextField fullWidth label="IGST Percentage" value={form.igst_rate ?? ''} onChange={e => setForm({ ...form, igst_rate: e.target.value })} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField fullWidth label="IGST Display Text" value={form.igst_invoice_text ?? ''} onChange={e => setForm({ ...form, igst_invoice_text: e.target.value })} /></Grid>
-                  <Grid item xs={12}><Divider sx={{ my: 2 }}><Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>HSN Codes</Typography></Divider></Grid>
-                  <Grid item xs={12} sm={4}><TextField fullWidth label="Gold HSN" value={form.hsn_gold ?? ''} onChange={e => setForm({ ...form, hsn_gold: e.target.value })} /></Grid>
-                  <Grid item xs={12} sm={4}><TextField fullWidth label="Silver HSN" value={form.hsn_silver ?? ''} onChange={e => setForm({ ...form, hsn_silver: e.target.value })} /></Grid>
-                  <Grid item xs={12} sm={4}><TextField fullWidth label="Platinum HSN" value={form.hsn_platinum ?? ''} onChange={e => setForm({ ...form, hsn_platinum: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="IGST Percentage" value={form.igst_rate ?? ''} onChange={e => setForm({ ...form, igst_rate: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="IGST Display Text" value={form.igst_invoice_text ?? ''} onChange={e => setForm({ ...form, igst_invoice_text: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12 }}><Divider sx={{ my: 2 }}><Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>HSN Codes</Typography></Divider></Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth label="Gold HSN" value={form.hsn_gold ?? ''} onChange={e => setForm({ ...form, hsn_gold: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth label="Silver HSN" value={form.hsn_silver ?? ''} onChange={e => setForm({ ...form, hsn_silver: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth label="Platinum HSN" value={form.hsn_platinum ?? ''} onChange={e => setForm({ ...form, hsn_platinum: e.target.value })} /></Grid>
                 </Grid>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Grid container spacing={6}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
                   <CardContent sx={{ p: 6 }}>
                     <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
@@ -243,13 +243,13 @@ const GeneralSetupForm = () => {
                       <Typography variant='h6' sx={{ fontWeight: 600 }}>KYC Setup</Typography>
                     </Box>
                     <Grid container spacing={5}>
-                      <Grid item xs={12}><TextField fullWidth label="Max Transaction Limit (Standard)" helperText="Without PAN card requirement" value={form.pan_limit_standard ?? ''} onChange={e => setForm({ ...form, pan_limit_standard: e.target.value })} /></Grid>
-                      <Grid item xs={12}><TextField fullWidth label="Max Transaction Limit (Digital Gold)" helperText="Without PAN card requirement" value={form.pan_limit_digital ?? ''} onChange={e => setForm({ ...form, pan_limit_digital: e.target.value })} /></Grid>
+                      <Grid size={{ xs: 12 }}><TextField fullWidth label="Max Transaction Limit (Standard)" helperText="Without PAN card requirement" value={form.pan_limit_standard ?? ''} onChange={e => setForm({ ...form, pan_limit_standard: e.target.value })} /></Grid>
+                      <Grid size={{ xs: 12 }}><TextField fullWidth label="Max Transaction Limit (Digital Gold)" helperText="Without PAN card requirement" value={form.pan_limit_digital ?? ''} onChange={e => setForm({ ...form, pan_limit_digital: e.target.value })} /></Grid>
                     </Grid>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
                   <CardContent sx={{ p: 6 }}>
                     <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
@@ -257,7 +257,7 @@ const GeneralSetupForm = () => {
                       <Typography variant='h6' sx={{ fontWeight: 600 }}>Abandoned Cart</Typography>
                     </Box>
                     <Grid container spacing={5}>
-                      <Grid item xs={12}>
+                      <Grid size={{ xs: 12 }}>
                         <TextField select fullWidth label="Send reminder after" value={form.abandoned_cart_wait_hrs ?? ''} onChange={e => setForm({ ...form, abandoned_cart_wait_hrs: e.target.value })}>
                           <MenuItem value='0:30'>30 Minutes</MenuItem>
                           <MenuItem value='1:00'>1 Hour</MenuItem>
@@ -277,7 +277,7 @@ const GeneralSetupForm = () => {
 
       {/* Tab 2: Digital Gold Setup */}
       {activeTab === 1 && (
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
             <CardContent sx={{ p: 6 }}>
               <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
@@ -289,7 +289,7 @@ const GeneralSetupForm = () => {
               
               <Grid container spacing={6}>
                 {/* Row 1 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Bill Round Off Value</Typography>
                     <RadioGroup row value={form.bill_round_off ?? 'No'} onChange={e => setForm({ ...form, bill_round_off: e.target.value })}>
@@ -298,7 +298,7 @@ const GeneralSetupForm = () => {
                     </RadioGroup>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Buy Digital Gold</Typography>
                     <RadioGroup row value={form.buy_digital_gold ?? 'Stop'} onChange={e => setForm({ ...form, buy_digital_gold: e.target.value })}>
@@ -309,7 +309,7 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 2 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Sell Digital Gold</Typography>
                     <RadioGroup row value={form.sell_digital_gold ?? 'Start'} onChange={e => setForm({ ...form, sell_digital_gold: e.target.value })}>
@@ -318,7 +318,7 @@ const GeneralSetupForm = () => {
                     </RadioGroup>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Allowed to Sell Digital Gold After</Typography>
                     <Box display="flex" alignItems="center">
@@ -329,7 +329,7 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 3 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Digital Gold Amount Rounding By</Typography>
                     <TextField select size="small" sx={{ width: 250 }} value={form.amount_rounding ?? ''} onChange={e => setForm({...form, amount_rounding: e.target.value})}>
@@ -339,7 +339,7 @@ const GeneralSetupForm = () => {
                     </TextField>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Customer Authentication Required for Sell Digital Gold</Typography>
                     <RadioGroup row value={form.sell_auth_required ?? 'Yes'} onChange={e => setForm({ ...form, sell_auth_required: e.target.value })}>
@@ -350,7 +350,7 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 4 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Digital Gold Sell Cancel Cheque Required</Typography>
                     <RadioGroup row value={form.sell_cancel_cheque_required ?? 'Yes'} onChange={e => setForm({ ...form, sell_cancel_cheque_required: e.target.value })}>
@@ -359,7 +359,7 @@ const GeneralSetupForm = () => {
                     </RadioGroup>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Redeem Gold Option</Typography>
                     <TextField select size="small" sx={{ width: 250 }} value={form.redeem_gold_option ?? ''} onChange={e => setForm({...form, redeem_gold_option: e.target.value})}>
@@ -370,7 +370,7 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 5 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Cheque and Bank Passbook Validation Tool</Typography>
                     <TextField select size="small" sx={{ width: 250 }} value={form.validation_tool ?? ''} onChange={e => setForm({...form, validation_tool: e.target.value})}>
@@ -380,7 +380,7 @@ const GeneralSetupForm = () => {
                     </TextField>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Digital Gold Buying Option</Typography>
                     <TextField select size="small" sx={{ width: 250 }} value={form.buying_option ?? ''} onChange={e => setForm({...form, buying_option: e.target.value})}>
@@ -392,7 +392,7 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 6 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Display Amount while Redeem Gold</Typography>
                     <RadioGroup row value={form.display_redeem_amount ?? 'Yes'} onChange={e => setForm({ ...form, display_redeem_amount: e.target.value })}>
@@ -401,7 +401,7 @@ const GeneralSetupForm = () => {
                     </RadioGroup>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Show Digital Gold Agent Code</Typography>
                     <RadioGroup row value={form.show_agent_code ?? 'No'} onChange={e => setForm({ ...form, show_agent_code: e.target.value })}>
@@ -412,9 +412,9 @@ const GeneralSetupForm = () => {
                 </Grid>
 
                 {/* Row 7 */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>Buy Digital Agent Code Label</Typography>
                     <TextField size="small" sx={{ width: 250 }} placeholder="Enter buy digital agent code label" value={form.agent_code_label ?? ''} onChange={e => setForm({...form, agent_code_label: e.target.value})} />
@@ -428,7 +428,7 @@ const GeneralSetupForm = () => {
 
       {/* Tab 3: Terms & Conditions Setup */}
       {activeTab === 2 && (
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
             <CardContent sx={{ p: 6 }}>
               <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
@@ -439,25 +439,25 @@ const GeneralSetupForm = () => {
               </Box>
               
               <Grid container spacing={6}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600, maxWidth: '250px' }}>Digital Gold Buy Terms & Conditions Link</Typography>
                     <TextField fullWidth sx={{ maxWidth: '400px' }} placeholder="https://drive.google.com/file/d/..." value={form.buy_terms_link ?? ''} onChange={e => setForm({...form, buy_terms_link: e.target.value})} />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600, maxWidth: '250px' }}>Digital Gold Sell Terms & Conditions Link</Typography>
                     <TextField fullWidth sx={{ maxWidth: '400px' }} placeholder="https://drive.google.com/file/d/..." value={form.sell_terms_link ?? ''} onChange={e => setForm({...form, sell_terms_link: e.target.value})} />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600, maxWidth: '250px' }}>Digital Gold Lease Terms & Conditions Link</Typography>
                     <TextField fullWidth sx={{ maxWidth: '400px' }} placeholder="https://drive.google.com/file/d/..." value={form.lease_terms_link ?? ''} onChange={e => setForm({...form, lease_terms_link: e.target.value})} />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                     <Typography variant="body1" sx={{ fontWeight: 600, maxWidth: '250px' }}>Digital Gold Redeem Terms & Conditions Link</Typography>
                     <TextField fullWidth sx={{ maxWidth: '400px' }} placeholder="https://drive.google.com/file/d/..." value={form.redeem_terms_link ?? ''} onChange={e => setForm({...form, redeem_terms_link: e.target.value})} />
@@ -473,3 +473,5 @@ const GeneralSetupForm = () => {
 }
 
 export default GeneralSetupForm
+
+

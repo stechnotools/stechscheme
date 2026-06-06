@@ -21,9 +21,23 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import TextField from '@mui/material/TextField'
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
+import Avatar from '@mui/material/Avatar'
+import LinearProgress from '@mui/material/LinearProgress'
+import Divider from '@mui/material/Divider'
 
 type MembershipDetail = {
   id: number
+  membership_no?: string | null
+  card_no?: string | null
+  card_reference?: string | null
+  card_issued_at?: string | null
   customer_id: number
   scheme_id: number
   user_id?: number | null
@@ -31,8 +45,26 @@ type MembershipDetail = {
   maturity_date: string
   total_paid: string | number
   status: string
-  customer?: { id: number; name?: string | null; mobile: string; kyc?: { status?: string | null } | null } | null
-  scheme?: { id: number; name: string; code: string; installment_value?: string | number | null } | null
+  customer?: {
+    id: number
+    name?: string | null
+    mobile: string
+    email?: string | null
+    category?: string | null
+    kyc?: { status?: string | null } | null
+  } | null
+  scheme?: {
+    id: number
+    name: string
+    code: string
+    installment_value?: string | number | null
+    total_installments?: number | null
+    free_installments?: number | null
+    scheme_type?: string | null
+    benefit_type?: string | null
+    benefit_mode?: string | null
+    min_installment_value?: string | number | null
+  } | null
   installments?: Array<{
     id: number
     installment_no: number
@@ -55,6 +87,38 @@ type MembershipDetail = {
 
 type MembershipResponse = { data: MembershipDetail }
 
+type LifecycleResponse = {
+  membership: {
+    id: number
+    membership_no?: string | null
+    status: string
+    next_status: string
+  }
+  summary: {
+    action: string
+    current_status: string
+    next_status: string
+    total_installments: number
+    paid_installments: number
+    pending_installments: number
+    overdue_installments: number
+    principal_total: number
+    penalty_total: number
+    paid_total: number
+    principal_paid: number
+    penalty_paid: number
+    principal_outstanding: number
+    penalty_outstanding: number
+    bonus_amount: number
+    closing_penalty_amount: number
+    net_settlement_amount: number
+    customer_payable_amount: number
+    customer_receivable_amount: number
+    maturity_due: boolean
+    is_eligible_for_maturity: boolean
+  }
+}
+
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
   const normalized = rawUrl.replace(/\/+$/, '')
@@ -62,13 +126,129 @@ const resolveBackendApiUrl = () => {
   return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
-const getStatusColor = (status: string) => {
-  if (status === 'success') return 'success'
-  if (status === 'pending') return 'warning'
-  if (status === 'refunded') return 'info'
+const money = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 2
+})
 
+const getStatusColor = (status: string) => {
+  const s = status.toLowerCase()
+  if (s === 'active' || s === 'success') return 'success'
+  if (s === 'pending' || s === 'paused' || s === 'matured') return 'warning'
+  if (s === 'refunded' || s === 'redeemed' || s === 'settled') return 'info'
   return 'error'
 }
+
+const getHeaderBackground = (status: string) => {
+  const s = status.toLowerCase()
+  if (s === 'active') return 'linear-gradient(135deg, #0f172a 0%, #059669 55%, #059669 100%)'
+  if (s === 'paused') return 'linear-gradient(135deg, #0f172a 0%, #d97706 55%, #d97706 100%)'
+  if (s === 'completed' || s === 'matured') return 'linear-gradient(135deg, #0f172a 0%, #b91c1c 55%, #ea580c 100%)'
+  if (s === 'redeemed') return 'linear-gradient(135deg, #0f172a 0%, #06b6d4 55%, #3b82f6 100%)'
+  if (s === 'cancelled' || s === 'closed') return 'linear-gradient(135deg, #0f172a 0%, #475569 55%, #64748b 100%)'
+  if (s === 'settled') return 'linear-gradient(135deg, #0f172a 0%, #6d28d9 55%, #8b5cf6 100%)'
+  return 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0f766e 100%)'
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  mature: 'Maturity Settlement',
+  redeem: 'Redemption Settlement',
+  close: 'Early Closure',
+  cancel: 'Cancellation',
+  settle: 'Custom Settlement'
+}
+
+import Skeleton from '@mui/material/Skeleton'
+
+const MembershipDetailSkeleton = () => (
+  <Grid container spacing={6}>
+    {/* Header Banner Skeleton */}
+    <Grid size={{ xs: 12 }}>
+      <Skeleton variant='rectangular' height={220} sx={{ borderRadius: 2 }} />
+    </Grid>
+
+    {/* Stats Cards Skeletons */}
+    {[1, 2, 3, 4].map(i => (
+      <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+        <Card sx={{ height: '100%', p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Stack direction='row' justifyContent='space-between' alignItems='center'>
+            <Box sx={{ width: '60%' }}>
+              <Skeleton variant='text' width='80%' height={20} />
+              <Skeleton variant='text' width='50%' height={32} sx={{ mt: 1 }} />
+            </Box>
+            <Skeleton variant='circular' width={42} height={42} />
+          </Stack>
+        </Card>
+      </Grid>
+    ))}
+
+    {/* Columns */}
+    <Grid size={{ xs: 12 }}>
+      <Grid container spacing={6}>
+        {/* Left Column Skeletons */}
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Stack spacing={6}>
+            <Card sx={{ p: 4 }}>
+              <Skeleton variant='text' width='30%' height={32} sx={{ mb: 4 }} />
+              <Stack spacing={2}>
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} variant='rectangular' height={52} sx={{ borderRadius: 1 }} />
+                ))}
+              </Stack>
+            </Card>
+            <Card sx={{ p: 4 }}>
+              <Skeleton variant='text' width='30%' height={32} sx={{ mb: 4 }} />
+              <Stack spacing={2}>
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} variant='rectangular' height={52} sx={{ borderRadius: 1 }} />
+                ))}
+              </Stack>
+            </Card>
+          </Stack>
+        </Grid>
+
+        {/* Right Column Skeletons */}
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Stack spacing={6}>
+            <Card sx={{ p: 5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Skeleton variant='circular' width={64} height={64} sx={{ mb: 2 }} />
+              <Skeleton variant='text' width='50%' height={24} />
+              <Skeleton variant='text' width='30%' height={16} sx={{ mt: 1, mb: 2 }} />
+              <Skeleton variant='rectangular' width='40%' height={24} sx={{ borderRadius: 2, mb: 4 }} />
+              <Divider sx={{ width: '100%', my: 2 }} />
+              <Stack spacing={3} sx={{ width: '100%', mt: 2 }}>
+                {[1, 2].map(i => (
+                  <Stack key={i} direction='row' spacing={2} alignItems='center'>
+                    <Skeleton variant='circular' width={32} height={32} />
+                    <Box sx={{ width: '70%' }}>
+                      <Skeleton variant='text' width='40%' height={12} />
+                      <Skeleton variant='text' width='80%' height={16} />
+                    </Box>
+                  </Stack>
+                ))}
+              </Stack>
+            </Card>
+            <Card sx={{ p: 5 }}>
+              <Stack direction='row' spacing={2} alignItems='center' sx={{ mb: 4 }}>
+                <Skeleton variant='circular' width={36} height={36} />
+                <Skeleton variant='text' width='40%' height={24} />
+              </Stack>
+              <Stack spacing={3}>
+                {[1, 2, 3, 4].map(i => (
+                  <Box key={i}>
+                    <Skeleton variant='text' width='30%' height={12} />
+                    <Skeleton variant='text' width='70%' height={16} />
+                  </Box>
+                ))}
+              </Stack>
+            </Card>
+          </Stack>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+)
 
 const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const router = useRouter()
@@ -77,6 +257,14 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const [membership, setMembership] = useState<MembershipDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogAction, setDialogAction] = useState<string>('mature')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewData, setPreviewData] = useState<LifecycleResponse | null>(null)
+  const [dialogNotes, setDialogNotes] = useState('')
+  const [dialogError, setDialogError] = useState<string | null>(null)
 
   const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
     if (!accessToken) throw new Error('Missing access token')
@@ -131,239 +319,643 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     }
   }
 
-  const updateStatus = async (status: string) => {
-    if (!membership) return
-
-    setSaving(true)
-    setError(null)
+  // Open the dialog and load the preview
+  const openLifecycleDialog = async (action: string) => {
+    setDialogAction(action)
+    setDialogOpen(true)
+    setPreviewLoading(true)
+    setPreviewData(null)
+    setDialogNotes('')
+    setDialogError(null)
 
     try {
-      await request(`/memberships/${membership.id}`, {
-        method: 'PUT',
+      const response = await request<{ data: LifecycleResponse }>(`/memberships/${membershipId}/lifecycle?action=${encodeURIComponent(action)}`)
+      setPreviewData(response.data)
+    } catch (err) {
+      setDialogError(err instanceof Error ? err.message : 'Failed to load lifecycle preview.')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  // Submit the lifecycle action
+  const handleApplyLifecycle = async () => {
+    setSaving(true)
+    setDialogError(null)
+
+    try {
+      await request(`/memberships/${membershipId}/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_id: membership.customer_id,
-          user_id: membership.user_id,
-          scheme_id: membership.scheme_id,
-          start_date: membership.start_date,
-          maturity_date: membership.maturity_date,
-          total_paid: membership.total_paid,
-          status
+          action: dialogAction,
+          notes: dialogNotes
         })
       })
+      setDialogOpen(false)
       await loadMembership()
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update membership.')
+      setDialogError(err instanceof Error ? err.message : 'Failed to apply lifecycle action.')
     } finally {
       setSaving(false)
     }
   }
 
-  if (!membership) return <Alert severity={error ? 'error' : 'info'}>{error || 'Loading membership...'}</Alert>
+  if (error) {
+    return (
+      <Box sx={{ p: 6 }}>
+        <Alert severity='error' variant='filled' sx={{ borderRadius: 2 }}>
+          {error}
+        </Alert>
+        <Button variant='contained' onClick={() => void loadMembership()} sx={{ mt: 4 }}>
+          Retry Loading Detail
+        </Button>
+      </Box>
+    )
+  }
+
+  if (!membership) return <MembershipDetailSkeleton />
+
+  // Installments calculation
+  const totalInstallments = membership.installments?.length || membership.scheme?.total_installments || 0
+  const paidInstallments = membership.installments?.filter(item => item.paid).length || 0
+  const progressPercent = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0
+
+  // Total paid calculation
+  const totalPaid = Number(membership.total_paid || 0)
+
+  // Next installment calculation
+  const nextUnpaid = membership.installments
+    ?.filter(item => !item.paid)
+    .sort((a, b) => a.installment_no - b.installment_no)[0]
+  const baseVal = Number(nextUnpaid?.amount || membership.scheme?.installment_value || 0)
+  const penaltyVal = Number(nextUnpaid?.penalty || 0)
+  const nextDueAmount = baseVal + penaltyVal
+
+  const stats = [
+    {
+      title: 'Installment Progress',
+      value: `${paidInstallments} / ${totalInstallments}`,
+      subtext: `Paid (${progressPercent.toFixed(0)}%)`,
+      iconClass: 'ri-calendar-todo-line',
+      iconColor: '#3b82f6',
+      progress: progressPercent
+    },
+    {
+      title: 'Total Contribution',
+      value: money.format(totalPaid),
+      subtext: 'Accumulated savings',
+      iconClass: 'ri-money-rupee-circle-line',
+      iconColor: '#10b981'
+    },
+    {
+      title: 'Next Installment',
+      value: nextUnpaid ? money.format(nextDueAmount) : 'Fully Paid',
+      subtext: nextUnpaid
+        ? `Due: ${new Date(nextUnpaid.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+        : 'Scheme matured',
+      iconClass: 'ri-time-line',
+      iconColor: nextUnpaid ? '#f59e0b' : '#10b981'
+    },
+    {
+      title: 'Maturity Target',
+      value: new Date(membership.maturity_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      subtext: `Started: ${new Date(membership.start_date).toLocaleDateString('en-IN')}`,
+      iconClass: 'ri-shield-check-line',
+      iconColor: '#ef4444'
+    }
+  ]
 
   return (
     <Grid container spacing={6}>
+      {/* Premium Header Banner */}
       <Grid size={{ xs: 12 }}>
-        <Card>
-          <CardContent>
-            <Stack spacing={3}>
-              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' spacing={2}>
-                <div>
-                  <Typography variant='h4'>{membership.customer?.name || `Membership #${membership.id}`}</Typography>
-                  <Typography color='text.secondary'>{`${membership.scheme?.name || 'No scheme'} • ${membership.scheme?.code || 'No code'}`}</Typography>
-                </div>
-                <Stack direction='row' spacing={1} alignItems='center'>
-                  <Chip label={membership.status} color='primary' variant='tonal' />
-                  <Button component={Link} href='/subscriptions/create' variant='outlined' size='small'>Edit</Button>
-                  <Button component={Link} href='/subscriptions' variant='outlined' size='small'>Back</Button>
-                </Stack>
+        <Card
+          sx={{
+            overflow: 'hidden',
+            background: getHeaderBackground(membership.status),
+            color: 'common.white',
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 5, md: 6 } }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' alignItems={{ xs: 'flex-start', md: 'center' }} spacing={4}>
+              <Stack spacing={2}>
+                <Chip
+                  label={membership.membership_no || `Subscription #${membership.id}`}
+                  sx={{ alignSelf: 'flex-start', bgcolor: 'rgba(255,255,255,0.16)', color: 'common.white', fontWeight: 700 }}
+                />
+                <Typography variant='h3' sx={{ color: 'common.white', fontWeight: 800 }}>
+                  {membership.customer?.name || 'Customer Account'}
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.05rem' }}>
+                  {`${membership.scheme?.name || 'No scheme'} • Code: ${membership.scheme?.code || 'No code'}`}
+                </Typography>
               </Stack>
-              {error ? <Alert severity='error'>{error}</Alert> : null}
-              <Stack direction='row' spacing={2} flexWrap='wrap' useFlexGap>
-                <Button disabled={saving} variant='contained' onClick={() => void updateStatus('completed')}>Mark Matured</Button>
-                <Button disabled={saving} variant='outlined' onClick={() => void updateStatus('redeemed')}>Mark Redeemed</Button>
-                <Button disabled={saving} variant='outlined' color='error' onClick={() => void updateStatus('cancelled')}>Close Membership</Button>
-                <Button disabled={saving} variant='outlined' color='error' onClick={() => void handleDelete()}>Delete Membership</Button>
+              <Stack direction='row' spacing={2} alignItems='center'>
+                <Chip
+                  label={membership.status.toUpperCase()}
+                  color={getStatusColor(membership.status)}
+                  variant='tonal'
+                  sx={{ py: 1.5, px: 2, fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase' }}
+                />
+                <Button component={Link} href='/subscriptions' variant='contained' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }} size='medium'>
+                  Back to List
+                </Button>
               </Stack>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Card variant='outlined'>
-                    <CardContent>
-                      <Stack spacing={1}>
-                        <Typography fontWeight={700}>Customer</Typography>
-                        <Typography>{membership.customer?.name || 'Unknown'}</Typography>
-                        <Typography color='text.secondary'>{membership.customer?.mobile || 'No mobile'}</Typography>
-                        <Typography color='text.secondary'>KYC: {membership.customer?.kyc?.status || 'pending'}</Typography>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Card variant='outlined'>
-                    <CardContent>
-                      <Stack spacing={1}>
-                        <Typography fontWeight={700}>Membership Summary</Typography>
-                        <Typography color='text.secondary'>{`Start ${new Date(membership.start_date).toLocaleDateString('en-IN')}`}</Typography>
-                        <Typography color='text.secondary'>{`Maturity ${new Date(membership.maturity_date).toLocaleDateString('en-IN')}`}</Typography>
-                        <Typography color='text.secondary'>{`Total paid Rs ${Number(membership.total_paid || 0).toLocaleString('en-IN')}`}</Typography>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Card variant='outlined'>
-                    <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
-                      <Table sx={{ minWidth: 900 }} aria-label='installment schedule table'>
-                        <TableHead sx={{ bgcolor: 'action.hover' }}>
-                          <TableRow>
-                            <TableCell>No.</TableCell>
-                            <TableCell>Due Date</TableCell>
-                            <TableCell align='right'>Base Amount</TableCell>
-                            <TableCell align='right'>Penalty</TableCell>
-                            <TableCell align='right'>Total Payable</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Payment Record</TableCell>
-                            <TableCell align='right'>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {membership.installments?.map(item => {
-                            const isOverdue = !item.paid && new Date(item.due_date) < new Date()
-                            const baseAmount = Number(item.amount || membership.scheme?.installment_value || 0)
-                            const penalty = Number(item.penalty || 0)
-                            const totalPayable = baseAmount + penalty
-                            const linkedPayment = membership.payments?.find(payment => payment.installment?.installment_no === item.installment_no && payment.status === 'success')
+            </Stack>
 
-                            return (
-                              <TableRow key={item.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                <TableCell component='th' scope='row'>
-                                  #{item.installment_no}
-                                </TableCell>
-                                <TableCell>{new Date(item.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
-                                <TableCell align='right'>{`Rs ${baseAmount.toLocaleString('en-IN')}`}</TableCell>
-                                <TableCell align='right'>
-                                  <Typography color={penalty > 0 ? 'error' : 'text.secondary'}>
-                                    {`Rs ${penalty.toLocaleString('en-IN')}`}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align='right' sx={{ fontWeight: 600 }}>
-                                  {`Rs ${totalPayable.toLocaleString('en-IN')}`}
-                                </TableCell>
-                                <TableCell>
-                                  {item.paid ? (
-                                    <Chip size='small' label='Paid' color='success' variant='tonal' />
-                                  ) : isOverdue ? (
-                                    <Chip size='small' label='Overdue' color='error' variant='tonal' />
-                                  ) : (
-                                    <Chip size='small' label='Pending' color='warning' variant='tonal' />
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  {linkedPayment ? (
-                                    <Stack spacing={0.25}>
-                                      <Typography variant='body2' fontWeight={600}>
-                                        {`Rs ${Number(linkedPayment.amount || 0).toLocaleString('en-IN')}`}
-                                      </Typography>
-                                      <Typography variant='caption' color='text.secondary'>
-                                        {`${new Date(linkedPayment.payment_date).toLocaleDateString('en-IN')} • ${linkedPayment.gateway || 'Manual'} • ${linkedPayment.transaction_id || 'No ref'}`}
-                                      </Typography>
-                                    </Stack>
-                                  ) : (
-                                    <Typography variant='body2' color='text.secondary'>
-                                      {item.paid_date ? `Paid on ${new Date(item.paid_date).toLocaleDateString('en-IN')}` : 'No payment linked yet'}
-                                    </Typography>
-                                  )}
-                                </TableCell>
-                                <TableCell align='right'>
-                                  {item.paid && linkedPayment ? (
-                                    <Button
-                                      size='small'
-                                      variant='outlined'
-                                      color='secondary'
-                                      LinkComponent={Link}
-                                      href={`/payments/receipt/${linkedPayment.id}`}
-                                    >
-                                      Receipt
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      size='small'
-                                      variant='contained'
-                                      color='primary'
-                                      LinkComponent={Link}
-                                      href={`/payments/collect?membership_id=${membership.id}&installment_id=${item.id}`}
-                                    >
-                                      Pay Now
-                                    </Button>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Card>
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Card variant='outlined'>
-                    <CardContent>
-                      <Stack spacing={2}>
-                        <Typography fontWeight={700}>Payment History</Typography>
-                        {!membership.payments?.length ? (
-                          <Alert severity='info'>No payments recorded yet.</Alert>
-                        ) : (
-                          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
-                            <Table sx={{ minWidth: 700 }} aria-label='membership payments table'>
-                              <TableHead sx={{ bgcolor: 'action.hover' }}>
-                                <TableRow>
-                                  <TableCell>Date</TableCell>
-                                  <TableCell>Installment</TableCell>
-                                  <TableCell>Gateway / Reference</TableCell>
-                                  <TableCell align='right'>Amount</TableCell>
-                                  <TableCell>Status</TableCell>
-                                  <TableCell align='right'>Receipt</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {membership.payments.map(item => (
-                                  <TableRow key={item.id}>
-                                    <TableCell>{new Date(item.payment_date).toLocaleDateString('en-IN')}</TableCell>
-                                    <TableCell>{`#${item.installment?.installment_no || '-'}`}</TableCell>
-                                    <TableCell>
-                                      <Typography variant='body2'>{item.gateway || 'Manual'}</Typography>
-                                      <Typography variant='caption' color='text.secondary'>{item.transaction_id || 'No reference id'}</Typography>
-                                    </TableCell>
-                                    <TableCell align='right'>{`Rs ${Number(item.amount || 0).toLocaleString('en-IN')}`}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        size='small'
-                                        label={item.status}
-                                        color={getStatusColor(item.status)}
-                                        variant='tonal'
-                                        sx={{ textTransform: 'capitalize' }}
-                                      />
-                                    </TableCell>
-                                    <TableCell align='right'>
-                                      <Button component={Link} href={`/payments/receipt/${item.id}`} size='small' variant='outlined'>
-                                        View Receipt
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        )}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+            <Divider sx={{ my: 5, borderColor: 'rgba(255,255,255,0.12)' }} />
+
+            <Stack direction='row' spacing={2} flexWrap='wrap' useFlexGap>
+              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#ffffff', color: '#1e3a8a', '&:hover': { bgcolor: '#f1f5f9' } }} onClick={() => openLifecycleDialog('mature')}>
+                Mark Matured
+              </Button>
+              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#10b981', color: 'common.white', '&:hover': { bgcolor: '#059669' } }} onClick={() => openLifecycleDialog('redeem')}>
+                Redeem Scheme
+              </Button>
+              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#f59e0b', color: 'common.white', '&:hover': { bgcolor: '#d97706' } }} onClick={() => openLifecycleDialog('close')}>
+                Close (Settled)
+              </Button>
+              <Button disabled={saving} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.4)', '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' } }} onClick={() => openLifecycleDialog('cancel')}>
+                Cancel Scheme
+              </Button>
+              <Button disabled={saving} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.4)', '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' } }} onClick={() => openLifecycleDialog('settle')}>
+                Custom Settlement
+              </Button>
+              <Button disabled={saving} variant='contained' color='error' onClick={() => void handleDelete()}>
+                Delete
+              </Button>
             </Stack>
           </CardContent>
         </Card>
       </Grid>
+
+      {error && (
+        <Grid size={{ xs: 12 }}>
+          <Alert severity='error'>{error}</Alert>
+        </Grid>
+      )}
+
+      {/* KPI Stats Grid */}
+      <Grid size={{ xs: 12 }}>
+        <Grid container spacing={4}>
+          {stats.map((stat, i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)' }}>
+                <CardContent sx={{ pb: '16px !important' }}>
+                  <Stack direction='row' justifyContent='space-between' alignItems='center' spacing={2}>
+                    <div>
+                      <Typography variant='body2' color='text.secondary' fontWeight={600}>
+                        {stat.title}
+                      </Typography>
+                      <Typography variant='h5' sx={{ mt: 1, fontWeight: 700 }}>
+                        {stat.value}
+                      </Typography>
+                    </div>
+                    <Avatar sx={{ bgcolor: 'action.hover', color: stat.iconColor, width: 42, height: 42 }}>
+                      <i className={stat.iconClass} style={{ fontSize: '1.25rem' }} />
+                    </Avatar>
+                  </Stack>
+                  {stat.progress !== undefined ? (
+                    <Box sx={{ mt: 3 }}>
+                      <LinearProgress variant='determinate' value={stat.progress} sx={{ height: 6, borderRadius: 3 }} />
+                      <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block', textAlign: 'right' }}>
+                        {stat.subtext}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant='caption' color='text.secondary' sx={{ mt: 2, display: 'block' }}>
+                      {stat.subtext}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Grid>
+
+      {/* Split details layout */}
+      <Grid size={{ xs: 12 }}>
+        <Grid container spacing={6}>
+          {/* Left Column - Schedules & Transactions */}
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <Stack spacing={6}>
+              {/* Installments Table Card */}
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                <CardContent sx={{ p: 0 }}>
+                  <Typography variant='h6' sx={{ p: 4, pb: 2, fontWeight: 700 }}>
+                    Installment Schedule
+                  </Typography>
+                  <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
+                    <Table sx={{ minWidth: 700 }} aria-label='installment schedule table'>
+                      <TableHead sx={{ bgcolor: 'action.hover' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600 }}>No.</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
+                          <TableCell align='right' sx={{ fontWeight: 600 }}>Base Amount</TableCell>
+                          <TableCell align='right' sx={{ fontWeight: 600 }}>Penalty</TableCell>
+                          <TableCell align='right' sx={{ fontWeight: 600 }}>Total Payable</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Payment Record</TableCell>
+                          <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {membership.installments?.map(item => {
+                          const isOverdue = !item.paid && new Date(item.due_date) < new Date()
+                          const baseAmount = Number(item.amount || membership.scheme?.installment_value || 0)
+                          const penalty = Number(item.penalty || 0)
+                          const totalPayable = baseAmount + penalty
+                          const linkedPayment = membership.payments?.find(payment => payment.installment?.installment_no === item.installment_no && payment.status === 'success')
+
+                          return (
+                            <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                              <TableCell component='th' scope='row' sx={{ fontWeight: 600 }}>
+                                #{item.installment_no}
+                              </TableCell>
+                              <TableCell>{new Date(item.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
+                              <TableCell align='right'>{`Rs ${baseAmount.toLocaleString('en-IN')}`}</TableCell>
+                              <TableCell align='right'>
+                                <Typography color={penalty > 0 ? 'error' : 'text.secondary'}>
+                                  {`Rs ${penalty.toLocaleString('en-IN')}`}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                                {`Rs ${totalPayable.toLocaleString('en-IN')}`}
+                              </TableCell>
+                              <TableCell>
+                                {item.paid ? (
+                                  <Chip size='small' label='Paid' color='success' variant='tonal' />
+                                ) : isOverdue ? (
+                                  <Chip size='small' label='Overdue' color='error' variant='tonal' />
+                                ) : (
+                                  <Chip size='small' label='Pending' color='warning' variant='tonal' />
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {linkedPayment ? (
+                                  <Stack spacing={0.25}>
+                                    <Typography variant='body2' fontWeight={600}>
+                                      {`Rs ${Number(linkedPayment.amount || 0).toLocaleString('en-IN')}`}
+                                    </Typography>
+                                    <Typography variant='caption' color='text.secondary'>
+                                      {`${new Date(linkedPayment.payment_date).toLocaleDateString('en-IN')} • ${linkedPayment.gateway || 'Manual'} • ${linkedPayment.transaction_id || 'No ref'}`}
+                                    </Typography>
+                                  </Stack>
+                                ) : (
+                                  <Typography variant='body2' color='text.secondary'>
+                                    {item.paid_date ? `Paid on ${new Date(item.paid_date).toLocaleDateString('en-IN')}` : 'No payment linked yet'}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell align='right'>
+                                {item.paid && linkedPayment ? (
+                                  <Button
+                                    size='small'
+                                    variant='outlined'
+                                    color='secondary'
+                                    component={Link}
+                                    href={`/payments/receipt/${linkedPayment.id}`}
+                                  >
+                                    Receipt
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size='small'
+                                    variant='contained'
+                                    color='primary'
+                                    component={Link}
+                                    href={`/payments/collect?membership_id=${membership.id}&installment_id=${item.id}`}
+                                  >
+                                    Pay Now
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Payments History Card */}
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                <CardContent sx={{ p: 0 }}>
+                  <Typography variant='h6' sx={{ p: 4, pb: 2, fontWeight: 700 }}>
+                    Payment History
+                  </Typography>
+                  {!membership.payments?.length ? (
+                    <Box sx={{ p: 4 }}>
+                      <Alert severity='info'>No payments recorded yet.</Alert>
+                    </Box>
+                  ) : (
+                    <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
+                      <Table sx={{ minWidth: 700 }} aria-label='membership payments table'>
+                        <TableHead sx={{ bgcolor: 'action.hover' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Installment</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Gateway / Reference</TableCell>
+                            <TableCell align='right' sx={{ fontWeight: 600 }}>Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                            <TableCell align='right' sx={{ fontWeight: 600 }}>Receipt</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {membership.payments.map(item => (
+                            <TableRow key={item.id} hover>
+                              <TableCell>{new Date(item.payment_date).toLocaleDateString('en-IN')}</TableCell>
+                              <TableCell>{`#${item.installment?.installment_no || '-'}`}</TableCell>
+                              <TableCell>
+                                <Typography variant='body2' fontWeight={500}>{item.gateway || 'Manual'}</Typography>
+                                <Typography variant='caption' color='text.secondary'>{item.transaction_id || 'No reference id'}</Typography>
+                              </TableCell>
+                              <TableCell align='right'>{`Rs ${Number(item.amount || 0).toLocaleString('en-IN')}`}</TableCell>
+                              <TableCell>
+                                <Chip
+                                  size='small'
+                                  label={item.status}
+                                  color={getStatusColor(item.status)}
+                                  variant='tonal'
+                                  sx={{ textTransform: 'capitalize' }}
+                                />
+                              </TableCell>
+                              <TableCell align='right'>
+                                <Button component={Link} href={`/payments/receipt/${item.id}`} size='small' variant='outlined'>
+                                  View Receipt
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
+
+          {/* Right Column - Profiles & Metadata */}
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <Stack spacing={6}>
+              {/* Customer Profile Card */}
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                <CardContent sx={{ textAlign: 'center', pt: 5 }}>
+                  <Stack spacing={2} alignItems='center'>
+                    <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', color: 'primary.contrastText', fontSize: '2rem', fontWeight: 700 }}>
+                      {membership.customer?.name?.[0]?.toUpperCase() || 'C'}
+                    </Avatar>
+                    <div>
+                      <Typography variant='h6' sx={{ fontWeight: 700 }}>
+                        {membership.customer?.name || 'Unknown customer'}
+                      </Typography>
+                      <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
+                        Loyalty Level: {membership.customer?.category || 'Regular'}
+                      </Typography>
+                    </div>
+                    <Chip
+                      size='small'
+                      label={membership.customer?.kyc?.status ? `KYC: ${membership.customer.kyc.status}` : 'KYC: Pending'}
+                      color={membership.customer?.kyc?.status === 'approved' ? 'success' : 'warning'}
+                      variant='tonal'
+                      sx={{ textTransform: 'capitalize' }}
+                    />
+                  </Stack>
+                  <Divider sx={{ my: 4 }} />
+                  <Stack spacing={3} sx={{ textAlign: 'left' }}>
+                    <Stack direction='row' alignItems='center' spacing={2}>
+                      <Avatar sx={{ bgcolor: 'action.hover', color: 'text.secondary', width: 32, height: 32 }}>
+                        <i className='ri-phone-line' style={{ fontSize: '1rem' }} />
+                      </Avatar>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Mobile</Typography>
+                        <Typography variant='body2' fontWeight={600}>{membership.customer?.mobile || 'No mobile'}</Typography>
+                      </div>
+                    </Stack>
+                    <Stack direction='row' alignItems='center' spacing={2}>
+                      <Avatar sx={{ bgcolor: 'action.hover', color: 'text.secondary', width: 32, height: 32 }}>
+                        <i className='ri-mail-line' style={{ fontSize: '1rem' }} />
+                      </Avatar>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Email Address</Typography>
+                        <Typography variant='body2' fontWeight={600}>{membership.customer?.email || 'No email registered'}</Typography>
+                      </div>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              {/* Scheme Rules Card */}
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                <CardContent>
+                  <Stack direction='row' alignItems='center' spacing={2} sx={{ mb: 4 }}>
+                    <Avatar sx={{ bgcolor: 'secondary.light', color: 'secondary.main', width: 36, height: 36 }}>
+                      <i className='ri-settings-4-line' style={{ fontSize: '1.1rem' }} />
+                    </Avatar>
+                    <Typography variant='h6' sx={{ fontWeight: 700 }}>Scheme Settings</Typography>
+                  </Stack>
+                  <Stack spacing={3}>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Name & Code</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.scheme?.name || 'No scheme'} ({membership.scheme?.code || 'No code'})
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Installment Value</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.scheme?.installment_value ? money.format(Number(membership.scheme.installment_value)) : 'N/A'}
+                      </Typography>
+                    </div>
+                    <Stack direction='row' spacing={2} justifyContent='space-between'>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Total Months</Typography>
+                        <Typography variant='body2' fontWeight={600}>
+                          {membership.scheme?.total_installments ? `${membership.scheme.total_installments} Months` : 'N/A'}
+                        </Typography>
+                      </div>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Free Months</Typography>
+                        <Typography variant='body2' fontWeight={600}>
+                          {membership.scheme?.free_installments ?? 0}
+                        </Typography>
+                      </div>
+                    </Stack>
+                    <Stack direction='row' spacing={2} justifyContent='space-between'>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Scheme Type</Typography>
+                        <Typography variant='body2' fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                          {membership.scheme?.scheme_type || 'N/A'}
+                        </Typography>
+                      </div>
+                      <div>
+                        <Typography variant='caption' color='text.secondary' display='block'>Benefit Mode</Typography>
+                        <Typography variant='body2' fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                          {membership.scheme?.benefit_mode || 'N/A'}
+                        </Typography>
+                      </div>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              {/* Physical Card Metadata Card */}
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                <CardContent>
+                  <Stack direction='row' alignItems='center' spacing={2} sx={{ mb: 4 }}>
+                    <Avatar sx={{ bgcolor: 'info.light', color: 'info.main', width: 36, height: 36 }}>
+                      <i className='ri-bank-card-line' style={{ fontSize: '1.1rem' }} />
+                    </Avatar>
+                    <Typography variant='h6' sx={{ fontWeight: 700 }}>Card Metadata</Typography>
+                  </Stack>
+                  <Stack spacing={3}>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Membership No.</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.membership_no || 'Not Assigned'}
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Physical Card No.</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.card_no || 'Not Assigned'}
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Card Reference</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.card_reference || 'N/A'}
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Card Issued At</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.card_issued_at ? new Date(membership.card_issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
+                      </Typography>
+                    </div>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      {/* Lifecycle Action Dialog */}
+      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} fullWidth maxWidth='sm'>
+        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>
+          {ACTION_LABELS[dialogAction] || 'Subscription Status Transition'}
+        </DialogTitle>
+        <DialogContent dividers>
+          {previewLoading ? (
+            <Stack direction='column' spacing={2} alignItems='center' sx={{ py: 6 }}>
+              <CircularProgress size={40} />
+              <Typography variant='body2' color='text.secondary'>
+                Calculating outstanding balances and settlement figures...
+              </Typography>
+            </Stack>
+          ) : dialogError ? (
+            <Alert severity='error' sx={{ my: 2 }}>
+              {dialogError}
+            </Alert>
+          ) : previewData ? (
+            <Stack spacing={4} sx={{ my: 1 }}>
+              <Alert severity={previewData.summary.is_eligible_for_maturity || dialogAction !== 'mature' ? 'info' : 'warning'}>
+                {dialogAction === 'mature' && !previewData.summary.is_eligible_for_maturity
+                  ? 'System flag: This subscription does not meet standard maturity guidelines yet (overdue installments may exist).'
+                  : `This action will transition the subscription status from "${previewData.summary.current_status}" to "${previewData.summary.next_status}".`}
+              </Alert>
+
+              <Typography variant='subtitle2' fontWeight={700}>
+                Settlement Calculator Breakdown
+              </Typography>
+
+              <TableContainer component={Paper} variant='outlined' elevation={0}>
+                <Table size='small'>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Principal Outstanding</TableCell>
+                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
+                        {money.format(previewData.summary.principal_outstanding)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Penalty Outstanding</TableCell>
+                      <TableCell align='right' sx={{ py: 2, color: 'error.main', fontWeight: 600 }}>
+                        {money.format(previewData.summary.penalty_outstanding)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Bonus Amount Credits</TableCell>
+                      <TableCell align='right' sx={{ py: 2, color: 'success.main', fontWeight: 600 }}>
+                        {money.format(previewData.summary.bonus_amount)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Early Closing Penalty</TableCell>
+                      <TableCell align='right' sx={{ py: 2, color: 'error.main', fontWeight: 600 }}>
+                        {money.format(previewData.summary.closing_penalty_amount || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ py: 2, fontWeight: 700 }}>Net Settlement Value</TableCell>
+                      <TableCell align='right' sx={{ py: 2, fontWeight: 700, fontSize: '1.05rem' }}>
+                        {money.format(previewData.summary.net_settlement_amount)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Customer Payable</TableCell>
+                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
+                        {money.format(previewData.summary.customer_payable_amount || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Customer Receivable</TableCell>
+                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
+                        {money.format(previewData.summary.customer_receivable_amount || 0)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TextField
+                fullWidth
+                label='Action Notes / Remarks'
+                multiline
+                rows={3}
+                placeholder='Enter reasons or details for audit logs...'
+                value={dialogNotes}
+                onChange={e => setDialogNotes(e.target.value)}
+                disabled={saving}
+              />
+            </Stack>
+          ) : (
+            <Typography variant='body2' color='text.secondary'>
+              No preview calculation data available.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 4, py: 3 }}>
+          <Button onClick={() => setDialogOpen(false)} disabled={saving} variant='outlined'>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleApplyLifecycle}
+            disabled={saving || previewLoading || !previewData}
+            variant='contained'
+            color={dialogAction === 'cancel' || dialogAction === 'close' ? 'error' : 'primary'}
+          >
+            {saving ? 'Processing...' : 'Confirm & Apply'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   )
 }

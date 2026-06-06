@@ -235,7 +235,7 @@ const CustomerLoyaltyLedgerPage = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={3}>
@@ -292,31 +292,31 @@ const CustomerLoyaltyLedgerPage = () => {
 
             {/* Summary Cards */}
             <Grid container spacing={4} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '0 0 20%', maxWidth: '20%' }}>
                 <Paper variant="outlined" sx={{ p: 2.5, textAlign: 'center', borderStyle: 'dashed', borderColor: 'primary.main', bgcolor: 'primary.lighter' }}>
                   <Typography variant="caption" color="primary.main" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Customers</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>{summary?.total_customers || 0}</Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '0 0 20%', maxWidth: '20%' }}>
                 <Paper variant="outlined" sx={{ p: 2.5, textAlign: 'center', borderStyle: 'dashed', borderColor: 'warning.main', bgcolor: 'warning.lighter' }}>
                   <Typography variant="caption" color="warning.main" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Opening Points</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>{summary?.total_opening_points || 0}</Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '0 0 20%', maxWidth: '20%' }}>
                 <Paper variant="outlined" sx={{ p: 2.5, textAlign: 'center', borderStyle: 'dashed', borderColor: 'success.main', bgcolor: 'success.lighter' }}>
                   <Typography variant="caption" color="success.main" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Added (In Range)</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>{summary?.range_added || 0}</Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '0 0 20%', maxWidth: '20%' }}>
                 <Paper variant="outlined" sx={{ p: 2.5, textAlign: 'center', borderStyle: 'dashed', borderColor: 'error.main', bgcolor: 'error.lighter' }}>
                   <Typography variant="caption" color="error.main" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Redeemed (In Range)</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>{summary?.range_redeemed || 0}</Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '0 0 20%', maxWidth: '20%' }}>
                 <Paper variant="outlined" sx={{ p: 2.5, textAlign: 'center', borderStyle: 'dashed', borderColor: 'primary.main', bgcolor: 'primary.lighter' }}>
                   <Typography variant="caption" color="primary.main" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Current Balance</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>{summary?.total_points || 0}</Typography>
@@ -328,7 +328,7 @@ const CustomerLoyaltyLedgerPage = () => {
             
             {/* Filters */}
             <Grid container spacing={4}>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <TextField
                   fullWidth
                   size="small"
@@ -344,7 +344,7 @@ const CustomerLoyaltyLedgerPage = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid size={{ xs: 12, sm: 2 }}>
                 <TextField
                   fullWidth
                   select
@@ -359,20 +359,20 @@ const CustomerLoyaltyLedgerPage = () => {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid size={{ xs: 12, sm: 2 }}>
                 <TextField fullWidth size="small" type="date" label="From Date" value={fromDate} onChange={e => setFromDate(e.target.value)} InputLabelProps={{ shrink: true }} />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid size={{ xs: 12, sm: 2 }}>
                 <TextField fullWidth size="small" type="date" label="To Date" value={toDate} onChange={e => setToDate(e.target.value)} InputLabelProps={{ shrink: true }} />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <Box display="flex" gap={2}>
                   <Button fullWidth variant="contained" color="primary" onClick={handleFilter}>
                     <i className="ri-filter-3-line" style={{ marginRight: '8px' }} /> Filter
                   </Button>
                   <Button 
                     fullWidth 
-                    variant="tonal" 
+                    variant="contained" 
                     color="warning" 
                     onClick={handleSync} 
                     disabled={syncing}
@@ -391,7 +391,7 @@ const CustomerLoyaltyLedgerPage = () => {
       </Grid>
 
       {/* Ledger Data Table */}
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card>
           <CardContent sx={{ p: 0 }}>
             <TableContainer component={Paper} elevation={0}>
@@ -636,3 +636,4 @@ const CustomerLoyaltyLedgerPage = () => {
 }
 
 export default CustomerLoyaltyLedgerPage
+

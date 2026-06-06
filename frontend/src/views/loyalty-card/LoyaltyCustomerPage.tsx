@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -239,7 +239,7 @@ const LoyaltyCustomerPage = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card
           sx={{
             color: 'common.white',
@@ -273,7 +273,7 @@ const LoyaltyCustomerPage = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
           {/* Header Bar like the image */}
           <Box 
@@ -519,3 +519,4 @@ const LoyaltyCustomerPage = () => {
 }
 
 export default LoyaltyCustomerPage
+

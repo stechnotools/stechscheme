@@ -48,7 +48,7 @@ const RedeemOptionListPage = () => {
   const [metals, setMetals] = useState([])
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(status === 'loading')
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [openForm, setOpenForm] = useState(false)
   const [showLogs, setShowLogs] = useState(true)
@@ -201,7 +201,7 @@ const RedeemOptionListPage = () => {
       <Card sx={{ mb: 6, borderRadius: '8px', boxShadow: '0 2px 10px 0 rgba(0,0,0,0.05)' }}>
         <CardContent sx={{ py: 6 }}>
           <Grid container spacing={6} alignItems="flex-end">
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>Metal</Typography>
               <TextField
                 select
@@ -216,7 +216,7 @@ const RedeemOptionListPage = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>Status</Typography>
               <TextField
                 select
@@ -230,7 +230,7 @@ const RedeemOptionListPage = () => {
                 <MenuItem value="Inactive">Inactive</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Button 
                 variant="outlined" 
                 fullWidth 
@@ -336,7 +336,7 @@ const RedeemOptionListPage = () => {
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
           <Grid container spacing={8}>
             {/* Column 1 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Stack spacing={6}>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Typography sx={{ fontWeight: 600, minWidth: '120px' }}>Metal Name</Typography>
@@ -386,7 +386,7 @@ const RedeemOptionListPage = () => {
             </Grid>
 
             {/* Column 2 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Stack spacing={6}>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Typography sx={{ fontWeight: 600, minWidth: '120px' }}>Status</Typography>
@@ -504,3 +504,4 @@ const RedeemOptionListPage = () => {
 }
 
 export default RedeemOptionListPage
+

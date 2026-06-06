@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React from 'react'
 import { Grid, Card, CardHeader, CardContent, Typography } from '@mui/material'
@@ -6,7 +6,7 @@ import { Grid, Card, CardHeader, CardContent, Typography } from '@mui/material'
 const LoyaltyProgrammePage = () => {
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Card>
           <CardHeader title='Loyalty Card' />
           <CardContent>
@@ -25,3 +25,4 @@ const LoyaltyProgrammePage = () => {
 }
 
 export default LoyaltyProgrammePage
+

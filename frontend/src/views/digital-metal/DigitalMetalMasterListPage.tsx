@@ -115,8 +115,6 @@ const DigitalMetalMasterListPage = () => {
     }
   }, [accessToken, request])
 
-
-
   useEffect(() => {
     if (status === 'authenticated') {
       void loadMetals()
@@ -148,15 +146,17 @@ const DigitalMetalMasterListPage = () => {
 
   const paginatedMetals = filteredMetals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
+  const headCellSx = { fontWeight: 700, whiteSpace: 'nowrap' as const }
+
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: '#6366f1' }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
             Digital Metal Master
           </Typography>
           <Breadcrumbs aria-label="breadcrumb" sx={{ mt: 1 }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6366f1', textDecoration: 'none' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
               <i className="ri-home-fill" />
             </Link>
             <Typography color="text.primary">Digital Metal Master</Typography>
@@ -169,8 +169,6 @@ const DigitalMetalMasterListPage = () => {
             href="/digital-metal/master/add" 
             startIcon={<i className="ri-add-line" />}
             sx={{ 
-              backgroundColor: '#6366f1', 
-              '&:hover': { backgroundColor: '#4f46e5' },
               textTransform: 'none',
               fontSize: '1rem',
               px: 4
@@ -182,9 +180,8 @@ const DigitalMetalMasterListPage = () => {
             variant="contained" 
             component={Link} 
             href="/digital-metal/rates" 
+            color="info"
             sx={{ 
-              backgroundColor: '#17a2b8', 
-              '&:hover': { backgroundColor: '#138496' },
               textTransform: 'none',
               fontSize: '1rem',
               px: 4
@@ -195,11 +192,27 @@ const DigitalMetalMasterListPage = () => {
         </Stack>
       </Stack>
 
-      <Card sx={{ borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-        <CardContent sx={{ p: 6 }}>
-          <Typography variant="h6" sx={{ mb: 6, color: '#8b5cf6', fontWeight: 500 }}>
-            Digital Metal Master List
-          </Typography>
+      <Card variant="outlined">
+        <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Digital Metal Master List
+            </Typography>
+            <TextField
+              size="small"
+              placeholder="Search metal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <i className="ri-search-line" />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ width: 250 }}
+            />
+          </Stack>
 
           {error && (
             <Alert severity="error" sx={{ mb: 4 }}>
@@ -207,19 +220,19 @@ const DigitalMetalMasterListPage = () => {
             </Alert>
           )}
 
-          <TableContainer sx={{ border: '1px solid #eaeaea', borderRadius: '4px' }}>
+          <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f3f4ff' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Metal Name</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>ERP Metal Id</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Display Text</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Purity</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Rate Per</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Rate Per Display Text</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Updated By</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Action</TableCell>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell sx={headCellSx}>Metal Name</TableCell>
+                  <TableCell sx={headCellSx}>ERP Metal Id</TableCell>
+                  <TableCell sx={headCellSx}>Display Text</TableCell>
+                  <TableCell sx={headCellSx}>Purity</TableCell>
+                  <TableCell sx={headCellSx}>Rate Per</TableCell>
+                  <TableCell sx={headCellSx}>Rate Per Display Text</TableCell>
+                  <TableCell sx={headCellSx}>Status</TableCell>
+                  <TableCell sx={headCellSx}>Updated By</TableCell>
+                  <TableCell align="center" sx={headCellSx}>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -231,23 +244,26 @@ const DigitalMetalMasterListPage = () => {
                   </TableRow>
                 ) : paginatedMetals.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 10, color: 'text.secondary' }}>
                       No digital metal masters found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginatedMetals.map(metal => (
                     <TableRow key={metal.id} hover>
-                      <TableCell sx={{ fontWeight: 500 }}>{metal.metal_name}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, textTransform: 'uppercase' }}>{metal.metal_name}</TableCell>
                       <TableCell>{metal.erp_metal_id || '-'}</TableCell>
                       <TableCell>{metal.display_text || '-'}</TableCell>
                       <TableCell>{metal.purity || '-'}</TableCell>
                       <TableCell>{metal.rate_per || '-'}</TableCell>
                       <TableCell>{metal.rate_per_display_text || '-'}</TableCell>
                       <TableCell>
-                        <Typography color={metal.status === 'Active' ? 'text.primary' : 'text.secondary'}>
-                          {metal.status}
-                        </Typography>
+                        <Chip
+                          label={metal.status}
+                          size="small"
+                          color={metal.status === 'Active' ? 'success' : 'default'}
+                          variant="tonal"
+                        />
                       </TableCell>
                       <TableCell>{metal.updated_by || '-'}</TableCell>
                       <TableCell align="center">
@@ -257,7 +273,7 @@ const DigitalMetalMasterListPage = () => {
                             component={Link} 
                             href={`/digital-metal/master/${metal.id}/edit`}
                             title="Edit"
-                            sx={{ color: '#7367F0' }}
+                            color="primary"
                           >
                             <i className="ri-edit-box-line" />
                           </IconButton>
@@ -266,7 +282,7 @@ const DigitalMetalMasterListPage = () => {
                             component={Link} 
                             href={`/digital-metal/master/${metal.id}`}
                             title="Detail"
-                            sx={{ color: '#00cfe8' }}
+                            color="info"
                           >
                             <i className="ri-eye-line" />
                           </IconButton>
@@ -274,7 +290,7 @@ const DigitalMetalMasterListPage = () => {
                             size="small" 
                             onClick={() => setDeleteTarget(metal)}
                             title="Delete"
-                            sx={{ color: '#ea5455' }}
+                            color="error"
                           >
                             <i className="ri-delete-bin-7-line" />
                           </IconButton>
@@ -317,8 +333,6 @@ const DigitalMetalMasterListPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-
     </Box>
   )
 }
