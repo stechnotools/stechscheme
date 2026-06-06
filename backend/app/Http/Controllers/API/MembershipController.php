@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\MembershipService;
+use App\Services\MembershipLifecycleService;
 use App\Services\OneClickEnrollmentService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ class MembershipController extends CrudController
 {
     public function __construct(
         private readonly MembershipService $membershipService,
+        private readonly MembershipLifecycleService $membershipLifecycleService,
         private readonly OneClickEnrollmentService $oneClickEnrollmentService
     )
     {
@@ -52,6 +54,7 @@ class MembershipController extends CrudController
             'customer.status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
             'customer.portal_password' => ['nullable', 'string', 'min:6'],
             'scheme_id' => ['required', 'integer', 'exists:schemes,id'],
+            'installment_value' => ['nullable', 'numeric', 'min:0'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'start_date' => ['required', 'date'],
@@ -73,6 +76,31 @@ class MembershipController extends CrudController
         ], 201);
     }
 
+    public function lifecyclePreview(Request $request, Membership $membership): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['mature', 'maturity', 'redeem', 'redemption', 'close', 'closure', 'cancel', 'cancellation', 'settle', 'settlement'])],
+        ]);
+
+        return response()->json([
+            'data' => $this->membershipLifecycleService->preview($membership, (string) $validated['action']),
+        ]);
+    }
+
+    public function lifecycleAction(Request $request, Membership $membership): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['mature', 'maturity', 'redeem', 'redemption', 'close', 'closure', 'cancel', 'cancellation', 'settle', 'settlement'])],
+            'status' => ['nullable', Rule::in(['matured', 'redeemed', 'closed', 'cancelled', 'settled'])],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        return response()->json([
+            'message' => 'Membership lifecycle action completed successfully.',
+            'data' => $this->membershipLifecycleService->apply($membership, (string) $validated['action'], $request->user(), $validated),
+        ]);
+    }
+
     protected function rules(?Model $model = null): array
     {
         return [
@@ -82,7 +110,7 @@ class MembershipController extends CrudController
             'start_date' => ['required', 'date'],
             'maturity_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'total_paid' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['nullable', Rule::in(['active', 'paused', 'completed', 'cancelled', 'redeemed'])],
+            'status' => ['nullable', Rule::in(['active', 'paused', 'completed', 'matured', 'cancelled', 'closed', 'redeemed', 'settled'])],
         ];
     }
 

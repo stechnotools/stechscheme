@@ -22,6 +22,20 @@ class MembershipService
             }
         }
 
+        // status_group filter: groups multiple statuses together
+        if (! empty($filters['status_group'])) {
+            $group = (string) $filters['status_group'];
+            $groupMap = [
+                'active'   => ['active', 'paused'],
+                'matured'  => ['matured', 'completed'],
+                'redeemed' => ['redeemed', 'settled'],
+                'closed'   => ['cancelled', 'closed'],
+            ];
+            if (isset($groupMap[$group])) {
+                $query->whereIn('status', $groupMap[$group]);
+            }
+        }
+
         if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
 
@@ -46,7 +60,7 @@ class MembershipService
             ? $sortBy
             : 'id';
         $sortDirection = strtolower((string) ($filters['sort_direction'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
-        $perPage = max(1, min((int) ($filters['per_page'] ?? 15), 100));
+        $perPage = max(1, min((int) ($filters['per_page'] ?? 15), 500));
 
         return $query->orderBy($sortBy, $sortDirection)->paginate($perPage);
     }
@@ -61,13 +75,18 @@ class MembershipService
         return DB::transaction(function () use ($validated, $options) {
             $scheme = Scheme::query()->findOrFail($validated['scheme_id']);
             $customer = Customer::query()->with('kyc')->findOrFail($validated['customer_id']);
+            $installmentAmount = array_key_exists('installment_value', $validated) && $validated['installment_value'] !== null
+                ? max(0, (float) $validated['installment_value'])
+                : null;
+            $membershipPayload = $validated;
+            unset($membershipPayload['installment_value']);
 
             if (($options['skip_kyc_check'] ?? false) !== true && ($customer->kyc?->status ?? 'pending') !== 'approved') {
                 abort(422, 'Customer KYC must be approved before enrollment.');
             }
 
             $membership = Membership::query()->create([
-                ...$validated,
+                ...$membershipPayload,
                 'membership_no' => $validated['membership_no'] ?? null,
                 'card_no' => $validated['card_no'] ?? null,
                 'card_reference' => $validated['card_reference'] ?? null,
@@ -77,7 +96,7 @@ class MembershipService
                 'status' => $validated['status'] ?? 'active',
             ]);
 
-            $this->generateInstallments($membership, $scheme);
+            $this->generateInstallments($membership, $scheme, $installmentAmount);
 
             return $membership->fresh(['customer.kyc', 'user', 'scheme.maturityBenefits', 'installments', 'payments.installment']);
         });
@@ -90,10 +109,10 @@ class MembershipService
         return Carbon::parse($startDate)->copy()->addMonthsNoOverflow($months - 1)->toDateString();
     }
 
-    private function generateInstallments(Membership $membership, Scheme $scheme): void
+    private function generateInstallments(Membership $membership, Scheme $scheme, ?float $customInstallmentAmount = null): void
     {
         $totalInstallments = max(1, (int) ($scheme->total_installments ?? 1));
-        $installmentAmount = (float) ($scheme->installment_value ?? 0);
+        $installmentAmount = $customInstallmentAmount ?? (float) ($scheme->installment_value ?? 0);
         $startDate = Carbon::parse($membership->start_date);
         $rows = [];
 
@@ -106,6 +125,9 @@ class MembershipService
                 'paid' => false,
                 'paid_date' => null,
                 'penalty' => 0,
+                'paid_amount' => 0,
+                'balance_amount' => $installmentAmount,
+                'status' => 'PENDING',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

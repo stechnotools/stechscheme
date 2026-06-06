@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\Membership;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +14,7 @@ class PaymentController extends CrudController
 {
     protected string $modelClass = Payment::class;
 
-    protected array $relations = ['membership.customer', 'membership.scheme', 'installment'];
+    protected array $relations = ['membership.customer', 'membership.scheme', 'installment', 'receipt.customer', 'receipt.voucher', 'receipt.payments', 'receipt.details.installment'];
 
     protected array $filterable = ['membership_id', 'gateway', 'status'];
 
@@ -76,14 +77,39 @@ class PaymentController extends CrudController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate($this->rules());
+        $mutated = $this->mutateValidatedData($validated, null);
 
-        /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($validated) {
-            $payment = Payment::query()->create($this->mutateValidatedData($validated, null));
-            $this->applyPaymentEffects($payment);
+        $membership = Membership::query()->with('installments')->findOrFail($mutated['membership_id']);
+        $installmentId = $mutated['installment_id'];
+        $paymentAmount = (float) $mutated['amount'];
+        $remainingPayable = $this->getRemainingPayableAmount($membership);
 
-            return $payment;
+        if ($paymentAmount > $remainingPayable + 0.001) {
+            abort(
+                422,
+                'Payment amount exceeds the remaining payable amount. Remaining balance is ' . number_format($remainingPayable, 2, '.', '') . '.'
+            );
+        }
+
+        $paymentPool = [
+            [
+                'gateway' => $mutated['gateway'] ?? 'cash',
+                'amount' => $paymentAmount,
+                'transaction_id' => $mutated['transaction_id'] ?? null,
+            ]
+        ];
+
+        $receipt = DB::transaction(function () use ($membership, $installmentId, $paymentPool, $mutated) {
+            return app(\App\Services\ReceiptService::class)->createReceipt(
+                $membership,
+                [['id' => $installmentId]],
+                $paymentPool,
+                $mutated['payment_date'],
+                $mutated['status']
+            );
         });
+
+        $payment = $receipt->legacyPayments()->first();
 
         return response()->json([
             'message' => 'Payment created successfully.',
@@ -124,7 +150,7 @@ class PaymentController extends CrudController
     protected function mutateValidatedData(array $validated, ?Model $model): array
     {
         if (! array_key_exists('installment_id', $validated) || empty($validated['installment_id'])) {
-            $membership = \App\Models\Membership::query()->findOrFail($validated['membership_id']);
+            $membership = Membership::query()->findOrFail($validated['membership_id']);
             $nextInstallment = $membership->installments()->where('paid', false)->orderBy('installment_no')->first();
 
             if ($nextInstallment) {
@@ -133,6 +159,20 @@ class PaymentController extends CrudController
         }
 
         return $validated;
+    }
+
+    private function getRemainingPayableAmount(Membership $membership): float
+    {
+        $installments = $membership->relationLoaded('installments')
+            ? $membership->installments
+            : $membership->installments()->get(['amount', 'penalty', 'paid_amount']);
+
+        return round((float) $installments->sum(function ($installment) {
+            return max(
+                0,
+                (float) $installment->amount + (float) ($installment->penalty ?? 0) - (float) ($installment->paid_amount ?? 0)
+            );
+        }), 2);
     }
 
     public function storeBulk(Request $request): JsonResponse
@@ -151,7 +191,9 @@ class PaymentController extends CrudController
             'status' => ['required', Rule::in(['pending', 'success', 'failed', 'refunded'])],
         ]);
 
-        $payments = DB::transaction(function () use ($validated) {
+        $membership = \App\Models\Membership::findOrFail($validated['membership_id']);
+
+        $receipt = DB::transaction(function () use ($validated, $membership) {
             $installments = \App\Models\Installment::query()
                 ->whereIn('id', $validated['installment_ids'])
                 ->where('membership_id', $validated['membership_id'])
@@ -163,8 +205,6 @@ class PaymentController extends CrudController
                 abort(422, 'One or more installments are already paid or do not belong to this membership.');
             }
 
-            $totalDue = $installments->sum(fn ($i) => (float) $i->amount + (float) ($i->penalty ?? 0));
-
             // Prepare payment pool
             $paymentPool = [];
             if ($validated['payments'] ?? null) {
@@ -172,74 +212,31 @@ class PaymentController extends CrudController
                     $paymentPool[] = [
                         'gateway' => $p['gateway'] ?? 'cash',
                         'transaction_id' => $p['transaction_id'] ?? null,
-                        'remaining' => (float) $p['amount'],
+                        'amount' => (float) $p['amount'],
                     ];
                 }
             } else {
+                $totalDue = $installments->sum(fn ($i) => (float) $i->amount + (float) ($i->penalty ?? 0) - (float) $i->paid_amount);
                 $paymentPool[] = [
                     'gateway' => $validated['gateway'] ?? 'cash',
                     'transaction_id' => $validated['transaction_id'] ?? null,
-                    'remaining' => $totalDue,
+                    'amount' => $totalDue,
                 ];
             }
 
-            $poolSum = array_sum(array_column($paymentPool, 'remaining'));
-            if (abs($poolSum - $totalDue) > 0.01) {
-                abort(422, "Total payment amount ({$poolSum}) must match total installments due ({$totalDue}).");
-            }
-
-            $createdPayments = [];
-            foreach ($installments as $installment) {
-                $dueForThis = (float) $installment->amount + (float) ($installment->penalty ?? 0);
-                
-                while ($dueForThis > 0.001) {
-                    // Find first available payment in pool
-                    $pIndex = null;
-                    foreach ($paymentPool as $idx => $p) {
-                        if ($p['remaining'] > 0.001) {
-                            $pIndex = $idx;
-                            break;
-                        }
-                    }
-
-                    if ($pIndex === null) break; // Should not happen due to sum check
-
-                    $take = min($dueForThis, $paymentPool[$pIndex]['remaining']);
-                    
-                    $createdPayments[] = Payment::query()->create([
-                        'membership_id' => $validated['membership_id'],
-                        'installment_id' => $installment->id,
-                        'amount' => $take,
-                        'gateway' => $paymentPool[$pIndex]['gateway'],
-                        'transaction_id' => $paymentPool[$pIndex]['transaction_id'],
-                        'payment_date' => $validated['payment_date'],
-                        'status' => $validated['status'],
-                    ]);
-
-                    $paymentPool[$pIndex]['remaining'] -= $take;
-                    $dueForThis -= $take;
-                }
-
-                if ($validated['status'] === 'success') {
-                    $installment->update([
-                        'paid' => true,
-                        'paid_date' => $validated['payment_date'],
-                    ]);
-                }
-            }
-
-            return $createdPayments;
+            return app(\App\Services\ReceiptService::class)->createReceipt(
+                $membership,
+                $installments->toArray(),
+                $paymentPool,
+                $validated['payment_date'],
+                $validated['status']
+            );
         });
 
-        $membership = \App\Models\Membership::query()->find($validated['membership_id']);
-        if ($membership) {
-            $membership->update([
-                'total_paid' => (float) $membership->payments()->where('status', 'success')->sum('amount'),
-            ]);
-        }
+        $payments = $receipt->legacyPayments()->with($this->relations)->get();
 
         return response()->json([
-            'message' => count($payments) . ' installment payments created successfully.',
+            'message' => $payments->count() . ' installment payments created successfully.',
             'data' => $payments,
         ], 201);
     }

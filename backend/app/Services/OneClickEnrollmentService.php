@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\CustomerKyc;
-use App\Models\Payment;
 use App\Models\Branch;
 use App\Models\Scheme;
 use App\Models\User;
@@ -54,6 +53,7 @@ class OneClickEnrollmentService
                 'customer_id' => $customer->id,
                 'user_id' => data_get($validated, 'user_id') ?: $staffUser?->id ?: $customer->user_id,
                 'scheme_id' => $scheme->id,
+                'installment_value' => data_get($validated, 'installment_value'),
                 'membership_no' => $membershipSeed['membership_no'],
                 'card_no' => $membershipSeed['card_no'],
                 'card_reference' => $membershipSeed['card_reference'],
@@ -78,22 +78,32 @@ class OneClickEnrollmentService
 
             $createdPayments = [];
             if ($paymentEntries) {
-                $firstInstallment = $membership->installments()->orderBy('installment_no')->firstOrFail();
+                $paymentTotal = round((float) array_sum(array_map(fn ($entry) => (float) ($entry['amount'] ?? 0), $paymentEntries)), 2);
+                $paymentDate = $paymentEntries[0]['payment_date'] ?? $validated['start_date'];
+                $selectedInstallments = collect();
+                $coveredAmount = 0.0;
 
-                foreach ($paymentEntries as $entry) {
-                    $payment = Payment::query()->create([
-                        'membership_id' => $membership->id,
-                        'installment_id' => $firstInstallment->id,
-                        'amount' => (float) $entry['amount'],
-                        'gateway' => $entry['gateway'] ?? 'cash',
-                        'transaction_id' => $entry['transaction_id'] ?? null,
-                        'payment_date' => $entry['payment_date'] ?? $validated['start_date'],
-                        'status' => 'success',
-                    ]);
+                foreach ($membership->installments()->orderBy('installment_no')->get() as $installment) {
+                    if ($coveredAmount >= $paymentTotal) {
+                        break;
+                    }
 
-                    app(PaymentService::class)->syncPaymentState($payment);
-                    $createdPayments[] = $payment;
+                    $selectedInstallments->push($installment);
+                    $coveredAmount += (float) $installment->amount + (float) ($installment->penalty ?? 0) - (float) ($installment->paid_amount ?? 0);
                 }
+
+                if ($selectedInstallments->isEmpty() || $coveredAmount + 0.001 < $paymentTotal) {
+                    abort(422, 'Receipt amount exceeds available opening installments.');
+                }
+
+                $receipt = app(\App\Services\ReceiptService::class)->createReceipt(
+                    $membership,
+                    $selectedInstallments->map(fn ($installment) => ['id' => $installment->id])->all(),
+                    $paymentEntries,
+                    $paymentDate
+                );
+
+                $createdPayments = $receipt->legacyPayments()->get()->all();
             }
 
             $membership = $membership->fresh([

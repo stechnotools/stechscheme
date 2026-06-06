@@ -4,35 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class ReceiptPayment extends Model
 {
     protected $fillable = [
         'receipt_id',
-        'membership_id',
-        'installment_id',
+        'method',
         'amount',
-        'gateway',
         'transaction_id',
         'payment_date',
-        'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'payment_date' => 'date',
             'amount' => 'decimal:2',
+            'payment_date' => 'date',
         ];
-    }
-
-    public function membership()
-    {
-        return $this->belongsTo(Membership::class);
-    }
-
-    public function installment()
-    {
-        return $this->belongsTo(Installment::class);
     }
 
     public function receipt()

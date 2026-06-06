@@ -11,35 +11,45 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (Schema::hasColumn('users', 'company_id')) {
-                DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_company_id_foreign');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_company_id_foreign');
+                }
                 $table->dropColumn('company_id');
             }
         });
 
         Schema::table('customers', function (Blueprint $table) {
             if (Schema::hasColumn('customers', 'company_id')) {
-                DB::statement('ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_company_id_foreign');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_company_id_foreign');
+                }
                 $table->dropColumn('company_id');
             }
         });
 
         Schema::table('schemes', function (Blueprint $table) {
             if (Schema::hasColumn('schemes', 'company_id')) {
-                DB::statement('ALTER TABLE schemes DROP CONSTRAINT IF EXISTS schemes_company_id_foreign');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE schemes DROP CONSTRAINT IF EXISTS schemes_company_id_foreign');
+                }
                 $table->dropColumn('company_id');
             }
         });
 
         Schema::table('products', function (Blueprint $table) {
             if (Schema::hasColumn('products', 'company_id')) {
-                DB::statement('ALTER TABLE products DROP CONSTRAINT IF EXISTS products_company_id_foreign');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE products DROP CONSTRAINT IF EXISTS products_company_id_foreign');
+                }
                 $table->dropColumn('company_id');
             }
         });
 
         Schema::table('chart_of_accounts', function (Blueprint $table) {
             if (Schema::hasColumn('chart_of_accounts', 'company_id')) {
-                DB::statement('ALTER TABLE chart_of_accounts DROP CONSTRAINT IF EXISTS chart_of_accounts_company_id_foreign');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE chart_of_accounts DROP CONSTRAINT IF EXISTS chart_of_accounts_company_id_foreign');
+                }
                 DB::statement('DROP INDEX IF EXISTS chart_of_accounts_company_id_account_type_index');
                 DB::statement('DROP INDEX IF EXISTS chart_of_accounts_company_id_parent_id_index');
                 $table->dropColumn('company_id');
@@ -49,8 +59,10 @@ return new class extends Migration
 
         Schema::table('app_settings', function (Blueprint $table) {
             if (Schema::hasColumn('app_settings', 'company_id')) {
-                DB::statement('ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS app_settings_company_id_foreign');
-                DB::statement('ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS app_settings_company_id_key_unique');
+                if (DB::getDriverName() !== 'sqlite') {
+                    DB::statement('ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS app_settings_company_id_foreign');
+                    DB::statement('ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS app_settings_company_id_key_unique');
+                }
                 $table->dropColumn('company_id');
                 $table->unique('key');
             }

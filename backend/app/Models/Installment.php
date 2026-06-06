@@ -14,6 +14,9 @@ class Installment extends Model
         'paid',
         'paid_date',
         'penalty',
+        'paid_amount',
+        'balance_amount',
+        'status',
     ];
 
     protected function casts(): array
@@ -24,6 +27,8 @@ class Installment extends Model
             'paid_date' => 'date',
             'amount' => 'decimal:2',
             'penalty' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+            'balance_amount' => 'decimal:2',
         ];
     }
 
@@ -35,5 +40,10 @@ class Installment extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function receiptDetails()
+    {
+        return $this->hasMany(ReceiptDetail::class);
     }
 }

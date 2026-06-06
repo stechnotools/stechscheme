@@ -28,6 +28,7 @@ class PermissionSeeder extends Seeder
             'membership.matured',
             'membership.redeemed',
             'membership.closed',
+            'membership.lifecycle',
             'installments.all',
             'installments.pending',
             'installments.paid',
@@ -39,6 +40,20 @@ class PermissionSeeder extends Seeder
             'reports.revenue',
             'reports.customers',
             'reports.payments',
+            'reports.dashboard',
+            'reports.daily-collection',
+            'reports.customer-ledger',
+            'reports.customer-statement',
+            'reports.installments.pending',
+            'reports.installments.overdue',
+            'reports.receipts.register',
+            'reports.branches.collection',
+            'reports.gold.liability',
+            'reports.accounting.cash-book',
+            'reports.accounting.bank-book',
+            'reports.accounting.trial-balance',
+            'reports.accounting.profit-loss',
+            'reports.accounting.balance-sheet',
             'users.users',
             'users.roles',
             'users.permissions',
@@ -64,6 +79,7 @@ class PermissionSeeder extends Seeder
 
         $superAdminRole = Role::findOrCreate('super-admin', 'web');
         $adminRole = Role::findOrCreate('admin', 'web');
+        $branchManagerRole = Role::findOrCreate('branch-manager', 'web');
         $staffRole = Role::findOrCreate('staff', 'web');
         $customerRole = Role::findOrCreate('customer', 'web');
 
@@ -87,6 +103,7 @@ class PermissionSeeder extends Seeder
             'membership.matured',
             'membership.redeemed',
             'membership.closed',
+            'membership.lifecycle',
             'installments.all',
             'installments.pending',
             'installments.paid',
@@ -98,6 +115,15 @@ class PermissionSeeder extends Seeder
             'reports.revenue',
             'reports.customers',
             'reports.payments',
+            'reports.dashboard',
+            'reports.daily-collection',
+            'reports.customer-ledger',
+            'reports.customer-statement',
+            'reports.installments.pending',
+            'reports.installments.overdue',
+            'reports.receipts.register',
+            'reports.branches.collection',
+            'reports.gold.liability',
             'lc.category',
             'lc.customers',
             'lc.setup',
@@ -110,6 +136,33 @@ class PermissionSeeder extends Seeder
 
         $customerPermissions = [];
 
+        $branchManagerPermissions = [
+            'dashboard.overview',
+            'branches.all',
+            'customers.all',
+            'schemes.all',
+            'membership.active',
+            'membership.matured',
+            'membership.redeemed',
+            'membership.lifecycle',
+            'installments.all',
+            'installments.pending',
+            'installments.overdue',
+            'payments.all',
+            'payments.history',
+            'payments.receipt',
+            'reports.dashboard',
+            'reports.daily-collection',
+            'reports.customer-ledger',
+            'reports.customer-statement',
+            'reports.installments.pending',
+            'reports.installments.overdue',
+            'reports.receipts.register',
+            'reports.branches.collection',
+            'reports.gold.liability',
+        ];
+
+        $branchManagerRole->syncPermissions($branchManagerPermissions);
         $staffRole->syncPermissions($staffPermissions);
         $customerRole->syncPermissions($customerPermissions);
     }

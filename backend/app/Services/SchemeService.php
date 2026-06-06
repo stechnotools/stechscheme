@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\ChartOfAccount;
 use App\Models\Scheme;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -74,19 +73,7 @@ class SchemeService
             return;
         }
 
-        ChartOfAccount::query()->updateOrCreate(
-            [
-                'source_type' => 'scheme',
-                'source_id' => $scheme->id,
-            ],
-            [
-                'parent_id' => null,
-                'name' => $schemeName,
-                'code' => $scheme->code ?: null,
-                'account_type' => 'Liability',
-                'is_active' => ! $scheme->is_closed,
-                'remarks' => $scheme->remarks,
-            ]
-        );
+        $account = app(AccountingLedgerService::class)->schemeLedger($scheme);
+        $account->update(['is_active' => ! $scheme->is_closed]);
     }
 }

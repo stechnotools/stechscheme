@@ -92,6 +92,8 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
+    Route::get('memberships/{membership}/lifecycle', [MembershipController::class, 'lifecyclePreview'])->middleware('permission:membership.lifecycle');
+    Route::post('memberships/{membership}/lifecycle', [MembershipController::class, 'lifecycleAction'])->middleware('permission:membership.lifecycle');
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
     Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 
