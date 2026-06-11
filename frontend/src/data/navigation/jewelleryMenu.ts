@@ -69,23 +69,6 @@ export const jewelleryMenuItems: JewelleryMenuItem[] = [
     ]
   },
   {
-    id: 'payments',
-    label: 'Payments',
-    icon: 'ri-secure-payment-line',
-    children: [
-      { id: 'payments-all', label: 'All Payments', href: '/payments', permission: 'payments.all', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'payments-history', label: 'Deposit Entry', href: '/payments/history', permission: 'payments.history', roles: ['super-admin', 'admin', 'staff'] },
-      { id: 'payments-failed', label: 'Failed', href: '/payments/failed', permission: 'payments.failed', roles: ['super-admin', 'admin', 'staff'] },
-      {
-        id: 'payments-receipt',
-        label: 'Receipts',
-        href: '/payments/receipt',
-        permission: 'payments.receipt',
-        roles: ['super-admin', 'admin', 'staff']
-      }
-    ]
-  },
-  {
     id: 'feedback',
     label: 'Feedback',
     icon: 'ri-feedback-line',

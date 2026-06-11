@@ -41,7 +41,11 @@ class MembershipService
 
             $query->where(function ($builder) use ($search) {
                 $builder
-                    ->whereHas('customer', function ($customerQuery) use ($search) {
+                    ->where('membership_no', 'like', "%{$search}%")
+                    ->orWhere('card_no', 'like', "%{$search}%")
+                    ->orWhere('passbook_no', 'like', "%{$search}%")
+                    ->orWhere('ticket_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
                         $customerQuery
                             ->where('name', 'like', "%{$search}%")
                             ->orWhere('mobile', 'like', "%{$search}%")

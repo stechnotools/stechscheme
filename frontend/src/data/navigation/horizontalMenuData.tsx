@@ -37,14 +37,6 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
       ]
     },
     {
-      label: 'Payments',
-      icon: 'ri-secure-payment-line',
-      children: [
-        { label: 'All Payments', href: '/payments' },
-        { label: 'Create Payment', href: '/payments/create' }
-      ]
-    },
-    {
       label: 'Feedback',
       icon: 'ri-feedback-line',
       children: [

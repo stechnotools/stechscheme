@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useRouter, useSearchParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
-import { CustomerModalForm } from '../customers/CustomerModalForm'
 
-import { usePageLoading } from '@/contexts/pageLoadingContext'
 import Alert from '@mui/material/Alert'
 import Backdrop from '@mui/material/Backdrop'
 import Box from '@mui/material/Box'
@@ -35,6 +34,9 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+
+import { usePageLoading } from '@/contexts/pageLoadingContext'
+import { CustomerModalForm } from '../customers/CustomerModalForm'
 
 type InstallmentItem = {
   id: number
@@ -187,7 +189,7 @@ type UsersResponse = {
 }
 
 type BulkPaymentResponse = {
-  data: Array<{ id: number }>
+  data: Array<{ id: number; receipt_id?: number }>
   message?: string
 }
 
@@ -201,7 +203,7 @@ type EnrollmentResponse = {
   data: {
     customer?: { id?: number; mobile?: string; name?: string | null }
     membership?: { id?: number; membership_no?: string | null; card_no?: string | null }
-    payment?: { id?: number }
+    payment?: { id?: number; receipt_id?: number }
   }
 }
 
@@ -274,9 +276,11 @@ const SubscriptionCreatePage = () => {
 
   const [accountSearch, setAccountSearch] = useState('')
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     { gateway: 'cash', amount: '', transaction_id: '' }
   ])
+
   const [remark, setRemark] = useState('')
   const [salesman, setSalesman] = useState('None')
   const [todayRate, setTodayRate] = useState('0.00')
@@ -398,6 +402,7 @@ const SubscriptionCreatePage = () => {
 
       const pending = (selected.installments || []).filter(item => !item.paid).sort((a, b) => a.installment_no - b.installment_no)
       const preferredId = preferredInstallmentId ? Number(preferredInstallmentId) : null
+
       setSelectedInstallmentIds(
         preferredId && pending.some(item => item.id === preferredId) ? [preferredId] : pending[0] ? [pending[0].id] : []
       )
@@ -417,21 +422,26 @@ const SubscriptionCreatePage = () => {
         ])
 
         const activeMetals = (metalResponse.data || []).filter((m: any) => m.status !== 'inactive')
+
         const mappedMetalRates = activeMetals.map((m: any) => {
           const baseRate = m.last_log ? parseFloat(m.last_log.new_rate) : parseFloat(m.rate_per || '0')
           const buyMarkup = m.last_log ? parseFloat(m.last_log.new_buy_markup) : parseFloat(m.buy_markup_amount || '0')
           const buyRate = baseRate + buyMarkup
-          return {
+
+          
+return {
             ...m,
             rate_per: buyRate
           }
         })
 
         const goldMaster = mappedMetalRates.find((m: any) => m.metal_name?.toLowerCase().includes('gold'))
+
         if (goldMaster) {
           const originalGold = activeMetals.find((m: any) => m.metal_name?.toLowerCase().includes('gold'))
           const ratePerNum = parseFloat(originalGold?.rate_per || '10')
           const perGramRate = goldMaster.rate_per / (ratePerNum > 0 ? ratePerNum : 10)
+
           setTodayRate(perGramRate.toFixed(2))
         }
 
@@ -457,6 +467,7 @@ const SubscriptionCreatePage = () => {
 
       try {
         const membership = await loadMembership(initialMembershipId)
+
         await applyMembershipSelection(membership, initialInstallmentId)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load subscription.')
@@ -483,6 +494,7 @@ const SubscriptionCreatePage = () => {
   const isFirstMembershipMode = !activeMembership && Boolean(customerMobile.trim() || accountSearch.trim() || lookupCustomer)
   const isVariableScheme = (selectedScheme?.no_of_installment_type || '').toLowerCase() === 'variable'
   const isWeightScheme = (selectedScheme?.scheme_type || '').toLowerCase() === 'weight'
+
   const activeInstallmentValue = useMemo(() => {
     if (!activeMembership?.installments?.length) return null
 
@@ -491,6 +503,7 @@ const SubscriptionCreatePage = () => {
 
     return installment?.amount != null ? Number(installment.amount) : null
   }, [activeMembership])
+
   const currentInstallmentValue = activeMembership
     ? Number(activeInstallmentValue ?? selectedScheme?.installment_value ?? 0)
     : Number(editableInstallmentValue || selectedScheme?.installment_value || 0)
@@ -518,7 +531,9 @@ const SubscriptionCreatePage = () => {
 
     if (enteredAmount > payableLimit) {
       const label = activeMembership ? 'remaining payable amount' : 'total installment amount'
-      return `Payable amount (${currencyFormatter.format(enteredAmount)}) cannot be greater than the ${label} (${currencyFormatter.format(payableLimit)}).`
+
+      
+return `Payable amount (${currencyFormatter.format(enteredAmount)}) cannot be greater than the ${label} (${currencyFormatter.format(payableLimit)}).`
     }
 
     const installmentVal = currentInstallmentValue
@@ -546,7 +561,9 @@ const SubscriptionCreatePage = () => {
         if (prev.length === 1) {
           return [{ ...prev[0], amount: payableAmount }]
         }
-        return prev
+
+        
+return prev
       })
     }
   }, [payableAmount])
@@ -559,22 +576,31 @@ const SubscriptionCreatePage = () => {
 
   const paymentAmountErrors = useMemo(() => {
     const payable = Number(payableAmount || 0)
+
     const errors: (string | null)[] = paymentMethods.map(p => {
       const amt = Number(p.amount || 0)
+
       if (payable > 0 && amt > payable) {
         return `Amount cannot exceed payable amount (${currencyFormatter.format(payable)})`
       }
-      return null
+
+      
+return null
     })
-    return errors
+
+    
+return errors
   }, [paymentMethods, payableAmount])
 
   const paymentTotalError = useMemo(() => {
     const payable = Number(payableAmount || 0)
+
     if (payable > 0 && Math.abs(payable - paymentTotalAllocated) > 0.01) {
       return `Total allocated (${currencyFormatter.format(paymentTotalAllocated)}) must equal payable amount (${currencyFormatter.format(payable)}). Difference: ${currencyFormatter.format(payable - paymentTotalAllocated)}`
     }
-    return null
+
+    
+return null
   }, [payableAmount, paymentTotalAllocated])
 
   // Auto-calculate weight for weight-based schemes
@@ -606,9 +632,13 @@ const SubscriptionCreatePage = () => {
     if (activeMembership) {
       if (installmentVal > 0 && enteredAmount > 0) {
         const numInstallments = Math.max(1, Math.floor(enteredAmount / installmentVal))
-        return pendingInstallments.slice(0, numInstallments)
+
+        
+return pendingInstallments.slice(0, numInstallments)
       }
-      return pendingInstallments.slice(0, 1)
+
+      
+return pendingInstallments.slice(0, 1)
     }
 
     if (!isFirstMembershipMode) return []
@@ -616,6 +646,7 @@ const SubscriptionCreatePage = () => {
     if (installmentVal > 0 && enteredAmount > 0) {
       const numInstallments = Math.max(1, Math.floor(enteredAmount / installmentVal))
       const rows = []
+
       for (let i = 0; i < numInstallments; i++) {
         rows.push({
           id: -(i + 1),
@@ -626,7 +657,9 @@ const SubscriptionCreatePage = () => {
           penalty: 0
         })
       }
-      return rows
+
+      
+return rows
     }
 
     return [
@@ -657,6 +690,7 @@ const SubscriptionCreatePage = () => {
   useEffect(() => {
     if (tableRows.length > 0) {
       const ids = tableRows.map(item => item.id)
+
       const isDifferent =
         ids.length !== selectedInstallmentIds.length ||
         !ids.every(id => selectedInstallmentIds.includes(id))
@@ -678,24 +712,34 @@ const SubscriptionCreatePage = () => {
   const installmentCode = selectedScheme?.installment_code || selectedScheme?.code || ''
   const lotNo = activeMembership ? (paidInstallments + 1) : 1
 
-  const ticketSearchResults = useMemo(() => {
-    const query = ticketSearchText.trim().toLowerCase()
+  const [ticketSearchResults, setTicketSearchResults] = useState<MembershipLookup[]>([])
+  const [ticketModalSearching, setTicketModalSearching] = useState(false)
 
-    return allMemberships.filter(item => {
-      if (!query) return true
+  const handleTicketSearchModal = async (fetchDefault = false) => {
+    const query = ticketSearchText.trim()
 
-      return (
-        (item.card_no || '').toLowerCase().includes(query) ||
-        (item.membership_no || '').toLowerCase().includes(query) ||
-        (item.passbook_no || '').toLowerCase().includes(query) ||
-        (item.ticket_no || '').toLowerCase().includes(query) ||
-        (item.customer?.name || '').toLowerCase().includes(query) ||
-        (item.customer?.mobile || '').toLowerCase().includes(query) ||
-        (item.scheme?.name || '').toLowerCase().includes(query) ||
-        (item.scheme?.code || '').toLowerCase().includes(query)
-      )
-    })
-  }, [allMemberships, ticketSearchText])
+    if (!query && !fetchDefault) {
+      setTicketSearchResults([])
+
+      return
+    }
+
+    setTicketModalSearching(true)
+
+    try {
+      const endpoint = query
+        ? `/memberships?search=${encodeURIComponent(query)}&status_group=active`
+        : `/memberships?status_group=active&per_page=25`
+
+      const response = await request<MembershipsResponse>(endpoint)
+
+      setTicketSearchResults(response.data || [])
+    } catch {
+      setTicketSearchResults([])
+    } finally {
+      setTicketModalSearching(false)
+    }
+  }
 
   const handleCustomerLookup = async (query: string) => {
     if (!query.trim()) {
@@ -750,6 +794,7 @@ const SubscriptionCreatePage = () => {
 
       const memberships = await Promise.all(activeMembershipSummaries.map(item => loadMembership(item.id)))
       const selected = memberships.sort((a, b) => a.id - b.id)[0]
+
       await applyMembershipSelection(selected)
       setSuccess('Customer loaded successfully.')
     } catch (err) {
@@ -859,6 +904,7 @@ const SubscriptionCreatePage = () => {
       if (activeMembershipSummaries.length) {
         const memberships = await Promise.all(activeMembershipSummaries.map(item => loadMembership(item.id)))
         const selected = memberships.sort((a, b) => a.id - b.id)[0]
+
         await applyMembershipSelection(selected)
       } else {
         setLookupCustomer(data)
@@ -886,6 +932,7 @@ const SubscriptionCreatePage = () => {
 
     try {
       const membership = await loadMembership(membershipId)
+
       await applyMembershipSelection(membership)
       setSuccess('Subscription loaded successfully.')
     } catch (err) {
@@ -908,6 +955,7 @@ const SubscriptionCreatePage = () => {
     setSelectedSchemeId(String(membership.scheme?.id || ''))
 
     const pending = (membership.installments || []).filter(item => !item.paid).sort((a, b) => a.installment_no - b.installment_no)
+
     setSelectedInstallmentIds(pending[0] ? [pending[0].id] : [])
   }
 
@@ -939,6 +987,7 @@ const SubscriptionCreatePage = () => {
       }
 
       const rowError = paymentAmountErrors.find(e => e !== null)
+
       if (rowError) {
         throw new Error(rowError)
       }
@@ -983,12 +1032,8 @@ const SubscriptionCreatePage = () => {
         const membershipId = response.data.membership?.id
 
         if (customerId && membershipId) {
-          const membership = await loadMembership(membershipId)
-          await applyMembershipSelection(membership)
+          router.push(`/subscriptions/${membershipId}`)
         }
-
-        setLastSavedPaymentId(response.data.payment?.id?.toString() || null)
-        setSuccess('First subscription saved successfully.')
       } else {
         if (!selectedInstallmentIds.length) throw new Error('Select installment rows.')
 
@@ -1009,8 +1054,9 @@ const SubscriptionCreatePage = () => {
         })
 
         const refreshedMembership = await loadMembership(activeMembership.id)
+
         await applyMembershipSelection(refreshedMembership)
-        setLastSavedPaymentId(response.data[0]?.id?.toString() || null)
+        setLastSavedPaymentId(response.data[0]?.receipt_id?.toString() || response.data[0]?.id?.toString() || null)
         setSuccess(response.message || 'Installment saved successfully.')
       }
 
@@ -1266,7 +1312,12 @@ const SubscriptionCreatePage = () => {
                             <Button
                                 variant='outlined'
                                 color='primary'
-                                onClick={() => setTicketSearchOpen(true)}
+                                onClick={() => {
+                                  setTicketSearchOpen(true)
+                                  if (!ticketSearchResults.length && !ticketSearchText) {
+                                    void handleTicketSearchModal(true)
+                                  }
+                                }}
                                 sx={{ height: 56, borderRadius: 0 }}
                                 startIcon={<i className='ri-search-line' />}
                             >
@@ -1391,6 +1442,7 @@ const SubscriptionCreatePage = () => {
                             value={method.gateway}
                             onChange={event => {
                               const newMethods = [...paymentMethods]
+
                               newMethods[index].gateway = event.target.value as any
                               setPaymentMethods(newMethods)
                             }}
@@ -1411,6 +1463,7 @@ const SubscriptionCreatePage = () => {
                             placeholder={index === 0 ? Number(payableAmount || 0).toFixed(2) : '0.00'}
                             onChange={event => {
                               const newMethods = [...paymentMethods]
+
                               newMethods[index].amount = event.target.value
                               setPaymentMethods(newMethods)
                             }}
@@ -1429,6 +1482,7 @@ const SubscriptionCreatePage = () => {
                             value={method.transaction_id}
                             onChange={event => {
                               const newMethods = [...paymentMethods]
+
                               newMethods[index].transaction_id = event.target.value
                               setPaymentMethods(newMethods)
                             }}
@@ -1455,6 +1509,7 @@ const SubscriptionCreatePage = () => {
                                 onClick={() => {
                                   const currentTotal = paymentMethods.reduce((sum, p) => sum + Number(p.amount || 0), 0)
                                   const remaining = Math.max(0, Number(payableAmount || 0) - currentTotal)
+
                                   setPaymentMethods([...paymentMethods, { gateway: 'cash', amount: remaining > 0 ? remaining.toFixed(2) : '', transaction_id: '' }])
                                 }}
                                 sx={{ minWidth: 44, height: 56 }}
@@ -1776,13 +1831,18 @@ const SubscriptionCreatePage = () => {
         <DialogTitle>Existing Subscription Search</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
-            <TextField
-              fullWidth
-              label='Search Subscription No / Customer'
-              value={ticketSearchText}
-              onChange={event => setTicketSearchText(event.target.value)}
-              sx={inputSx}
-            />
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+              <TextField
+                fullWidth
+                label='Search Subscription No / Customer / A/C'
+                value={ticketSearchText}
+                onChange={event => setTicketSearchText(event.target.value)}
+                sx={inputSx}
+              />
+              <Button variant='contained' onClick={() => void handleTicketSearchModal()} disabled={ticketModalSearching}>
+                {ticketModalSearching ? <CircularProgress size={18} color='inherit' /> : 'Search'}
+              </Button>
+            </Stack>
             <TableContainer sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
               <Table>
                 <TableHead>
@@ -1812,8 +1872,8 @@ const SubscriptionCreatePage = () => {
                   ))}
                   {!ticketSearchResults.length ? (
                     <TableRow>
-                      <TableCell colSpan={4} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-                        No subscription found in loaded active records.
+                      <TableCell colSpan={6} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                        Search for a subscription, passbook, or ticket number.
                       </TableCell>
                     </TableRow>
                   ) : null}

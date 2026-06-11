@@ -68,14 +68,6 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       ]
     },
     {
-      label: 'Payments',
-      icon: 'ri-secure-payment-line',
-      children: [
-        { label: 'All Payments', href: '/payments' },
-        { label: 'Failed Payments', href: '/payments/failed' }
-      ]
-    },
-    {
       label: 'Feedback',
       icon: 'ri-feedback-line',
       children: [

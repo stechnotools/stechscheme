@@ -24,7 +24,7 @@ class MembershipController extends CrudController
 
     protected string $modelClass = Membership::class;
 
-    protected array $relations = ['customer.kyc', 'user', 'scheme.maturityBenefits', 'installments', 'payments.installment'];
+    protected array $relations = ['customer.kyc', 'user', 'scheme.maturityBenefits', 'installments', 'payments.installment', 'payments.receipt'];
 
     protected array $filterable = ['customer_id', 'user_id', 'scheme_id', 'status'];
 

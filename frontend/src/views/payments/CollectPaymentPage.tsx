@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useRouter, useSearchParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
-import { usePageLoading } from '@/contexts/pageLoadingContext'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -32,6 +32,8 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+
+import { usePageLoading } from '@/contexts/pageLoadingContext'
 
 type InstallmentItem = {
   id: number
@@ -179,7 +181,7 @@ type UsersResponse = {
 }
 
 type BulkPaymentResponse = {
-  data: Array<{ id: number }>
+  data: Array<{ id: number; receipt_id?: number }>
   message?: string
 }
 
@@ -187,7 +189,7 @@ type EnrollmentResponse = {
   data: {
     customer?: { id?: number; mobile?: string; name?: string | null }
     membership?: { id?: number; membership_no?: string | null; card_no?: string | null }
-    payment?: { id?: number }
+    payment?: { id?: number; receipt_id?: number }
   }
 }
 
@@ -503,6 +505,7 @@ const CollectPaymentPage = () => {
 
       const pending = (selected.installments || []).filter(item => !item.paid).sort((a, b) => a.installment_no - b.installment_no)
       const preferredId = preferredInstallmentId ? Number(preferredInstallmentId) : null
+
       setSelectedInstallmentIds(
         preferredId && pending.some(item => item.id === preferredId) ? [preferredId] : pending[0] ? [pending[0].id] : []
       )
@@ -540,6 +543,7 @@ const CollectPaymentPage = () => {
 
       try {
         const membership = await loadMembership(initialMembershipId)
+
         await applyMembershipSelection(membership, initialInstallmentId)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load membership.')
@@ -655,6 +659,7 @@ const CollectPaymentPage = () => {
 
     try {
       const fullMembership = await loadMembership(membership.id)
+
       await applyMembershipSelection(fullMembership)
       setPassbookNo(fullMembership.membership_no || query)
       setSuccess('Passbook loaded successfully.')
@@ -722,6 +727,7 @@ const CollectPaymentPage = () => {
 
       const memberships = await Promise.all(activeMembershipSummaries.map(item => loadMembership(item.id)))
       const selected = memberships.sort((a, b) => a.id - b.id)[0]
+
       await applyMembershipSelection(selected)
       setSuccess('Customer and ticket loaded successfully.')
     } catch (err) {
@@ -1008,6 +1014,7 @@ const CollectPaymentPage = () => {
 
     try {
       const membership = await loadMembership(membershipId)
+
       await applyMembershipSelection(membership)
       setSuccess('Ticket loaded successfully.')
     } catch (err) {
@@ -1032,6 +1039,7 @@ const CollectPaymentPage = () => {
     setTicketNo(membership.card_no || '')
 
     const pending = (membership.installments || []).filter(item => !item.paid).sort((a, b) => a.installment_no - b.installment_no)
+
     setSelectedInstallmentIds(pending[0] ? [pending[0].id] : [])
   }
 
@@ -1039,6 +1047,7 @@ const CollectPaymentPage = () => {
     setSelectedSchemeId(schemeId)
     setSelectedInstallmentIds(schemeId ? [-1] : [])
     setTicketNo(schemeId ? `TKT-${String(schemeId).padStart(4, '0')}` : '')
+
     if (!activeMembership) {
       setPassbookNo('')
     }
@@ -1087,10 +1096,11 @@ const CollectPaymentPage = () => {
 
         if (customerId && membershipId) {
           const membership = await loadMembership(membershipId)
+
           await applyMembershipSelection(membership)
         }
 
-        setLastSavedPaymentId(response.data.payment?.id || null)
+        setLastSavedPaymentId(response.data.payment?.receipt_id || response.data.payment?.id || null)
         setSuccess('First membership saved successfully.')
       } else {
         if (!selectedInstallmentIds.length) throw new Error('Select installment rows.')
@@ -1108,8 +1118,9 @@ const CollectPaymentPage = () => {
         })
 
         const refreshedMembership = await loadMembership(activeMembership.id)
+
         await applyMembershipSelection(refreshedMembership)
-        setLastSavedPaymentId(response.data?.[response.data.length - 1]?.id || null)
+        setLastSavedPaymentId(response.data?.[response.data.length - 1]?.receipt_id || response.data?.[response.data.length - 1]?.id || null)
         setSuccess(response.message || 'Installment saved successfully.')
       }
 

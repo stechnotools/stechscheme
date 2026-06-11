@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import Alert from '@mui/material/Alert'
@@ -59,6 +61,7 @@ type MembershipOption = {
 
 type PaymentItem = {
   id: number
+  receipt_id?: number | null
   amount: string | number
   status: string
   payment_date: string
@@ -79,23 +82,28 @@ type MembershipsResponse = { data: MembershipOption[] }
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
   const normalized = rawUrl.replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
+
+  
+return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
 const buildQueryString = (baseQuery: string, customerId?: string | null, filters?: any) => {
   const params = new URLSearchParams(baseQuery)
+
   if (customerId) params.set('customer_id', customerId)
   if (filters?.customer_name) params.set('customer_name', filters.customer_name)
   if (filters?.date_from) params.set('date_from', filters.date_from)
   if (filters?.date_to) params.set('date_to', filters.date_to)
-  return params.toString()
+  
+return params.toString()
 }
 
 const getStatusColor = (status: string) => {
   if (status === 'success') return 'success'
   if (status === 'pending') return 'warning'
   if (status === 'refunded') return 'info'
-  return 'error'
+  
+return 'error'
 }
 
 const PaymentListPage = ({
@@ -145,6 +153,7 @@ const PaymentListPage = ({
 
   const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
     if (!accessToken) throw new Error('Missing access token')
+
     const response = await fetch(`${resolveBackendApiUrl()}${path}`, {
       ...init,
       headers: {
@@ -154,18 +163,25 @@ const PaymentListPage = ({
         ...(init?.headers || {})
       }
     })
+
     const payload = (await response.json().catch(() => null)) as any
+
     if (!response.ok) {
       const validationMessage = payload?.errors ? Object.values(payload.errors).flat().join(' ') : null
+
       throw new Error(validationMessage || payload?.message || 'Request failed')
     }
-    return payload as T
+
+    
+return payload as T
   }, [accessToken])
 
   const load = useCallback(async () => {
     setLoading(true)
+
     try {
       const jobs: Array<Promise<unknown>> = []
+
       if (showLedger) jobs.push(request<PaymentsResponse>(`/payments?per_page=200&${ledgerQuery}`))
       if (initialShowCreateForm) jobs.push(request<MembershipsResponse>('/memberships?per_page=300&status=active'))
 
@@ -174,12 +190,14 @@ const PaymentListPage = ({
 
       if (showLedger) {
         const paymentsResponse = results[cursor] as PaymentsResponse
+
         setPayments(paymentsResponse.data)
         cursor += 1
       }
 
       if (initialShowCreateForm) {
         const membershipsResponse = results[cursor] as MembershipsResponse
+
         setMemberships(customerId ? membershipsResponse.data.filter(item => String(item.customer?.id || '') === customerId) : membershipsResponse.data)
       }
     } catch (err) {
@@ -197,10 +215,13 @@ const PaymentListPage = ({
   const handleCreate = async () => {
     if (!membershipId || !amount || Number(amount) <= 0) {
       setError('Membership and amount are required.')
-      return
+      
+return
     }
+
     setSaving(true)
     setError(null)
+
     try {
       const response = await request<{ data: PaymentItem }>('/payments', {
         method: 'POST',
@@ -213,13 +234,15 @@ const PaymentListPage = ({
           status
         })
       })
+
       setAmount('')
       setTransactionId('')
       setMembershipId('')
       setShowForm(false)
       await load()
+
       if (response.data.id && response.data.status === 'success') {
-        router.push(`/payments/receipt/${response.data.id}?autoprint=1`)
+        router.push(`/payments/receipt/${response.data.receipt_id || response.data.id}?autoprint=1`)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create payment.')
@@ -232,7 +255,9 @@ const PaymentListPage = ({
     const total = payments.reduce((sum, item) => sum + Number(item.amount || 0), 0)
     const successful = payments.filter(item => item.status === 'success').length
     const pending = payments.filter(item => item.status === 'pending').length
-    return { total, successful, pending, lastPaymentDate: payments[0]?.payment_date }
+
+    
+return { total, successful, pending, lastPaymentDate: payments[0]?.payment_date }
   }, [payments])
 
   const handleClearFilters = () => {
@@ -310,7 +335,7 @@ const PaymentListPage = ({
                   {customerId && (
                     <Button
                       component={Link}
-                      href='/payments/history'
+                      href={`/payments?customer_id=${customerId}`}
                       variant='outlined'
                       sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.3)' }}
                     >
@@ -515,7 +540,7 @@ const PaymentListPage = ({
                               <Chip size='small' label={item.status} color={getStatusColor(item.status)} variant='tonal' sx={{ fontWeight: 600 }} />
                             </TableCell>
                             <TableCell align='right' sx={{ pr: 4 }}>
-                              <Button component={Link} href={`/payments/receipt/${item.id}`} size='small' variant='outlined'>Receipt</Button>
+                              <Button component={Link} href={`/payments/receipt/${item.receipt_id || item.id}`} size='small' variant='outlined'>Receipt</Button>
                             </TableCell>
                           </TableRow>
                         ))}

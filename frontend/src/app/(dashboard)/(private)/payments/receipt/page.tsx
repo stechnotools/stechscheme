@@ -22,10 +22,7 @@ const PaymentsReceiptIndexPage = () => {
             Receipt pages are now generated per payment so staff can print or download the exact installment collection record.
           </Alert>
           <Stack direction='row' spacing={2}>
-            <Button component={Link} href='/payments/history' variant='contained'>
-              Open Payment History
-            </Button>
-            <Button component={Link} href='/payments' variant='outlined'>
+            <Button component={Link} href='/payments' variant='contained'>
               Go to Payments
             </Button>
           </Stack>

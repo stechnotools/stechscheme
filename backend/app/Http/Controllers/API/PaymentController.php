@@ -62,6 +62,14 @@ class PaymentController extends CrudController
 
     public function show(int|string $id): JsonResponse
     {
+        if (request()->boolean('by_receipt')) {
+            $payments = Payment::query()->with($this->relations)->where('receipt_id', (int) $id)->get();
+
+            return response()->json([
+                'data' => $payments,
+            ]);
+        }
+
         if (is_string($id) && str_contains($id, ',')) {
             $ids = explode(',', $id);
             $payments = Payment::query()->with($this->relations)->whereIn('id', $ids)->get();

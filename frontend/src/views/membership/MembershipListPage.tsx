@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
 import Link from 'next/link'
+
 import { useSession } from 'next-auth/react'
 
 import Alert from '@mui/material/Alert'
@@ -24,10 +26,7 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
-import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
 
 const MembershipSkeleton = () => (
   <Grid container spacing={6}>
@@ -93,7 +92,9 @@ type MembershipsResponse = { data: MembershipItem[] }
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
   const normalized = rawUrl.replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
+
+  
+return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
@@ -104,12 +105,14 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
 
 const getStatusColor = (status: string) => {
   const s = status.toLowerCase()
+
   if (s === 'active') return 'success'
   if (s === 'matured') return 'warning'
   if (s === 'redeemed') return 'info'
   if (s === 'closed') return 'error'
   if (s === 'settled') return 'secondary'
-  return 'default'
+  
+return 'default'
 }
 
 const MembershipListPage = ({
@@ -131,12 +134,16 @@ const MembershipListPage = ({
   const request = useCallback(
     async <T,>(path: string) => {
       if (!accessToken) throw new Error('Missing access token')
+
       const response = await fetch(`${resolveBackendApiUrl()}${path}`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` }
       })
+
       const payload = (await response.json().catch(() => null)) as any
+
       if (!response.ok) throw new Error(payload?.message || 'Request failed')
-      return payload as T
+      
+return payload as T
     },
     [accessToken]
   )
@@ -145,8 +152,10 @@ const MembershipListPage = ({
     if (!accessToken) return
     setLoading(true)
     setError(null)
+
     try {
       const response = await request<MembershipsResponse>('/memberships?per_page=500')
+
       setMemberships(response.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load memberships.')
@@ -158,7 +167,8 @@ const MembershipListPage = ({
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
-      return
+      
+return
     }
 
     if (status === 'authenticated') {
@@ -168,9 +178,12 @@ const MembershipListPage = ({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return memberships.filter(
+
+    
+return memberships.filter(
       item => {
         const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase()
+
         const matchesSearch =
           !q ||
           (item.customer?.name || '').toLowerCase().includes(q) ||
@@ -178,7 +191,9 @@ const MembershipListPage = ({
           (item.scheme?.name || '').toLowerCase().includes(q) ||
           (item.scheme?.code || '').toLowerCase().includes(q) ||
           String(item.id).includes(q)
-        return matchesStatus && matchesSearch
+
+        
+return matchesStatus && matchesSearch
       }
     )
   }, [memberships, search, statusFilter])
@@ -256,19 +271,6 @@ const MembershipListPage = ({
                     startIcon={<i className='ri-user-add-line' />}
                   >
                     New Enrollment
-                  </Button>
-                  <Button
-                    component={Link}
-                    href='/subscriptions/lifecycle'
-                    variant='outlined'
-                    sx={{
-                      borderColor: 'rgba(255,255,255,0.55)',
-                      color: 'common.white',
-                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.1)' }
-                    }}
-                    startIcon={<i className='ri-shuffle-line' />}
-                  >
-                    Lifecycle
                   </Button>
                 </Stack>
               </Stack>

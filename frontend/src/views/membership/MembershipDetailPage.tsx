@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+
+
 import { useSession } from 'next-auth/react'
 
 import Alert from '@mui/material/Alert'
@@ -21,12 +22,7 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
-import CircularProgress from '@mui/material/CircularProgress'
+
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import LinearProgress from '@mui/material/LinearProgress'
@@ -82,42 +78,21 @@ type MembershipDetail = {
     gateway?: string | null
     transaction_id?: string | null
     installment?: { installment_no: number } | null
+    receipt_id?: number | null
+    receipt?: {
+      id: number
+      receipt_no: string
+      payment_date: string
+      gateway?: string | null
+      transaction_id?: string | null
+      status: string
+    } | null
   }>
 }
 
 type MembershipResponse = { data: MembershipDetail }
 
-type LifecycleResponse = {
-  membership: {
-    id: number
-    membership_no?: string | null
-    status: string
-    next_status: string
-  }
-  summary: {
-    action: string
-    current_status: string
-    next_status: string
-    total_installments: number
-    paid_installments: number
-    pending_installments: number
-    overdue_installments: number
-    principal_total: number
-    penalty_total: number
-    paid_total: number
-    principal_paid: number
-    penalty_paid: number
-    principal_outstanding: number
-    penalty_outstanding: number
-    bonus_amount: number
-    closing_penalty_amount: number
-    net_settlement_amount: number
-    customer_payable_amount: number
-    customer_receivable_amount: number
-    maturity_due: boolean
-    is_eligible_for_maturity: boolean
-  }
-}
+
 
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
@@ -134,30 +109,28 @@ const money = new Intl.NumberFormat('en-IN', {
 
 const getStatusColor = (status: string) => {
   const s = status.toLowerCase()
+
   if (s === 'active' || s === 'success') return 'success'
   if (s === 'pending' || s === 'paused' || s === 'matured') return 'warning'
   if (s === 'refunded' || s === 'redeemed' || s === 'settled') return 'info'
-  return 'error'
+  
+return 'error'
 }
 
 const getHeaderBackground = (status: string) => {
   const s = status.toLowerCase()
+
   if (s === 'active') return 'linear-gradient(135deg, #0f172a 0%, #059669 55%, #059669 100%)'
   if (s === 'paused') return 'linear-gradient(135deg, #0f172a 0%, #d97706 55%, #d97706 100%)'
   if (s === 'completed' || s === 'matured') return 'linear-gradient(135deg, #0f172a 0%, #b91c1c 55%, #ea580c 100%)'
   if (s === 'redeemed') return 'linear-gradient(135deg, #0f172a 0%, #06b6d4 55%, #3b82f6 100%)'
   if (s === 'cancelled' || s === 'closed') return 'linear-gradient(135deg, #0f172a 0%, #475569 55%, #64748b 100%)'
   if (s === 'settled') return 'linear-gradient(135deg, #0f172a 0%, #6d28d9 55%, #8b5cf6 100%)'
-  return 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0f766e 100%)'
+  
+return 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0f766e 100%)'
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  mature: 'Maturity Settlement',
-  redeem: 'Redemption Settlement',
-  close: 'Early Closure',
-  cancel: 'Cancellation',
-  settle: 'Custom Settlement'
-}
+
 
 import Skeleton from '@mui/material/Skeleton'
 
@@ -251,20 +224,61 @@ const MembershipDetailSkeleton = () => (
 )
 
 const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
-  const router = useRouter()
+
   const { data: session } = useSession()
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
   const [membership, setMembership] = useState<MembershipDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
 
-  // Dialog state
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [dialogAction, setDialogAction] = useState<string>('mature')
-  const [previewLoading, setPreviewLoading] = useState(false)
-  const [previewData, setPreviewData] = useState<LifecycleResponse | null>(null)
-  const [dialogNotes, setDialogNotes] = useState('')
-  const [dialogError, setDialogError] = useState<string | null>(null)
+
+  const receipts = useMemo(() => {
+    if (!membership?.payments) return []
+
+    const map = new Map<number, any>()
+
+    membership.payments.forEach(payment => {
+      const rId = payment.receipt_id || payment.receipt?.id
+
+      if (!rId) return
+
+      if (!map.has(rId)) {
+        map.set(rId, {
+          id: rId,
+          receipt_no: payment.receipt?.receipt_no || `REC-${rId}`,
+          payment_date: payment.receipt?.payment_date || payment.payment_date,
+          gateway: payment.receipt?.gateway || payment.gateway || 'Manual',
+          transaction_id: payment.receipt?.transaction_id || payment.transaction_id || '',
+          amount: 0,
+          status: payment.receipt?.status || payment.status,
+          installments: []
+        })
+      }
+
+      const item = map.get(rId)
+
+      item.amount += Number(payment.amount || 0)
+
+      if (payment.installment) {
+        item.installments.push(payment.installment.installment_no)
+      }
+    })
+
+    return Array.from(map.values())
+      .map(item => {
+        const sortedInsts = item.installments.sort((a: number, b: number) => a - b)
+        let installmentText = '-'
+
+        if (sortedInsts.length > 0) {
+          installmentText = sortedInsts.map((n: number) => `#${n}`).join(', ')
+        }
+
+        return {
+          ...item,
+          installmentText
+        }
+      })
+      .sort((a, b) => b.id - a.id)
+  }, [membership?.payments])
 
   const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
     if (!accessToken) throw new Error('Missing access token')
@@ -302,65 +316,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     void loadMembership()
   }, [accessToken, loadMembership])
 
-  const handleDelete = async () => {
-    if (!membership) return
-    if (!confirm(`Are you sure you want to delete Membership #${membership.id}? This action cannot be undone.`)) return
 
-    setSaving(true)
-    setError(null)
-
-    try {
-      await request(`/memberships/${membership.id}`, { method: 'DELETE' })
-      router.replace('/subscriptions')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete membership.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Open the dialog and load the preview
-  const openLifecycleDialog = async (action: string) => {
-    setDialogAction(action)
-    setDialogOpen(true)
-    setPreviewLoading(true)
-    setPreviewData(null)
-    setDialogNotes('')
-    setDialogError(null)
-
-    try {
-      const response = await request<{ data: LifecycleResponse }>(`/memberships/${membershipId}/lifecycle?action=${encodeURIComponent(action)}`)
-      setPreviewData(response.data)
-    } catch (err) {
-      setDialogError(err instanceof Error ? err.message : 'Failed to load lifecycle preview.')
-    } finally {
-      setPreviewLoading(false)
-    }
-  }
-
-  // Submit the lifecycle action
-  const handleApplyLifecycle = async () => {
-    setSaving(true)
-    setDialogError(null)
-
-    try {
-      await request(`/memberships/${membershipId}/lifecycle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: dialogAction,
-          notes: dialogNotes
-        })
-      })
-      setDialogOpen(false)
-      await loadMembership()
-      router.refresh()
-    } catch (err) {
-      setDialogError(err instanceof Error ? err.message : 'Failed to apply lifecycle action.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   if (error) {
     return (
@@ -389,9 +345,12 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const nextUnpaid = membership.installments
     ?.filter(item => !item.paid)
     .sort((a, b) => a.installment_no - b.installment_no)[0]
+
   const baseVal = Number(nextUnpaid?.amount || membership.scheme?.installment_value || 0)
   const penaltyVal = Number(nextUnpaid?.penalty || 0)
   const nextDueAmount = baseVal + penaltyVal
+
+
 
   const stats = [
     {
@@ -466,28 +425,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
               </Stack>
             </Stack>
 
-            <Divider sx={{ my: 5, borderColor: 'rgba(255,255,255,0.12)' }} />
 
-            <Stack direction='row' spacing={2} flexWrap='wrap' useFlexGap>
-              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#ffffff', color: '#1e3a8a', '&:hover': { bgcolor: '#f1f5f9' } }} onClick={() => openLifecycleDialog('mature')}>
-                Mark Matured
-              </Button>
-              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#10b981', color: 'common.white', '&:hover': { bgcolor: '#059669' } }} onClick={() => openLifecycleDialog('redeem')}>
-                Redeem Scheme
-              </Button>
-              <Button disabled={saving} variant='contained' sx={{ bgcolor: '#f59e0b', color: 'common.white', '&:hover': { bgcolor: '#d97706' } }} onClick={() => openLifecycleDialog('close')}>
-                Close (Settled)
-              </Button>
-              <Button disabled={saving} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.4)', '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' } }} onClick={() => openLifecycleDialog('cancel')}>
-                Cancel Scheme
-              </Button>
-              <Button disabled={saving} variant='outlined' sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.4)', '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' } }} onClick={() => openLifecycleDialog('settle')}>
-                Custom Settlement
-              </Button>
-              <Button disabled={saving} variant='contained' color='error' onClick={() => void handleDelete()}>
-                Delete
-              </Button>
-            </Stack>
           </CardContent>
         </Card>
       </Grid>
@@ -555,21 +493,21 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                         <TableRow>
                           <TableCell sx={{ fontWeight: 600 }}>No.</TableCell>
                           <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Paid Date</TableCell>
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Base Amount</TableCell>
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Penalty</TableCell>
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Total Payable</TableCell>
                           <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Payment Record</TableCell>
-                          <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {membership.installments?.map(item => {
+                        {[...(membership.installments || [])]
+                          .sort((a, b) => a.installment_no - b.installment_no)
+                          .map(item => {
                           const isOverdue = !item.paid && new Date(item.due_date) < new Date()
                           const baseAmount = Number(item.amount || membership.scheme?.installment_value || 0)
                           const penalty = Number(item.penalty || 0)
                           const totalPayable = baseAmount + penalty
-                          const linkedPayment = membership.payments?.find(payment => payment.installment?.installment_no === item.installment_no && payment.status === 'success')
 
                           return (
                             <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
@@ -577,6 +515,11 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                                 #{item.installment_no}
                               </TableCell>
                               <TableCell>{new Date(item.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
+                              <TableCell>
+                                {item.paid_date
+                                  ? new Date(item.paid_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                  : '-'}
+                              </TableCell>
                               <TableCell align='right'>{`Rs ${baseAmount.toLocaleString('en-IN')}`}</TableCell>
                               <TableCell align='right'>
                                 <Typography color={penalty > 0 ? 'error' : 'text.secondary'}>
@@ -595,45 +538,6 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                                   <Chip size='small' label='Pending' color='warning' variant='tonal' />
                                 )}
                               </TableCell>
-                              <TableCell>
-                                {linkedPayment ? (
-                                  <Stack spacing={0.25}>
-                                    <Typography variant='body2' fontWeight={600}>
-                                      {`Rs ${Number(linkedPayment.amount || 0).toLocaleString('en-IN')}`}
-                                    </Typography>
-                                    <Typography variant='caption' color='text.secondary'>
-                                      {`${new Date(linkedPayment.payment_date).toLocaleDateString('en-IN')} • ${linkedPayment.gateway || 'Manual'} • ${linkedPayment.transaction_id || 'No ref'}`}
-                                    </Typography>
-                                  </Stack>
-                                ) : (
-                                  <Typography variant='body2' color='text.secondary'>
-                                    {item.paid_date ? `Paid on ${new Date(item.paid_date).toLocaleDateString('en-IN')}` : 'No payment linked yet'}
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell align='right'>
-                                {item.paid && linkedPayment ? (
-                                  <Button
-                                    size='small'
-                                    variant='outlined'
-                                    color='secondary'
-                                    component={Link}
-                                    href={`/payments/receipt/${linkedPayment.id}`}
-                                  >
-                                    Receipt
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size='small'
-                                    variant='contained'
-                                    color='primary'
-                                    component={Link}
-                                    href={`/payments/collect?membership_id=${membership.id}&installment_id=${item.id}`}
-                                  >
-                                    Pay Now
-                                  </Button>
-                                )}
-                              </TableCell>
                             </TableRow>
                           )
                         })}
@@ -649,7 +553,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                   <Typography variant='h6' sx={{ p: 4, pb: 2, fontWeight: 700 }}>
                     Payment History
                   </Typography>
-                  {!membership.payments?.length ? (
+                  {!receipts.length ? (
                     <Box sx={{ p: 4 }}>
                       <Alert severity='info'>No payments recorded yet.</Alert>
                     </Box>
@@ -659,18 +563,20 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                         <TableHead sx={{ bgcolor: 'action.hover' }}>
                           <TableRow>
                             <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Installment</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Receipt No.</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Installments</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Gateway / Reference</TableCell>
                             <TableCell align='right' sx={{ fontWeight: 600 }}>Amount</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                            <TableCell align='right' sx={{ fontWeight: 600 }}>Receipt</TableCell>
+                            <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {membership.payments.map(item => (
+                          {receipts.map(item => (
                             <TableRow key={item.id} hover>
                               <TableCell>{new Date(item.payment_date).toLocaleDateString('en-IN')}</TableCell>
-                              <TableCell>{`#${item.installment?.installment_no || '-'}`}</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>{item.receipt_no}</TableCell>
+                              <TableCell>{item.installmentText}</TableCell>
                               <TableCell>
                                 <Typography variant='body2' fontWeight={500}>{item.gateway || 'Manual'}</Typography>
                                 <Typography variant='caption' color='text.secondary'>{item.transaction_id || 'No reference id'}</Typography>
@@ -687,7 +593,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                               </TableCell>
                               <TableCell align='right'>
                                 <Button component={Link} href={`/payments/receipt/${item.id}`} size='small' variant='outlined'>
-                                  View Receipt
+                                  Details
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -847,115 +753,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
         </Grid>
       </Grid>
 
-      {/* Lifecycle Action Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} fullWidth maxWidth='sm'>
-        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>
-          {ACTION_LABELS[dialogAction] || 'Subscription Status Transition'}
-        </DialogTitle>
-        <DialogContent dividers>
-          {previewLoading ? (
-            <Stack direction='column' spacing={2} alignItems='center' sx={{ py: 6 }}>
-              <CircularProgress size={40} />
-              <Typography variant='body2' color='text.secondary'>
-                Calculating outstanding balances and settlement figures...
-              </Typography>
-            </Stack>
-          ) : dialogError ? (
-            <Alert severity='error' sx={{ my: 2 }}>
-              {dialogError}
-            </Alert>
-          ) : previewData ? (
-            <Stack spacing={4} sx={{ my: 1 }}>
-              <Alert severity={previewData.summary.is_eligible_for_maturity || dialogAction !== 'mature' ? 'info' : 'warning'}>
-                {dialogAction === 'mature' && !previewData.summary.is_eligible_for_maturity
-                  ? 'System flag: This subscription does not meet standard maturity guidelines yet (overdue installments may exist).'
-                  : `This action will transition the subscription status from "${previewData.summary.current_status}" to "${previewData.summary.next_status}".`}
-              </Alert>
 
-              <Typography variant='subtitle2' fontWeight={700}>
-                Settlement Calculator Breakdown
-              </Typography>
-
-              <TableContainer component={Paper} variant='outlined' elevation={0}>
-                <Table size='small'>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Principal Outstanding</TableCell>
-                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
-                        {money.format(previewData.summary.principal_outstanding)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Penalty Outstanding</TableCell>
-                      <TableCell align='right' sx={{ py: 2, color: 'error.main', fontWeight: 600 }}>
-                        {money.format(previewData.summary.penalty_outstanding)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Bonus Amount Credits</TableCell>
-                      <TableCell align='right' sx={{ py: 2, color: 'success.main', fontWeight: 600 }}>
-                        {money.format(previewData.summary.bonus_amount)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Early Closing Penalty</TableCell>
-                      <TableCell align='right' sx={{ py: 2, color: 'error.main', fontWeight: 600 }}>
-                        {money.format(previewData.summary.closing_penalty_amount || 0)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow sx={{ bgcolor: 'action.hover' }}>
-                      <TableCell sx={{ py: 2, fontWeight: 700 }}>Net Settlement Value</TableCell>
-                      <TableCell align='right' sx={{ py: 2, fontWeight: 700, fontSize: '1.05rem' }}>
-                        {money.format(previewData.summary.net_settlement_amount)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Customer Payable</TableCell>
-                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
-                        {money.format(previewData.summary.customer_payable_amount || 0)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ py: 2, fontWeight: 500 }}>Customer Receivable</TableCell>
-                      <TableCell align='right' sx={{ py: 2, fontWeight: 600 }}>
-                        {money.format(previewData.summary.customer_receivable_amount || 0)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <TextField
-                fullWidth
-                label='Action Notes / Remarks'
-                multiline
-                rows={3}
-                placeholder='Enter reasons or details for audit logs...'
-                value={dialogNotes}
-                onChange={e => setDialogNotes(e.target.value)}
-                disabled={saving}
-              />
-            </Stack>
-          ) : (
-            <Typography variant='body2' color='text.secondary'>
-              No preview calculation data available.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 4, py: 3 }}>
-          <Button onClick={() => setDialogOpen(false)} disabled={saving} variant='outlined'>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleApplyLifecycle}
-            disabled={saving || previewLoading || !previewData}
-            variant='contained'
-            color={dialogAction === 'cancel' || dialogAction === 'close' ? 'error' : 'primary'}
-          >
-            {saving ? 'Processing...' : 'Confirm & Apply'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Grid>
   )
 }

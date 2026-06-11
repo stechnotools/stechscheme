@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import Alert from '@mui/material/Alert'
@@ -220,7 +221,10 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
     const loadReceipt = async () => {
       try {
         setError(null)
-        const response = await request<PaymentReceiptResponse>(`/payments/${paymentId}`)
+
+        const response = await request<PaymentReceiptResponse>(
+          `/payments/${paymentId}?by_receipt=1`
+        )
 
         if (Array.isArray(response.data)) {
           setPayments(response.data)
@@ -253,6 +257,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
 
   const payment = payments[0]
   const receipt = payment.receipt
+
   const receiptPayments = receipt?.payments?.length
     ? receipt.payments
     : payments.map(p => ({
@@ -262,6 +267,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         transaction_id: p.transaction_id || null,
         payment_date: p.payment_date
       }))
+
   const receiptDetails = receipt?.details?.length
     ? receipt.details
     : payments.map(p => ({
@@ -270,12 +276,14 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         late_fee: p.installment?.penalty ?? 0,
         installment: p.installment
       }))
+
   const totalPaid = Number(receipt?.total_amount ?? receiptPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0))
   const receiptDate = new Date(receipt?.receipt_date || receipt?.payment_date || payment.payment_date).toLocaleDateString('en-IN')
   const customerName = receipt?.customer?.name || payment.membership?.customer?.name || 'Unknown customer'
   const customerMobile = receipt?.customer?.mobile || payment.membership?.customer?.mobile || '-'
   const schemeName = payment.membership?.scheme?.name || '-'
   const schemeCode = payment.membership?.scheme?.code || '-'
+
   const installmentNumbers = Array.from(
     new Set(
       receiptDetails
@@ -283,6 +291,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         .filter((value): value is number => typeof value === 'number')
     )
   ).sort((a, b) => a - b)
+
   const gatewayNames = Array.from(new Set(receiptPayments.map(p => p.method || 'manual'))).join(', ')
 
   return (
@@ -290,9 +299,6 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
       <Stack direction='row' justifyContent='space-between' alignItems='center' className='no-print'>
         <Typography variant='h4'>Payment Receipt</Typography>
         <Stack direction='row' spacing={1.5}>
-          <Button component={Link} href='/payments/history' variant='outlined' color='secondary'>
-            Payment History
-          </Button>
           <Button variant='outlined' onClick={() => window.print()}>Print</Button>
           <Button variant='contained' onClick={() => void handleDownloadPdf()} disabled={downloadingPdf}>
             {downloadingPdf ? 'Preparing PDF...' : 'Download PDF'}
