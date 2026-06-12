@@ -50,7 +50,15 @@ class BlockBotRequests
         $userAgent = $request->userAgent() ?? '';
 
         if ($userAgent === '') {
-            abort(444);
+            $ip = $request->ip() ?? '';
+            $isLocal = in_array($ip, ['127.0.0.1', '::1'])
+                || str_starts_with($ip, '172.')
+                || str_starts_with($ip, '10.')
+                || str_starts_with($ip, '192.168.');
+
+            if (!$isLocal) {
+                abort(444);
+            }
         }
 
         foreach (self::BLOCKED_AGENTS as $bot) {
