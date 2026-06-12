@@ -46,10 +46,10 @@ services:
       context: ./frontend
       dockerfile: ../docker/frontend/Dockerfile
       args:
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://crm.stechnotools.com}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://crm.stechnotools.com/api}
         API_URL: ${API_URL:-http://nginx/api}
-        NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+        NEXTAUTH_URL: ${NEXTAUTH_URL:-https://crm.stechnotools.com}
         NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-jewellery-scheme-nextauth-secret}
         NEXTAUTH_BASEPATH: ${NEXTAUTH_BASEPATH:-/api/auth}
         NEXTAUTH_TRUST_HOST: ${NEXTAUTH_TRUST_HOST:-true}
@@ -64,10 +64,10 @@ services:
     environment:
       PORT: 3000
       HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://crm.stechnotools.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://crm.stechnotools.com/api}
       API_URL: ${API_URL:-http://nginx/api}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://crm.stechnotools.com}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-jewellery-scheme-nextauth-secret}
       NEXTAUTH_BASEPATH: ${NEXTAUTH_BASEPATH:-/api/auth}
       NEXTAUTH_TRUST_HOST: ${NEXTAUTH_TRUST_HOST:-true}
