@@ -56,7 +56,19 @@ export const authOptions: NextAuthOptions = {
           })
         })
 
-        const data = (await res.json()) as BackendLoginResponse | { message?: string; errors?: Record<string, string[]> }
+        let data: any
+        try {
+          const clonedRes = res.clone()
+          data = await clonedRes.json()
+        } catch (err) {
+          const text = await res.text().catch(() => '')
+          console.error('Failed to parse login response JSON. Response text:', text)
+          throw new Error(
+            JSON.stringify({
+              message: [`Invalid response: ${text.slice(0, 300)}`]
+            })
+          )
+        }
 
         if (!res.ok || !('token' in data)) {
           throw new Error(
@@ -67,10 +79,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         const roles =
-          Array.isArray(data.data.roles)
-            ? data.data.roles
-                .map(item => (typeof item === 'string' ? item : item?.name))
-                .filter((name): name is string => Boolean(name))
+          Array.isArray(data?.data?.roles)
+            ? (data.data.roles as any[])
+                .map((item: any) => (typeof item === 'string' ? item : (item as { name?: string | null })?.name))
+                .filter((name: any): name is string => Boolean(name))
             : []
 
         const backendUser: SessionBackendUser = {
