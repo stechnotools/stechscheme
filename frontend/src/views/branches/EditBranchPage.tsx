@@ -15,8 +15,124 @@ import Stack from '@mui/material/Stack'
 import Switch from '@mui/material/Switch'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import CircularProgress from '@mui/material/CircularProgress'
+import Skeleton from '@mui/material/Skeleton'
 import { mapApiBranchToBranch, resolveBackendApiUrl, type ApiBranch } from './data'
+
+const EditBranchSkeleton = () => {
+  return (
+    <Grid container spacing={6}>
+      <Grid size={{ xs: 12 }}>
+        <Card
+          sx={{
+            color: 'common.white',
+            background: 'linear-gradient(135deg, #1f2937 0%, #14532d 50%, #0f766e 100%)'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 5, md: 6 } }}>
+            <Stack direction={{ xs: 'column', lg: 'row' }} justifyContent='space-between' spacing={3}>
+              <div>
+                <Chip
+                  label='Branch Edit'
+                  sx={{ mb: 2, bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white' }}
+                />
+                <Skeleton width={250} height={40} animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)', mb: 1 }} />
+                <Skeleton width={450} height={20} animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Skeleton width={120} height={36} variant='rounded' animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+                <Skeleton width={120} height={36} variant='rounded' animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid size={{ xs: 12, lg: 8 }}>
+        <Card>
+          <CardContent>
+            <Stack spacing={3}>
+              <Alert severity='info'>
+                Core branch details below update the backend now. Zone, default visibility, and onboarding toggles are
+                still visual defaults only.
+              </Alert>
+
+              <Skeleton width={180} height={32} animation='wave' />
+
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Skeleton width='100%' height={90} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Skeleton width='100%' height={56} variant='rounded' animation='wave' />
+                </Grid>
+              </Grid>
+
+              <Stack direction='row' justifyContent='flex-end' spacing={2}>
+                <Skeleton width={100} height={36} variant='rounded' animation='wave' />
+                <Skeleton width={130} height={36} variant='rounded' animation='wave' />
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid size={{ xs: 12, lg: 4 }}>
+        <Stack spacing={6}>
+          <Card>
+            <CardContent>
+              <Stack spacing={2}>
+                <Skeleton width={160} height={28} animation='wave' />
+                <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                  <Skeleton width={120} height={20} animation='wave' />
+                  <Skeleton width={40} height={20} variant='rounded' animation='wave' />
+                </Stack>
+                <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                  <Skeleton width={180} height={20} animation='wave' />
+                  <Skeleton width={40} height={20} variant='rounded' animation='wave' />
+                </Stack>
+                <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                  <Skeleton width={180} height={20} animation='wave' />
+                  <Skeleton width={40} height={20} variant='rounded' animation='wave' />
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Skeleton width={180} height={28} animation='wave' />
+                <Skeleton width='100%' height={40} animation='wave' />
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      </Grid>
+    </Grid>
+  )
+}
 
 const EditBranchPage = ({ branchId }: { branchId: number }) => {
   const router = useRouter()
@@ -138,6 +254,10 @@ const EditBranchPage = ({ branchId }: { branchId: number }) => {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loading || status === 'loading') {
+    return <EditBranchSkeleton />
   }
 
   if (!branch) {

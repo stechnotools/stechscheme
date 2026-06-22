@@ -1,5 +1,11 @@
+// React Imports
+import { useMemo } from 'react'
+
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
+
+// Third-party Imports
+import { useSession } from 'next-auth/react'
 
 // Type Imports
 import type { getDictionary } from '@/utils/getDictionary'
@@ -12,6 +18,7 @@ import { GenerateHorizontalMenu } from '@components/GenerateMenu'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
+import { usePermissions } from '@/hooks/usePermissions'
 
 // Styled Component Imports
 import StyledHorizontalNavExpandIcon from '@menu/styles/horizontal/StyledHorizontalNavExpandIcon'
@@ -25,6 +32,9 @@ import verticalNavigationCustomStyles from '@core/styles/vertical/navigationCust
 
 // Menu Data Imports
 import menuData from '@/data/navigation/horizontalMenuData'
+
+// Util Imports
+import { filterMenuByPermissions } from '@/utils/menuFilter'
 
 type RenderExpandIconProps = {
   level?: number
@@ -50,8 +60,14 @@ const RenderVerticalExpandIcon = ({ open, transitionDuration }: RenderVerticalEx
 const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof getDictionary>> }) => {
   const verticalNavOptions = useVerticalNav()
   const theme = useTheme()
+  const { status } = useSession()
+  const { hasPermission } = usePermissions()
 
   const { transitionDuration } = verticalNavOptions
+
+  const filteredMenuData = useMemo(() => {
+    return filterMenuByPermissions(menuData(dictionary), hasPermission)
+  }, [dictionary, hasPermission])
 
   return (
     <HorizontalNav
@@ -79,7 +95,13 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
           renderExpandedMenuItemIcon: { icon: <i className='ri-circle-fill' /> }
         }}
       >
-        <GenerateHorizontalMenu menuData={menuData(dictionary)} />
+        {status === 'loading' ? (
+          <div className='flex items-center justify-center p-5 bs-full'>
+            <i className='ri-loader-2-line animate-spin text-xl text-textSecondary' />
+          </div>
+        ) : (
+          <GenerateHorizontalMenu menuData={filteredMenuData} />
+        )}
       </Menu>
     </HorizontalNav>
   )

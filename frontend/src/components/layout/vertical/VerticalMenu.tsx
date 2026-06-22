@@ -1,8 +1,12 @@
+// React Imports
+import { useMemo } from 'react'
+
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
+import { useSession } from 'next-auth/react'
 
 // Type Imports
 import type { getDictionary } from '@/utils/getDictionary'
@@ -14,6 +18,7 @@ import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
+import { usePermissions } from '@/hooks/usePermissions'
 
 // Styled Component Imports
 import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNavExpandIcon'
@@ -24,6 +29,9 @@ import menuSectionStyles from '@core/styles/vertical/menuSectionStyles'
 
 // Menu Data Imports
 import menuData from '@/data/navigation/verticalMenuData'
+
+// Util Imports
+import { filterMenuByPermissions } from '@/utils/menuFilter'
 
 type RenderExpandIconProps = {
   open?: boolean
@@ -44,9 +52,15 @@ const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) =
 const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
+  const { status } = useSession()
+  const { hasPermission } = usePermissions()
 
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
+
+  const filteredMenuData = useMemo(() => {
+    return filterMenuByPermissions(menuData(dictionary), hasPermission)
+  }, [dictionary, hasPermission])
 
   return (
     <ScrollWrapper
@@ -67,7 +81,13 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <GenerateVerticalMenu menuData={menuData(dictionary)} />
+        {status === 'loading' ? (
+          <div className='flex items-center justify-center p-5 bs-full'>
+            <i className='ri-loader-2-line animate-spin text-xl text-textSecondary' />
+          </div>
+        ) : (
+          <GenerateVerticalMenu menuData={filteredMenuData} />
+        )}
       </Menu>
     </ScrollWrapper>
   )

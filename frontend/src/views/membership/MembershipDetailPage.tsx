@@ -27,6 +27,12 @@ import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import LinearProgress from '@mui/material/LinearProgress'
 import Divider from '@mui/material/Divider'
+import IconButton from '@mui/material/IconButton'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import TextField from '@mui/material/TextField'
 
 type MembershipDetail = {
   id: number
@@ -69,6 +75,9 @@ type MembershipDetail = {
     amount?: string | number
     penalty?: string | number
     paid_date?: string | null
+    weight?: string | number | null
+    rate_per_gram?: string | number | null
+    manual_weight?: string | number | null
   }>
   payments?: Array<{
     id: number
@@ -229,6 +238,11 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
   const [membership, setMembership] = useState<MembershipDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingInstallment, setEditingInstallment] = useState<NonNullable<MembershipDetail['installments']>[number] | null>(null)
+  const [editWeight, setEditWeight] = useState('')
+  const [editPenalty, setEditPenalty] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
 
   const receipts = useMemo(() => {
@@ -316,6 +330,62 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     void loadMembership()
   }, [accessToken, loadMembership])
 
+  const openEditInstallment = (item: NonNullable<MembershipDetail['installments']>[number]) => {
+    setEditingInstallment(item)
+    setEditWeight(String(item.manual_weight ?? item.weight ?? ''))
+    setEditPenalty(String(item.penalty ?? '0'))
+    setEditError(null)
+  }
+
+  const closeEditInstallment = () => {
+    if (editSaving) return
+    setEditingInstallment(null)
+    setEditError(null)
+  }
+
+  const handleSaveInstallmentEdit = async () => {
+    if (!editingInstallment || !membership) return
+
+    const weightValue = Number(editWeight)
+    const penaltyValue = Number(editPenalty || 0)
+
+    if (!Number.isFinite(weightValue) || weightValue < 0) {
+      setEditError('Enter a valid weight.')
+      return
+    }
+
+    if (!Number.isFinite(penaltyValue) || penaltyValue < 0) {
+      setEditError('Enter a valid penalty.')
+      return
+    }
+
+    setEditSaving(true)
+    setEditError(null)
+
+    try {
+      await request(`/installments/${editingInstallment.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          membership_id: membership.id,
+          installment_no: editingInstallment.installment_no,
+          due_date: editingInstallment.due_date,
+          amount: Number(editingInstallment.amount ?? 0),
+          paid: editingInstallment.paid,
+          paid_date: editingInstallment.paid_date ?? null,
+          penalty: penaltyValue,
+          manual_weight: weightValue
+        })
+      })
+
+      setEditingInstallment(null)
+      await loadMembership()
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to update installment.')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
 
 
   if (error) {
@@ -332,6 +402,8 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   }
 
   if (!membership) return <MembershipDetailSkeleton />
+
+  const isWeightScheme = (membership.scheme?.scheme_type || '').toLowerCase() === 'weight'
 
   // Installments calculation
   const totalInstallments = membership.installments?.length || membership.scheme?.total_installments || 0
@@ -497,7 +569,13 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Base Amount</TableCell>
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Penalty</TableCell>
                           <TableCell align='right' sx={{ fontWeight: 600 }}>Total Payable</TableCell>
+                          {isWeightScheme && (
+                            <TableCell align='right' sx={{ fontWeight: 600 }}>Weight (g)</TableCell>
+                          )}
                           <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                          {isWeightScheme && (
+                            <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
+                          )}
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -529,6 +607,11 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                               <TableCell align='right' sx={{ fontWeight: 600 }}>
                                 {`Rs ${totalPayable.toLocaleString('en-IN')}`}
                               </TableCell>
+                              {isWeightScheme && (
+                                <TableCell align='right'>
+                                  {item.weight != null ? `${Number(item.weight).toFixed(4)} g` : '-'}
+                                </TableCell>
+                              )}
                               <TableCell>
                                 {item.paid ? (
                                   <Chip size='small' label='Paid' color='success' variant='tonal' />
@@ -538,6 +621,15 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                                   <Chip size='small' label='Pending' color='warning' variant='tonal' />
                                 )}
                               </TableCell>
+                              {isWeightScheme && (
+                                <TableCell align='right'>
+                                  {item.paid && (
+                                    <IconButton size='small' color='primary' onClick={() => openEditInstallment(item)}>
+                                      <i className='ri-edit-line' style={{ fontSize: '1.1rem' }} />
+                                    </IconButton>
+                                  )}
+                                </TableCell>
+                              )}
                             </TableRow>
                           )
                         })}
@@ -753,7 +845,35 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
         </Grid>
       </Grid>
 
-
+      <Dialog open={Boolean(editingInstallment)} onClose={closeEditInstallment} maxWidth='xs' fullWidth>
+        <DialogTitle>Edit Installment #{editingInstallment?.installment_no}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {editError && <Alert severity='error'>{editError}</Alert>}
+            <TextField
+              label='Weight (g)'
+              type='number'
+              value={editWeight}
+              onChange={e => setEditWeight(e.target.value)}
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label='Penalty'
+              type='number'
+              value={editPenalty}
+              onChange={e => setEditPenalty(e.target.value)}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEditInstallment} disabled={editSaving}>Cancel</Button>
+          <Button variant='contained' onClick={() => void handleSaveInstallmentEdit()} disabled={editSaving}>
+            {editSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   )
 }

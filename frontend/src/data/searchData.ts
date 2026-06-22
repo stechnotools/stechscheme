@@ -255,7 +255,7 @@ const data: SearchData[] = [
   {
     id: '35',
     name: 'User List',
-    url: '/apps/user/list',
+    url: '/users',
     icon: 'ri-file-user-line',
     section: 'Apps'
   },
@@ -269,14 +269,14 @@ const data: SearchData[] = [
   {
     id: '37',
     name: 'Roles',
-    url: '/apps/roles',
+    url: '/roles',
     icon: 'ri-shield-user-line',
     section: 'Apps'
   },
   {
     id: '38',
     name: 'Permissions',
-    url: '/apps/permissions',
+    url: '/permissions',
     icon: 'ri-lock-unlock-line',
     section: 'Apps'
   },

@@ -7,7 +7,6 @@ import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
 import type { RoleApiType } from '@/types/apps/roleTypes'
 import RoleCards from './RoleCards'
-import RolesTable from './RolesTable'
 
 const resolveBackendApiUrl = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
@@ -106,15 +105,6 @@ const Roles = () => {
 
       <Grid size={{ xs: 12 }}>
         <RoleCards roles={roles} loading={loading} onRefresh={loadRoles} request={request} />
-      </Grid>
-      <Grid size={{ xs: 12 }} className='!pbs-12'>
-        <Typography variant='h4' className='mbe-1'>
-          Total users with their roles
-        </Typography>
-        <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
-      </Grid>
-      <Grid size={{ xs: 12 }}>
-        <RolesTable roles={roles} loading={loading} onRefresh={loadRoles} request={request} />
       </Grid>
     </Grid>
   )

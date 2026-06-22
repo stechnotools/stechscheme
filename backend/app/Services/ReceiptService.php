@@ -16,12 +16,17 @@ use Illuminate\Support\Str;
 
 class ReceiptService
 {
+    public function __construct(
+        private readonly CommissionService $commissionService
+    ) {
+    }
+
     /**
      * Process payments and generate Receipt, Details, Payments, Vouchers and Transactions.
      */
-    public function createReceipt(Membership $membership, array $installmentsData, array $paymentsPool, string $paymentDate, string $status = 'success'): Receipt
+    public function createReceipt(Membership $membership, array $installmentsData, array $paymentsPool, string $paymentDate, string $status = 'success', bool $skipCommission = false): Receipt
     {
-        return DB::transaction(function () use ($membership, $installmentsData, $paymentsPool, $paymentDate, $status) {
+        return DB::transaction(function () use ($membership, $installmentsData, $paymentsPool, $paymentDate, $status, $skipCommission) {
             $membership->loadMissing('customer', 'scheme', 'user.branches');
 
             $totalAmount = round((float) array_sum(array_column($paymentsPool, 'amount')), 2);
@@ -192,6 +197,10 @@ class ReceiptService
                     'DR' => 0,
                     'CR' => round($lateFeeCollected, 2),
                 ]);
+            }
+
+            if (! $skipCommission) {
+                $this->commissionService->recordForCollection($membership, $receipt->id, $totalAmount);
             }
 
             return $receipt;

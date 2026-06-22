@@ -3,6 +3,12 @@
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\ChartOfAccountController;
+use App\Http\Controllers\API\CommissionCalculatorController;
+use App\Http\Controllers\API\CommissionResolutionController;
+use App\Http\Controllers\API\CommissionRuleController;
+use App\Http\Controllers\API\CommissionTypeController;
+use App\Http\Controllers\API\SalesmanCommissionController;
+use App\Http\Controllers\API\SalesmanCommissionOverrideController;
 use App\Http\Controllers\API\CustomerController;
 use App\Http\Controllers\API\CustomerPortalAuthController;
 use App\Http\Controllers\API\CustomerPortalController;
@@ -15,6 +21,7 @@ use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\PromotionController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\API\SalesmanController;
 use App\Http\Controllers\VoucherSetupController;
 use App\Http\Controllers\MetalBuyingOptionController;
 use App\Http\Controllers\MetalRedeemOptionController;
@@ -49,7 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('reports/dashboard', [ReportController::class, 'dashboard'])
-        ->middleware('role:super-admin,admin');
+        ->middleware('role:super-admin,admin,cashier');
 
 
     
@@ -71,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResources([
         'chart-of-accounts' => ChartOfAccountController::class,
         'branches' => BranchController::class,
+        'salesmen' => SalesmanController::class,
         'users' => UserController::class,
         'customers' => CustomerController::class,
         'kycs' => KycController::class,
@@ -92,8 +100,6 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
-    Route::get('memberships/{membership}/lifecycle', [MembershipController::class, 'lifecyclePreview'])->middleware('permission:membership.lifecycle');
-    Route::post('memberships/{membership}/lifecycle', [MembershipController::class, 'lifecycleAction'])->middleware('permission:membership.lifecycle');
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
     Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 
@@ -132,6 +138,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('settings/company-logo', [SettingController::class, 'uploadCompanyLogo'])
         ->middleware('role:super-admin,admin');
 
+    Route::prefix('commission')->middleware('role:super-admin,admin')->group(function () {
+        Route::apiResource('types', CommissionTypeController::class);
+        Route::apiResource('global-rules', CommissionRuleController::class);
+        Route::apiResource('salesman-overrides', SalesmanCommissionOverrideController::class);
+        Route::get('rules/{salesman}', [CommissionResolutionController::class, 'forSalesman']);
+        Route::post('generate/{salesman}', [CommissionResolutionController::class, 'generate']);
+        Route::post('calculate', [CommissionCalculatorController::class, 'calculate']);
+        Route::get('ledger', [SalesmanCommissionController::class, 'index']);
+        Route::post('ledger/{id}/approve', [SalesmanCommissionController::class, 'approve']);
+        Route::post('ledger/{id}/mark-paid', [SalesmanCommissionController::class, 'markPaid']);
+        Route::post('ledger/bulk-mark-paid', [SalesmanCommissionController::class, 'bulkMarkPaid']);
+    });
+
     // Feedback Management
     Route::prefix('feedback')->group(function () {
         Route::get('/', [FeedbackController::class, 'index']);
@@ -163,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('scheme-openings/validate-rows', [\App\Http\Controllers\API\SchemeOpeningController::class, 'validateRows']);
     Route::post('scheme-openings/import-rows', [\App\Http\Controllers\API\SchemeOpeningController::class, 'importRows']);
     Route::post('scheme-openings/process', [\App\Http\Controllers\API\SchemeOpeningController::class, 'process']);
+    Route::post('scheme-openings/process-background', [\App\Http\Controllers\API\SchemeOpeningController::class, 'processBackground']);
     Route::get('scheme-openings/batches', [\App\Http\Controllers\API\SchemeOpeningController::class, 'batches']);
     Route::get('scheme-openings/batches/{batch_id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'batchDetails']);
     Route::delete('scheme-openings/batches/{batch_id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'deleteBatch']);

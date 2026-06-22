@@ -12,6 +12,7 @@ import Stack from '@mui/material/Stack'
 import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+import LinearProgress from '@mui/material/LinearProgress'
 import Dialog from '@mui/material/Dialog'
 import Autocomplete from '@mui/material/Autocomplete'
 import DialogActions from '@mui/material/DialogActions'
@@ -59,8 +60,10 @@ const SchemeOpeningEntryPage = () => {
   const [listData, setListData] = useState<any[]>([])
   const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15)
   const [searchQuery, setSearchQuery] = useState('')
   const [loadingList, setLoadingList] = useState(false)
+  const [bulkEnrollProgress, setBulkEnrollProgress] = useState<{ current: number; total: number } | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
 
   // Modal / Import screen trigger
@@ -70,6 +73,8 @@ const SchemeOpeningEntryPage = () => {
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [processProgress, setProcessProgress] = useState<{ current: number; total: number } | null>(null)
+  const [queueing, setQueueing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<any>(null)
@@ -80,6 +85,7 @@ const SchemeOpeningEntryPage = () => {
   const [validating, setValidating] = useState(false)
   const [isValidated, setIsValidated] = useState(false)
   const [selectedPreviewRows, setSelectedPreviewRows] = useState<number[]>([])
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [editPreviewDialogOpen, setEditPreviewDialogOpen] = useState(false)
   const [editPreviewData, setEditPreviewData] = useState<string[]>([])
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -266,6 +272,106 @@ const SchemeOpeningEntryPage = () => {
     }
   }
 
+  const handleBulkEnroll = async () => {
+    if (selectedRows.length === 0 || !accessToken) return
+    setError(null)
+    setSuccess(null)
+
+    const total = selectedRows.length
+    setBulkEnrollProgress({ current: 0, total })
+
+    let processedCount = 0
+    let failedCount = 0
+
+    // One AJAX request per row (not one bulk call) so the progress bar reflects
+    // real completed/total counts instead of an indeterminate spinner.
+    for (let i = 0; i < selectedRows.length; i++) {
+      try {
+        const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/process`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({ record_ids: [selectedRows[i]] })
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.message || 'Bulk processing failed')
+
+        processedCount += result.processed ?? 0
+        failedCount += result.failed ?? 0
+      } catch (rowErr) {
+        failedCount += 1
+      } finally {
+        setBulkEnrollProgress({ current: i + 1, total })
+      }
+    }
+
+    setSuccess(`Bulk Enrollment completed. processed: ${processedCount}, failed: ${failedCount}`)
+    setSelectedRows([])
+    setBulkEnrollProgress(null)
+    fetchOpenings()
+  }
+
+  const handleBulkEnrollBackground = async () => {
+    if (selectedRows.length === 0 || !accessToken) return
+    setError(null)
+    setSuccess(null)
+    setQueueing(true)
+
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/process-background`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ record_ids: selectedRows })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Queueing failed')
+
+      setSuccess(`${result.message} You can navigate away — check the Status column for progress.`)
+      setSelectedRows([])
+      fetchOpenings()
+    } catch (err: any) {
+      setError(err.message || 'Queueing failed.')
+    } finally {
+      setQueueing(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0 || !accessToken) return
+    if (!window.confirm(`Are you sure you want to delete the ${selectedRows.length} selected staged records?`)) return
+    setLoadingList(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/records/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ ids: selectedRows })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Bulk delete failed')
+      
+      setSuccess('Selected staged records deleted successfully.')
+      setSelectedRows([])
+      fetchOpenings()
+    } catch (err: any) {
+      setError(err.message || 'Bulk delete failed.')
+    } finally {
+      setLoadingList(false)
+    }
+  }
+
   // Fetch Scheme Openings List
   const fetchOpenings = useCallback(async () => {
     if (!accessToken) return
@@ -273,6 +379,7 @@ const SchemeOpeningEntryPage = () => {
     try {
       const url = new URL(`${resolveBackendApiUrl()}/scheme-openings`)
       url.searchParams.append('page', currentPage.toString())
+      url.searchParams.append('per_page', pageSize.toString())
       if (searchQuery) url.searchParams.append('search', searchQuery)
       if (statusFilter) url.searchParams.append('status', statusFilter)
 
@@ -282,12 +389,13 @@ const SchemeOpeningEntryPage = () => {
       const json = await response.json()
       setListData(json.data || [])
       setTotalRecords(json.total || 0)
+      setSelectedRows([])
     } catch (err) {
       console.error('Failed to load scheme openings', err)
     } finally {
       setLoadingList(false)
     }
-  }, [accessToken, currentPage, searchQuery, statusFilter])
+  }, [accessToken, currentPage, pageSize, searchQuery, statusFilter])
 
   useEffect(() => {
     fetchOpenings()
@@ -368,30 +476,51 @@ const SchemeOpeningEntryPage = () => {
   }
 
   const handleValidate = async () => {
-    if (!file || !accessToken) return
+    if (previewRows.length === 0 || !accessToken) return
     setValidating(true)
     setError(null)
     setSuccess(null)
-    
-    const formData = new FormData()
-    formData.append('file', file)
-    
+
     try {
-      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/validate`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: formData
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Validation failed')
-      
-      setValidationResults(result)
+      // Send already-parsed rows in batches of 50 to avoid server timeout.
+      // No file re-upload needed — data is already in previewRows.
+      const CHUNK_SIZE = 50
+      const allResults: any[] = []
+
+      for (let i = 0; i < previewRows.length; i += CHUNK_SIZE) {
+        const chunk = previewRows.slice(i, i + CHUNK_SIZE)
+        const rows = chunk.map((row: string[], j: number) => ({ data: row, index: i + j + 1 }))
+
+        const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/validate-rows`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({ rows })
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.message || 'Validation failed')
+        allResults.push(...(result.rows || []))
+      }
+
+      const errorCount = allResults.filter((r: any) => !r.is_valid).length
+      const validationResult = {
+        success: true,
+        is_all_valid: errorCount === 0,
+        error_count: errorCount,
+        total_rows: allResults.length,
+        rows: allResults
+      }
+
+      setValidationResults(validationResult)
       setIsValidated(true)
-      
-      if (result.is_all_valid) {
+
+      if (errorCount === 0) {
         setSuccess('Validation successful! All rows are verified and valid.')
       } else {
-        setError(`Validation completed with errors. Click any edit pencil to correct details.`)
+        setError(`Validation completed with errors in ${errorCount} row(s). Click the edit pencil (✏) on any row to correct details.`)
       }
     } catch (err: any) {
       setError(err.message)
@@ -403,7 +532,7 @@ const SchemeOpeningEntryPage = () => {
   const handleEditPreviewRow = (index: number) => {
     setEditingIndex(index)
     const padded = [...previewRows[index]]
-    while (padded.length < 15) padded.push('')
+    while (padded.length < 10) padded.push('')
     setEditPreviewData(padded)
     setEditPreviewDialogOpen(true)
   }
@@ -449,9 +578,23 @@ const SchemeOpeningEntryPage = () => {
     }
   }
 
-  const handleImport = async () => {
+  const handleImport = async (mode: 'now' | 'background' = 'now') => {
     if (selectedPreviewRows.length === 0) {
       setError('Please select at least one row to import.')
+      return
+    }
+
+    // Auto-skip invalid rows: only import selected rows that passed validation
+    const validRowIndices = selectedPreviewRows.filter(idx => {
+      if (!isValidated || !validationResults) return true // not validated yet — include all
+      const r = validationResults.rows?.find((vr: any) => vr.index === idx + 1)
+      return !r || r.is_valid
+    })
+
+    const skippedCount = selectedPreviewRows.length - validRowIndices.length
+
+    if (validRowIndices.length === 0) {
+      setError('All selected rows have validation errors. Please fix them before importing.')
       return
     }
 
@@ -460,7 +603,7 @@ const SchemeOpeningEntryPage = () => {
     setSuccess(null)
 
     try {
-      const rowsToImport = selectedPreviewRows.map(idx => ({
+      const rowsToImport = validRowIndices.map(idx => ({
         data: previewRows[idx],
         index: idx + 1
       }))
@@ -479,9 +622,16 @@ const SchemeOpeningEntryPage = () => {
       if (!response.ok) throw new Error(result.message || 'Import failed')
 
       setImportResult(result)
+      if (skippedCount > 0) {
+        setSuccess(`${skippedCount} invalid row${skippedCount > 1 ? 's were' : ' was'} skipped. Enrolling ${validRowIndices.length} valid row${validRowIndices.length > 1 ? 's' : ''}...`)
+      }
+
       if (result.processed_rows > 0) {
-        // Automatically process enrollments
-        await handleProcess(result.batch_id)
+        if (mode === 'background') {
+          await handleProcessBackground(result.batch_id)
+        } else {
+          await handleProcess(result.batch_id)
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.')
@@ -492,22 +642,76 @@ const SchemeOpeningEntryPage = () => {
 
   const handleProcess = async (batchId: string) => {
     setProcessing(true)
+    setProcessProgress(null)
+
     try {
-      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/process`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify({ batch_id: batchId })
-      })
+      // Check completion status for this batch first: if Post & Enroll was
+      // interrupted earlier, rows already marked Processed/Failed must be
+      // skipped rather than redone — only fetch & process what's still Pending.
+      const [allResponse, pendingResponse] = await Promise.all([
+        fetch(`${resolveBackendApiUrl()}/scheme-openings?import_batch_id=${batchId}&per_page=1000`, {
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' }
+        }),
+        fetch(`${resolveBackendApiUrl()}/scheme-openings?import_batch_id=${batchId}&status=Pending&per_page=1000`, {
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' }
+        })
+      ])
 
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Processing failed')
+      const allResult = await allResponse.json()
+      const listResult = await pendingResponse.json()
+      if (!allResponse.ok) throw new Error(allResult.message || 'Failed to load staged records.')
+      if (!pendingResponse.ok) throw new Error(listResult.message || 'Failed to load staged records.')
 
-      setSuccess(`Staging & processing completed. ${result.message}`)
-      
+      const batchTotal = allResult.total ?? (allResult.data || []).length
+      const recordIds: number[] = (listResult.data || []).map((row: any) => row.id)
+      const total = recordIds.length
+      const alreadyDone = batchTotal - total
+
+      if (alreadyDone > 0) {
+        setSuccess(`Resuming batch: ${alreadyDone} of ${batchTotal} row${batchTotal > 1 ? 's' : ''} already complete. Continuing with the remaining ${total}...`)
+      }
+
+      if (total === 0) {
+        setSuccess(`This batch is already fully processed (${batchTotal} of ${batchTotal} rows complete). Nothing left to do.`)
+        setImportDialogOpen(false)
+        setFile(null)
+        setPreviewRows([])
+        setValidationResults(null)
+        fetchOpenings()
+        return
+      }
+
+      setProcessProgress({ current: 0, total })
+
+      let processedCount = 0
+      let failedCount = 0
+
+      for (let i = 0; i < recordIds.length; i++) {
+        try {
+          const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/process`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify({ record_ids: [recordIds[i]] })
+          })
+
+          const result = await response.json()
+          if (!response.ok) throw new Error(result.message || 'Processing failed')
+
+          processedCount += result.processed ?? 0
+          failedCount += result.failed ?? 0
+        } catch (rowErr) {
+          failedCount += 1
+        } finally {
+          setProcessProgress({ current: i + 1, total })
+        }
+      }
+
+      setSuccess(`Staging & processing completed. Processed: ${processedCount}, Failed: ${failedCount}.`)
+
       // Close the workspace & reload parent list
       setImportDialogOpen(false)
       setFile(null)
@@ -518,8 +722,41 @@ const SchemeOpeningEntryPage = () => {
       setError(`Staging Error: ${err.message}`)
     } finally {
       setProcessing(false)
+      setProcessProgress(null)
     }
   }
+
+  const handleProcessBackground = async (batchId: string) => {
+    setQueueing(true)
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/process-background`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ batch_id: batchId })
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Queueing failed')
+
+      setSuccess(`${result.message} You can navigate away — check this list's Status column for progress, or filter by Pending/Processed/Failed.`)
+
+      // Close the workspace & reload parent list — rows will flip status as the queue worker processes them
+      setImportDialogOpen(false)
+      setFile(null)
+      setPreviewRows([])
+      setValidationResults(null)
+      fetchOpenings()
+    } catch (err: any) {
+      setError(`Staging Error: ${err.message}`)
+    } finally {
+      setQueueing(false)
+    }
+  }
+
   const handleClearWorkspace = () => {
     setFile(null)
     setPreviewRows([])
@@ -531,27 +768,37 @@ const SchemeOpeningEntryPage = () => {
   }
 
   const downloadSample = () => {
+    // Final 10-column format:
+    // 0:Account Name, 1:City, 2:MobileNo, 3:Salesman, 4:SchemeType,
+    // 5:Total Amount, 6:Installment Amount, 7:Number of Months, 8:Branch ID, 9:Scheme ID
     const headers = [
-      '"Opening Date"', '"Account Name"', '"City"', '"MobileNo"', '"Salesman"',
-      '"SchemeType"', '"Total Amount"', '"Total Weight"', '"Ticket No"', '"Deposit Or Redeem"',
-      '"Branch Name"', '"Narration"', '"Scheme Name"', '"Installment Amount"', '"Number of Months"'
+      'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
+      'Total Amount', 'Installment Amount', 'Number of Months', 'Branch ID', 'Scheme ID'
     ]
-    const sampleData = [
-      '"12-05-2026"', '"Aditya Verma"', '"Mumbai"', '"9876543210"', '"Admin"',
-      '"Amount"', '"15000"', '"2.500"', '"T-505"', '"Deposit"', '"Zavery"',
-      '"Starting scheme opening balance"', '"Swarna Laxmi Yojana-Fixed"', '"5000"', '"3"'
+    // Sample rows — Branch ID and Scheme ID accept name, code, or numeric ID
+    const sampleRows = [
+      ['Ramesh Kumar',  'BBSR',    '9861000001', 'Niranjan', 'Amount', '25000', '5000', '5',  'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
+      ['Sunita Devi',   'BBSR',    '9861000002', 'Khitish',  'Amount', '9000',  '3000', '3',  'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
+      ['Bijay Mohanty', 'BBSR',    '9861000003', 'Niranjan', 'Weight', '0',     '2',    '4',  'City Jewellers', 'SWARNA LAXMI'],
+      ['Pratima Sahoo', 'Cuttack', '9861000004', 'Niranjan', 'Amount', '60000', '6000', '10', 'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
+      ['Manoj Nayak',   'BBSR',    '9861000005', 'Khitish',  'Weight', '0',     '1.5',  '6',  'City Jewellers', 'SWARNA LAXMI'],
     ]
-    
-    const csvContent = '\uFEFF' + [headers, sampleData].map(e => e.join(',')).join('\r\n')
-    const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent)
+
+    const csvLines = [
+      headers.join(','),
+      ...sampleRows.map(row => row.map(v => `"${v}"`).join(','))
+    ]
+    const csvContent = '\uFEFF' + csvLines.join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = encodedUri
+    link.href = url
     link.download = 'scheme_opening_template.csv'
-    link.setAttribute('download', 'scheme_opening_template.csv')
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -589,15 +836,85 @@ const SchemeOpeningEntryPage = () => {
           >
             Refresh
           </Button>
-          
+          <Button
+            size='medium'
+            variant='outlined'
+            color='success'
+            startIcon={<i className='ri-download-2-line' />}
+            onClick={downloadSample}
+            sx={{ fontWeight: 600, textTransform: 'none' }}
+          >
+            Download Sample CSV
+          </Button>
+
+          {selectedRows.length > 0 && (
+            <>
+              <Button
+                size='medium'
+                variant='contained'
+                color='success'
+                startIcon={bulkEnrollProgress ? <CircularProgress size={16} color="inherit" /> : <i className='ri-play-fill' />}
+                onClick={handleBulkEnroll}
+                disabled={Boolean(bulkEnrollProgress) || queueing}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                {bulkEnrollProgress
+                  ? `Enrolling ${bulkEnrollProgress.current}/${bulkEnrollProgress.total} (${Math.round((bulkEnrollProgress.current / bulkEnrollProgress.total) * 100)}%)`
+                  : `Bulk Enroll Now (${selectedRows.length})`}
+              </Button>
+              <Tooltip title="Queues the selected rows for a background worker to process — requires php artisan queue:work to be running." arrow>
+                <span>
+                  <Button
+                    size='medium'
+                    variant='outlined'
+                    color='success'
+                    startIcon={queueing ? <CircularProgress size={16} color="inherit" /> : <i className='ri-time-line' />}
+                    onClick={handleBulkEnrollBackground}
+                    disabled={Boolean(bulkEnrollProgress) || queueing}
+                    sx={{ fontWeight: 600, textTransform: 'none' }}
+                  >
+                    {queueing ? 'Queueing...' : `Enroll in Background (${selectedRows.length})`}
+                  </Button>
+                </span>
+              </Tooltip>
+              <Button
+                size='medium'
+                variant='contained'
+                color='error'
+                startIcon={<i className='ri-delete-bin-line' />}
+                onClick={handleBulkDelete}
+                disabled={Boolean(bulkEnrollProgress) || queueing}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Bulk Delete ({selectedRows.length})
+              </Button>
+            </>
+          )}
+
           <Box sx={{ flexGrow: 1 }} />
-          
+
+          {/* Status Filter */}
+          <FormControl size='small' sx={{ minWidth: 160 }}>
+            <InputLabel>Status Filter</InputLabel>
+            <Select
+              label="Status Filter"
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1) }}
+              sx={{ height: 38, fontSize: '0.875rem', bgcolor: 'background.paper' }}
+            >
+              <MenuItem value=''>All Status</MenuItem>
+              <MenuItem value='Pending'>Pending</MenuItem>
+              <MenuItem value='Processed'>Processed</MenuItem>
+              <MenuItem value='Failed'>Failed</MenuItem>
+            </Select>
+          </FormControl>
+
           <TextField
             size='small'
             placeholder='Search openings...'
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            sx={{ width: 280, '& .MuiInputBase-root': { height: 38, fontSize: '0.875rem', bgcolor: 'background.paper' } }}
+            sx={{ width: 250, '& .MuiInputBase-root': { height: 38, fontSize: '0.875rem', bgcolor: 'background.paper' } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position='start'>
@@ -607,6 +924,18 @@ const SchemeOpeningEntryPage = () => {
             }}
           />
         </Stack>
+        {bulkEnrollProgress && (
+          <Box sx={{ px: 2, pb: 2 }}>
+            <LinearProgress
+              variant='determinate'
+              color='success'
+              value={(bulkEnrollProgress.current / bulkEnrollProgress.total) * 100}
+            />
+            <Typography variant='caption' color='text.secondary' display='block' sx={{ mt: 1 }}>
+              {`Enrolling ${bulkEnrollProgress.current} of ${bulkEnrollProgress.total} rows (${Math.round((bulkEnrollProgress.current / bulkEnrollProgress.total) * 100)}%)`}
+            </Typography>
+          </Box>
+        )}
       </Card>
 
       {/* Main Title Banner */}
@@ -625,6 +954,20 @@ const SchemeOpeningEntryPage = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ backgroundColor: 'var(--mui-palette-action-hover)', borderBottom: '1px solid var(--mui-palette-divider)' }}>
+                <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', width: 50 }}>
+                  <Checkbox 
+                    size="small"
+                    indeterminate={selectedRows.length > 0 && selectedRows.length < listData.length}
+                    checked={listData.length > 0 && selectedRows.length === listData.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedRows(listData.map((row: any) => row.id))
+                      } else {
+                        setSelectedRows([])
+                      }
+                    }}
+                  />
+                </th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem' }}>SI. No</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem' }}>Date</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem' }}>Account Name</th>
@@ -634,7 +977,7 @@ const SchemeOpeningEntryPage = () => {
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', textAlign: 'right' }}>Total Amount</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', textAlign: 'right' }}>Inst. Amt</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', textAlign: 'center' }}>Months</th>
-                <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', textAlign: 'right' }}>Weight (g)</th>
+                <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem' }}>Salesman</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem' }}>Status</th>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', textAlign: 'right' }}>Actions</th>
               </tr>
@@ -642,89 +985,133 @@ const SchemeOpeningEntryPage = () => {
             <tbody>
               {loadingList ? (
                 <tr>
-                  <td colSpan={12} style={{ padding: '40px', textAlign: 'center' }}>
+                  <td colSpan={13} style={{ padding: '40px', textAlign: 'center' }}>
                     <CircularProgress size={30} />
                     <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>Loading openings list...</Typography>
                   </td>
                 </tr>
               ) : listData.length === 0 ? (
                 <tr>
-                  <td colSpan={12} style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan={13} style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
                     No scheme openings entries found. Click the <strong>Import</strong> button to load spreadsheet data.
                   </td>
                 </tr>
               ) : (
-                listData.map((row: any, index: number) => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid var(--mui-palette-divider)' }}>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{(currentPage - 1) * 15 + index + 1}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.opening_date ? new Date(row.opening_date).toLocaleDateString('en-GB') : '-'}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem', fontWeight: 500, color: '#1e3a8a' }}>{row.account_name}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.mobile_no}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>
-                      <Chip 
-                        label={row.scheme_type || 'N/A'} 
-                        size="small" 
-                        variant="outlined"
-                        color={row.scheme_type === 'Amount' ? 'primary' : row.scheme_type === 'Weight' ? 'secondary' : 'default'}
-                        sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
-                      />
-                    </td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.scheme_name || '-'}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(row.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(row.installment_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'center' }}>{row.number_of_months || '-'}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'right' }}>{parseFloat(row.total_weight).toFixed(3)}</td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <Chip 
-                        label={row.status} 
-                        size="small" 
-                        color={row.status === 'Processed' ? 'success' : row.status === 'Failed' ? 'error' : 'warning'}
-                        sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
-                      />
-                    </td>
-                    <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        {row.status !== 'Processed' && (
-                          <Tooltip title="Enroll / Process Opening" arrow>
-                            <IconButton size="small" color="success" onClick={() => handleProcessSingle(row.id)}>
-                              <i className="ri-play-fill" style={{ fontSize: '1.1rem' }} />
+                listData.map((row: any, index: number) => {
+                  const isSelected = selectedRows.includes(row.id)
+                  return (
+                    <tr 
+                      key={row.id} 
+                      style={{ 
+                        borderBottom: '1px solid var(--mui-palette-divider)',
+                        backgroundColor: isSelected ? 'rgba(var(--mui-palette-primary-mainChannel), 0.08)' : 'transparent'
+                      }}
+                    >
+                      <td style={{ padding: '0 18px', fontSize: '0.85rem' }}>
+                        <Checkbox 
+                          size="small" 
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRows([...selectedRows, row.id])
+                            } else {
+                              setSelectedRows(selectedRows.filter(id => id !== row.id))
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{(currentPage - 1) * pageSize + index + 1}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.opening_date ? new Date(row.opening_date).toLocaleDateString('en-GB') : '-'}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem', fontWeight: 500, color: '#1e3a8a' }}>{row.account_name}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.mobile_no}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>
+                        <Chip 
+                          label={row.scheme_type || 'N/A'} 
+                          size="small" 
+                          variant="outlined"
+                          color={row.scheme_type === 'Amount' ? 'primary' : row.scheme_type === 'Weight' ? 'secondary' : 'default'}
+                          sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
+                        />
+                      </td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.scheme_name || '-'}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(row.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(row.installment_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'center' }}>{row.number_of_months || '-'}</td>
+                      <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.salesman_user?.name || row.salesman || '-'}</td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <Chip 
+                          label={row.status} 
+                          size="small" 
+                          color={row.status === 'Processed' ? 'success' : row.status === 'Failed' ? 'error' : 'warning'}
+                          sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
+                        />
+                      </td>
+                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          {row.status !== 'Processed' && (
+                            <Tooltip title="Enroll / Process Opening" arrow>
+                              <IconButton size="small" color="success" onClick={() => handleProcessSingle(row.id)}>
+                                <i className="ri-play-fill" style={{ fontSize: '1.1rem' }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="View Entry Detail" arrow>
+                            <IconButton size="small" color="info" onClick={() => handleViewRowClick(row)}>
+                              <i className="ri-eye-line" style={{ fontSize: '1.1rem' }} />
                             </IconButton>
                           </Tooltip>
-                        )}
-                        <Tooltip title="View Entry Detail" arrow>
-                          <IconButton size="small" color="info" onClick={() => handleViewRowClick(row)}>
-                            <i className="ri-eye-line" style={{ fontSize: '1.1rem' }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit Entry" arrow>
-                          <IconButton size="small" color="primary" onClick={() => handleEditRowClick(row)}>
-                            <i className="ri-edit-line" style={{ fontSize: '1.1rem' }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete Entry" arrow>
-                          <IconButton size="small" color="error" onClick={() => handleDeleteOpening(row.id)}>
-                            <i className="ri-delete-bin-line" style={{ fontSize: '1.1rem' }} />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </td>
-                  </tr>
-                ))
+                          <Tooltip title="Edit Entry" arrow>
+                            <IconButton size="small" color="primary" onClick={() => handleEditRowClick(row)}>
+                              <i className="ri-edit-line" style={{ fontSize: '1.1rem' }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Entry" arrow>
+                            <IconButton size="small" color="error" onClick={() => handleDeleteOpening(row.id)}>
+                              <i className="ri-delete-bin-line" style={{ fontSize: '1.1rem' }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </Box>
         
         {/* Pagination Bar */}
-        {totalRecords > 15 && (
-          <Box display="flex" justifyContent="flex-end" sx={{ p: 4 }}>
-            <Pagination 
-              count={Math.ceil(totalRecords / 15)} 
-              page={currentPage} 
-              onChange={(_, value) => setCurrentPage(value)} 
-              color="primary" 
-              size="small"
-            />
+        {totalRecords > 0 && (
+          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 4, flexWrap: 'wrap', gap: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                Rows per page
+              </Typography>
+              <FormControl size="small">
+                <Select
+                  value={pageSize}
+                  onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+                  sx={{ height: 36, fontSize: '0.875rem', bgcolor: 'background.paper' }}
+                >
+                  {[10, 15, 25, 50, 100].map(size => (
+                    <MenuItem key={size} value={size}>{size}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Typography variant="body2" color="text.secondary">
+                {`Showing ${Math.min((currentPage - 1) * pageSize + 1, totalRecords)}-${Math.min(currentPage * pageSize, totalRecords)} of ${totalRecords}`}
+              </Typography>
+            </Stack>
+
+            {totalRecords > pageSize && (
+              <Pagination
+                count={Math.ceil(totalRecords / pageSize)}
+                page={currentPage}
+                onChange={(_, value) => setCurrentPage(value)}
+                color="primary"
+                size="small"
+              />
+            )}
           </Box>
         )}
       </Card>
@@ -790,16 +1177,16 @@ const SchemeOpeningEntryPage = () => {
               id='sheet-file-picker'
               type='file'
               hidden
-              accept='.csv, .xlsx, .xls'
+              accept='.csv'
               onChange={handleFileChange}
               disabled={importing || processing}
             />
             <i className='ri-file-excel-line' style={{ fontSize: '48px', color: 'var(--mui-palette-primary-main)' }} />
             <Typography variant='h6' sx={{ mt: 3 }}>
-              {file ? file.name : 'Click or Drag & Drop Excel sheet here'}
+              {file ? file.name : 'Click or Drag & Drop CSV file here'}
             </Typography>
             <Typography variant='caption' color='text.secondary' display="block" sx={{ mt: 1 }}>
-              Required format (15 columns): Opening Date, Account Name, City, MobileNo, Salesman, SchemeType (Amount or Weight), Total Amount, Total Weight, Ticket No, Deposit Or Redeem, Branch Name, Narration, Scheme Name, Installment Amount, Number of Months
+              Required format (10 columns): Account Name, City, MobileNo, Salesman, SchemeType (Amount or Weight), Total Amount, Installment Amount, Number of Months, Branch, Scheme
             </Typography>
           </Dropzone>
 
@@ -810,7 +1197,19 @@ const SchemeOpeningEntryPage = () => {
                 <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>
                   Parsed Records Staging ({previewRows.length} rows)
                 </Typography>
-                <Stack direction="row" spacing={2}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  {/* Inline skip notice when validation has found errors in selected rows */}
+                  {isValidated && (() => {
+                    const invalidSelected = selectedPreviewRows.filter(idx => {
+                      const r = validationResults?.rows?.find((vr: any) => vr.index === idx + 1)
+                      return r && !r.is_valid
+                    }).length
+                    return invalidSelected > 0 ? (
+                      <Typography variant='caption' color='warning.main' sx={{ alignSelf: 'center', fontWeight: 600 }}>
+                        ⚠ {invalidSelected} invalid row{invalidSelected > 1 ? 's' : ''} will be auto-skipped
+                      </Typography>
+                    ) : null
+                  })()}
                   <Button 
                     variant="contained" 
                     color="info" 
@@ -818,20 +1217,65 @@ const SchemeOpeningEntryPage = () => {
                     disabled={validating || processing}
                     startIcon={validating && <CircularProgress size={16} color="inherit" />}
                   >
-                    Verify & Validate Cells
+                    {validating ? 'Validating...' : 'Verify & Validate Cells'}
                   </Button>
-                  <Button 
-                    variant="contained" 
-                    color="success" 
-                    onClick={handleImport}
-                    disabled={importing || processing || (validationResults && !validationResults.is_all_valid)}
-                    startIcon={importing && <CircularProgress size={16} color="inherit" />}
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() => handleImport('now')}
+                    disabled={importing || processing || queueing || selectedPreviewRows.length === 0}
+                    startIcon={(importing || processing) && <CircularProgress size={16} color="inherit" />}
                   >
-                    Post & Enroll Openings
+                    {processing
+                      ? (processProgress
+                          ? `Processing ${processProgress.current}/${processProgress.total} (${Math.round((processProgress.current / processProgress.total) * 100)}%)`
+                          : 'Processing & Enrolling...')
+                      : importing ? 'Posting Records...' : (() => {
+                      const validCount = selectedPreviewRows.filter(idx => {
+                        if (!isValidated || !validationResults) return true
+                        const r = validationResults.rows?.find((vr: any) => vr.index === idx + 1)
+                        return !r || r.is_valid
+                      }).length
+                      return `Post & Enroll Now (${validCount} rows)`
+                    })()}
                   </Button>
+                  <Tooltip title="Queues rows for a background worker to process — you can navigate away immediately. Requires a queue worker (php artisan queue:work) to be running." arrow>
+                    <span>
+                      <Button
+                        variant="outlined"
+                        color="success"
+                        onClick={() => handleImport('background')}
+                        disabled={importing || processing || queueing || selectedPreviewRows.length === 0}
+                        startIcon={queueing && <CircularProgress size={16} color="inherit" />}
+                      >
+                        {queueing ? 'Queueing...' : 'Process in Background'}
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </Stack>
               </Stack>
-              
+
+              {(importing || processing) && (
+                <Box sx={{ mt: 3, mb: 3 }}>
+                  {processing && processProgress ? (
+                    <LinearProgress
+                      variant='determinate'
+                      color='success'
+                      value={(processProgress.current / processProgress.total) * 100}
+                    />
+                  ) : (
+                    <LinearProgress color={processing ? 'success' : 'info'} />
+                  )}
+                  <Typography variant='caption' color='text.secondary' display='block' sx={{ mt: 1.5 }}>
+                    {processing
+                      ? (processProgress
+                          ? `Enrolling row ${processProgress.current} of ${processProgress.total} — please keep this window open.`
+                          : 'Preparing to enroll staged rows...')
+                      : 'Posting staged records...'}
+                  </Typography>
+                </Box>
+              )}
+
               <Box sx={{ 
                 overflowX: 'auto', 
                 border: '1px solid', 
@@ -898,7 +1342,7 @@ const SchemeOpeningEntryPage = () => {
                                </IconButton>
                              </Stack>
                            </td>
-                           {Array.from({ length: 15 }).map((_, cellIndex) => {
+                           {Array.from({ length: 10 }).map((_, cellIndex) => {
                              const cellValue = row[cellIndex] || ''
                              const cellError = rowErrors.find((e: any) => e.column === cellIndex)
                              return (
@@ -947,21 +1391,16 @@ const SchemeOpeningEntryPage = () => {
         <DialogContent sx={{ p: 6 }}>
           <Grid container spacing={4}>
             {[
-              { label: 'Opening Date (DD-MM-YYYY)', index: 0 },
-              { label: 'Account Name', index: 1 },
-              { label: 'City', index: 2 },
-              { label: 'MobileNo', index: 3 },
-              { label: 'Salesman', index: 4 },
-              { label: 'SchemeType (Amount or Weight)', index: 5 },
-              { label: 'Total Amount', index: 6 },
-              { label: 'Total Weight', index: 7 },
-              { label: 'Ticket No', index: 8 },
-              { label: 'Deposit Or Redeem', index: 9 },
-              { label: 'Branch Name', index: 10 },
-              { label: 'Narration', index: 11 },
-              { label: 'Scheme Name', index: 12 },
-              { label: 'Installment Amount', index: 13 },
-              { label: 'Number of Months', index: 14 }
+              { label: 'Account Name *', index: 0 },
+              { label: 'City', index: 1 },
+              { label: 'Mobile No * (10 digits)', index: 2 },
+              { label: 'Salesman (optional)', index: 3 },
+              { label: 'Scheme Type * (Amount or Weight)', index: 4 },
+              { label: 'Total Amount *', index: 5 },
+              { label: 'Installment Amount *', index: 6 },
+              { label: 'Number of Months * (whole number)', index: 7 },
+              { label: 'Branch (Name, Code, or ID)', index: 8 },
+              { label: 'Scheme * (Name, Code, or ID)', index: 9 }
             ].map((col) => (
               <Grid size={{ xs: 12, sm: 4 }} key={col.index}>
                 <TextField
@@ -969,9 +1408,13 @@ const SchemeOpeningEntryPage = () => {
                   size="small"
                   label={col.label}
                   value={editPreviewData[col.index] || ''}
+                  inputProps={col.index === 7 ? { inputMode: 'numeric', pattern: '[0-9]*' } : {}}
                   onChange={(e) => {
                     const updated = [...editPreviewData]
-                    updated[col.index] = e.target.value
+                    // Number of Months: strip non-digits
+                    updated[col.index] = col.index === 7
+                      ? e.target.value.replace(/[^0-9]/g, '')
+                      : e.target.value
                     setEditPreviewData(updated)
                   }}
                 />

@@ -32,7 +32,7 @@ class UpdateCustomerRequest extends FormRequest
         return [
             'name' => ['nullable', 'string', 'max:255'],
             'mobile' => [
-                'required',
+                'nullable',
                 'string',
                 'max:20',
                 Rule::unique('customers', 'mobile')->ignore($customerId),

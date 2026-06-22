@@ -41,7 +41,7 @@ const defaultSuggestions: DefaultSuggestionsType[] = [
       },
       {
         label: 'User List',
-        href: '/apps/user/list',
+        href: '/users',
         icon: 'ri-file-user-line'
       }
     ]
@@ -61,12 +61,12 @@ const defaultSuggestions: DefaultSuggestionsType[] = [
       },
       {
         label: 'User List',
-        href: '/apps/user/list',
+        href: '/users',
         icon: 'ri-file-user-line'
       },
       {
         label: 'Roles & Permissions',
-        href: '/apps/roles',
+        href: '/roles',
         icon: 'ri-lock-unlock-line'
       }
     ]

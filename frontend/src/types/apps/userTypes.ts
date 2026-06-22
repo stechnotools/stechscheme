@@ -4,6 +4,7 @@ import type { ThemeColor } from '@core/types'
 export type UsersType = {
   id: number
   role: string
+  roles?: string[]
   email: string
   status: string
   avatar: string

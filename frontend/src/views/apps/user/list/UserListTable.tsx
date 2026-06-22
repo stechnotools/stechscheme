@@ -240,20 +240,30 @@ const UserListTable = ({ users, roles, branches, loading, onRefresh, request }: 
         header: 'Mobile',
         cell: ({ row }) => <Typography>{row.original.contact}</Typography>
       }),
-      columnHelper.accessor('role', {
+      columnHelper.accessor(row => row.roles?.join(', ') ?? row.role, {
+        id: 'role',
         header: 'Role',
         cell: ({ row }) => {
-          const config = userRoleObj[row.original.role] || { icon: 'ri-user-line', color: 'secondary' }
+          const roleNames = row.original.roles?.length ? row.original.roles : [row.original.role]
 
           return (
-            <div className='flex items-center gap-2'>
-              <Icon className={classnames('text-[22px]', config.icon)} sx={{ color: `var(--mui-palette-${config.color}-main)` }} />
-              <Typography className='capitalize' color='text.primary'>
-                {row.original.role}
-              </Typography>
+            <div className='flex items-center gap-2 flex-wrap'>
+              {roleNames.map(roleName => {
+                const config = userRoleObj[roleName] || { icon: 'ri-user-line', color: 'secondary' }
+
+                return (
+                  <div key={roleName} className='flex items-center gap-1'>
+                    <Icon className={classnames('text-[18px]', config.icon)} sx={{ color: `var(--mui-palette-${config.color}-main)` }} />
+                    <Typography className='capitalize' color='text.primary'>
+                      {roleName}
+                    </Typography>
+                  </div>
+                )
+              })}
             </div>
           )
-        }
+        },
+        enableSorting: false
       }),
       columnHelper.accessor(row => row.branchNames?.join(', ') ?? '', {
         id: 'branchNames',

@@ -14,6 +14,7 @@ class Installment extends Model
         'paid',
         'paid_date',
         'penalty',
+        'manual_weight',
         'paid_amount',
         'balance_amount',
         'status',
@@ -27,6 +28,7 @@ class Installment extends Model
             'paid_date' => 'date',
             'amount' => 'decimal:2',
             'penalty' => 'decimal:2',
+            'manual_weight' => 'decimal:4',
             'paid_amount' => 'decimal:2',
             'balance_amount' => 'decimal:2',
         ];

@@ -7,14 +7,17 @@ use App\Models\CustomerKyc;
 use App\Models\Branch;
 use App\Models\Scheme;
 use App\Models\User;
+use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
 class OneClickEnrollmentService
 {
+    private static ?int $customerCount = null;
     public function __construct(
         private readonly CustomerService $customerService,
-        private readonly MembershipService $membershipService
+        private readonly MembershipService $membershipService,
+        private readonly CommissionService $commissionService
     ) {
     }
 
@@ -22,17 +25,23 @@ class OneClickEnrollmentService
     {
         return DB::transaction(function () use ($validated, $staffUser) {
             $customerPayload = [
-                'name' => data_get($validated, 'customer.name'),
-                'mobile' => data_get($validated, 'customer.mobile'),
-                'email' => data_get($validated, 'customer.email'),
-                'status' => data_get($validated, 'customer.status', 'active'),
-                'portal_enabled' => true,
+                'name'            => data_get($validated, 'customer.name'),
+                'mobile'          => data_get($validated, 'customer.mobile'),
+                'email'           => data_get($validated, 'customer.email'),
+                'status'          => data_get($validated, 'customer.status', 'active'),
+                'portal_enabled'  => true,
                 'portal_password' => data_get($validated, 'customer.portal_password'),
+                'branch_id'       => data_get($validated, 'customer.branch_id') ?: data_get($validated, 'branch_id'),
+                'loyalty_card_no' => data_get($validated, 'customer.loyalty_card_no'),
             ];
 
-            $existingCustomer = Customer::query()
-                ->where('mobile', $customerPayload['mobile'])
-                ->first();
+            // Only dedupe by mobile when one is actually provided — Laravel's
+            // where('mobile', null) compiles to whereNull('mobile'), which would
+            // otherwise match (and silently merge into) the first customer that
+            // has no mobile number at all.
+            $existingCustomer = ! empty($customerPayload['mobile'])
+                ? Customer::query()->where('mobile', $customerPayload['mobile'])->first()
+                : null;
 
             $customer = $existingCustomer
                 ? $this->customerService->update($existingCustomer, $customerPayload)
@@ -49,20 +58,39 @@ class OneClickEnrollmentService
             $scheme = Scheme::query()->with('maturityBenefits')->findOrFail($validated['scheme_id']);
             $membershipSeed = $this->buildMembershipIdentifiers($customer, $scheme);
 
-            $membership = $this->membershipService->createWithOptions([
-                'customer_id' => $customer->id,
-                'user_id' => data_get($validated, 'user_id') ?: $staffUser?->id ?: $customer->user_id,
-                'scheme_id' => $scheme->id,
-                'installment_value' => data_get($validated, 'installment_value'),
-                'membership_no' => $membershipSeed['membership_no'],
-                'card_no' => $membershipSeed['card_no'],
-                'card_reference' => $membershipSeed['card_reference'],
-                'card_issued_at' => now(),
-                'start_date' => $validated['start_date'],
-                'status' => 'active',
-            ], [
-                'skip_kyc_check' => true,
-            ]);
+            $targetMembershipNo = data_get($validated, 'membership_no');
+            $membership = null;
+            if ($targetMembershipNo) {
+                $membership = Membership::where('membership_no', $targetMembershipNo)->first();
+            }
+
+            $isNewMembership = ! $membership;
+
+            if (! $membership) {
+                $membership = $this->membershipService->createWithOptions([
+                    'customer_id' => $customer->id,
+                    'user_id' => data_get($validated, 'user_id') ?: $staffUser?->id ?: $customer->user_id,
+                    'scheme_id' => $scheme->id,
+                    'installment_value' => data_get($validated, 'installment_value'),
+                    'membership_no' => $targetMembershipNo ?: $membershipSeed['membership_no'],
+                    'card_no' => $membershipSeed['card_no'],
+                    'card_reference' => $membershipSeed['card_reference'],
+                    'card_issued_at' => now(),
+                    'start_date' => $validated['start_date'],
+                    'status' => 'active',
+                ], [
+                    'skip_kyc_check' => true,
+                ]);
+            }
+
+            $skipCommission = (bool) data_get($validated, 'skip_commission', false);
+
+            if ($isNewMembership && ! $skipCommission) {
+                $this->commissionService->recordForEnrollment(
+                    $membership,
+                    (float) (data_get($validated, 'installment_value') ?: $scheme->installment_value ?? 0)
+                );
+            }
 
             $paymentEntries = data_get($validated, 'payments');
             if (! $paymentEntries && data_get($validated, 'payment.amount') > 0) {
@@ -100,7 +128,9 @@ class OneClickEnrollmentService
                     $membership,
                     $selectedInstallments->map(fn ($installment) => ['id' => $installment->id])->all(),
                     $paymentEntries,
-                    $paymentDate
+                    $paymentDate,
+                    'success',
+                    $skipCommission
                 );
 
                 $createdPayments = $receipt->legacyPayments()->get()->all();
@@ -149,11 +179,16 @@ class OneClickEnrollmentService
     private function buildMembershipIdentifiers(Customer $customer, Scheme $scheme): array
     {
         $stamp = now()->format('ymd');
-        $sequence = str_pad((string) ((int) Customer::query()->count() + (int) $scheme->id), 4, '0', STR_PAD_LEFT);
+        if (self::$customerCount === null) {
+            self::$customerCount = (int) Customer::query()->count();
+        } else {
+            self::$customerCount++;
+        }
+        $sequence = str_pad((string) (self::$customerCount + (int) $scheme->id), 4, '0', STR_PAD_LEFT);
 
         return [
-            'membership_no' => sprintf('MEM-%s-%s', $stamp, $sequence),
-            'card_no' => sprintf('CARD-%d-%s', $customer->id, Str::upper(Str::random(6))),
+            'membership_no'  => sprintf('MEM-%s-%s', $stamp, $sequence),
+            'card_no'        => sprintf('CARD-%d-%s', $customer->id, Str::upper(Str::random(6))),
             'card_reference' => sprintf('JS-%d-%d-%s', $customer->id, $scheme->id, Str::upper(Str::random(8))),
         ];
     }

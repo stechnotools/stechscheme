@@ -16,7 +16,7 @@ class StoreCustomerRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'string', 'max:255'],
-            'mobile' => ['required', 'string', 'max:20', 'unique:customers,mobile', 'unique:users,mobile'],
+            'mobile' => ['nullable', 'string', 'max:20', 'unique:customers,mobile', 'unique:users,mobile'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
             'portal_enabled' => ['nullable', 'boolean'],

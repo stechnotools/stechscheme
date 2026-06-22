@@ -13,6 +13,7 @@ use Spatie\Permission\Models\Role;
 
 class CustomerService
 {
+    private static ?string $lastGeneratedLoyaltyCardNo = null;
     public function paginate(array $filters): LengthAwarePaginator
     {
         $query = Customer::query()->with(['kyc']);
@@ -47,10 +48,16 @@ class CustomerService
     {
         return DB::transaction(function () use ($validated) {
             $customerPayload = $validated;
-            
+
             // Auto-generate unique loyalty card number if not provided
             if (empty($customerPayload['loyalty_card_no'])) {
                 $customerPayload['loyalty_card_no'] = $this->generateUniqueLoyaltyCardNo();
+            }
+
+            // Every customer gets a unique customer_code — this is the stable
+            // identifier to rely on now that mobile is optional.
+            if (empty($customerPayload['customer_code'])) {
+                $customerPayload['customer_code'] = $this->generateUniqueCustomerCode();
             }
 
             $kycPayload = $customerPayload['kyc'] ?? null;
@@ -102,13 +109,22 @@ class CustomerService
     {
         $user = $customer->user;
 
-        if (! $user) {
-            $user = User::query()
-                ->where(function ($builder) use ($customer, $originalMobile, $originalEmail) {
-                    $builder->where('mobile', $originalMobile ?: $customer->mobile);
+        $lookupMobile = $originalMobile ?: $customer->mobile;
+        $lookupEmail = $originalEmail ?: $customer->email;
 
-                    if (! empty($originalEmail ?: $customer->email)) {
-                        $builder->orWhere('email', $originalEmail ?: $customer->email);
+        // Only look up by mobile/email when at least one is actually present —
+        // where('mobile', null) compiles to whereNull('mobile') in Laravel, which
+        // would otherwise match (and incorrectly reuse) the first user with no
+        // mobile number at all.
+        if (! $user && (! empty($lookupMobile) || ! empty($lookupEmail))) {
+            $user = User::query()
+                ->where(function ($builder) use ($lookupMobile, $lookupEmail) {
+                    if (! empty($lookupMobile)) {
+                        $builder->where('mobile', $lookupMobile);
+                    }
+
+                    if (! empty($lookupEmail)) {
+                        $builder->orWhere('email', $lookupEmail);
                     }
                 })
                 ->first();
@@ -118,10 +134,10 @@ class CustomerService
 
         if (! $user) {
             $user = User::query()->create([
-                'name' => $customer->name ?: 'Customer ' . $customer->mobile,
+                'name' => $customer->name ?: 'Customer ' . ($customer->mobile ?: $customer->customer_code),
                 'email' => $this->resolveUserEmail($customer, $user),
                 'mobile' => $customer->mobile,
-                'password' => Hash::make($password ?: $customer->mobile),
+                'password' => Hash::make($password ?: $customer->mobile ?: \Illuminate\Support\Str::random(16)),
                 'status' => $customer->status ?: 'active',
             ]);
         } else {
@@ -163,7 +179,13 @@ class CustomerService
             return $customer->email;
         }
 
-        return $user?->email ?: sprintf('customer.%s@portal.local', preg_replace('/\D+/', '', $customer->mobile));
+        if ($user?->email) {
+            return $user->email;
+        }
+
+        $identifier = $customer->mobile ? preg_replace('/\D+/', '', $customer->mobile) : strtolower($customer->customer_code ?: \Illuminate\Support\Str::random(8));
+
+        return sprintf('customer.%s@portal.local', $identifier);
     }
 
     public function regenerateLoyaltyCard(Customer $customer): Customer
@@ -176,6 +198,15 @@ class CustomerService
 
     public function generateUniqueLoyaltyCardNo(): string
     {
+        if (self::$lastGeneratedLoyaltyCardNo !== null) {
+            $nextNo = sprintf('%.0f', (float) self::$lastGeneratedLoyaltyCardNo + 1);
+            while (Customer::query()->where('loyalty_card_no', $nextNo)->exists()) {
+                $nextNo = sprintf('%.0f', (float) $nextNo + 1);
+            }
+            self::$lastGeneratedLoyaltyCardNo = $nextNo;
+            return $nextNo;
+        }
+
         // Using numeric casting for accurate max value in PostgreSQL
         $maxCardNo = Customer::query()
             ->whereRaw("loyalty_card_no ~ '^[0-9]{10,}$' ")
@@ -183,17 +214,27 @@ class CustomerService
             ->value('max_no');
 
         if (! $maxCardNo) {
-            return '1000000001';
+            $nextNo = '1000000001';
+        } else {
+            $nextNo = sprintf('%.0f', (float) $maxCardNo + 1);
         }
-
-        $nextNo = (string) ($maxCardNo + 1);
 
         // Final safety check against any collision
         while (Customer::query()->where('loyalty_card_no', $nextNo)->exists()) {
-            $nextNo = (string) ((int) $nextNo + 1);
+            $nextNo = sprintf('%.0f', (float) $nextNo + 1);
         }
 
+        self::$lastGeneratedLoyaltyCardNo = $nextNo;
         return $nextNo;
+    }
+
+    public function generateUniqueCustomerCode(): string
+    {
+        do {
+            $code = (string) random_int(100000, 999999);
+        } while (Customer::query()->where('customer_code', $code)->exists());
+
+        return $code;
     }
 
     private function syncCustomerKyc(Customer $customer, ?array $kycPayload): void

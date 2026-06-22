@@ -70,7 +70,11 @@ const GeneralSetupForm = () => {
     buy_terms_link: '',
     sell_terms_link: '',
     lease_terms_link: '',
-    redeem_terms_link: ''
+    redeem_terms_link: '',
+
+    // Tab 4 fields: Salesman Commission Setup
+    salesman_commission_enabled: 'No',
+    salesman_commission_percent: '1'
   })
 
   const [loading, setLoading] = useState(false)
@@ -182,6 +186,7 @@ const GeneralSetupForm = () => {
             <Tab label="GST & KYC Setup" sx={{ fontWeight: 600 }} />
             <Tab label="Digital Gold Setup" sx={{ fontWeight: 600 }} />
             <Tab label="Terms & Conditions" sx={{ fontWeight: 600 }} />
+            <Tab label="Salesman Commission Setup" sx={{ fontWeight: 600 }} />
           </Tabs>
         </Box>
       </Grid>
@@ -462,6 +467,45 @@ const GeneralSetupForm = () => {
                     <Typography variant="body1" sx={{ fontWeight: 600, maxWidth: '250px' }}>Digital Gold Redeem Terms & Conditions Link</Typography>
                     <TextField fullWidth sx={{ maxWidth: '400px' }} placeholder="https://drive.google.com/file/d/..." value={form.redeem_terms_link ?? ''} onChange={e => setForm({...form, redeem_terms_link: e.target.value})} />
                   </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
+
+      {/* Tab 4: Salesman Commission Setup */}
+      {activeTab === 3 && (
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)' }}>
+            <CardContent sx={{ p: 6 }}>
+              <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
+                <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: 'rgba(40, 199, 111, 0.1)', color: '#28C76F', mr: 3, display: 'flex' }}>
+                  <i className="ri-user-star-line" style={{ fontSize: '1.5rem' }} />
+                </Box>
+                <Typography variant='h6' sx={{ fontWeight: 600 }}>Salesman Commission Setup</Typography>
+              </Box>
+
+              <Grid container spacing={6}>
+                <Grid size={{ xs: 12 }}>
+                  <FormControl fullWidth sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>Enable Salesman Commission</Typography>
+                    <RadioGroup row value={form.salesman_commission_enabled ?? 'No'} onChange={e => setForm({ ...form, salesman_commission_enabled: e.target.value })}>
+                      <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                      <FormControlLabel value='No' control={<Radio />} label='No' />
+                    </RadioGroup>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Commission Percentage (%)"
+                    helperText="Applied to the amount collected on each installment payment."
+                    value={form.salesman_commission_percent ?? ''}
+                    onChange={e => setForm({ ...form, salesman_commission_percent: e.target.value })}
+                    disabled={(form.salesman_commission_enabled ?? 'No') !== 'Yes'}
+                  />
                 </Grid>
               </Grid>
             </CardContent>

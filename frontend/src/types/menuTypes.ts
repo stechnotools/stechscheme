@@ -27,16 +27,19 @@ export type VerticalMenuItemDataType = Omit<
     icon?: string
     prefix?: ReactNode | ChipProps
     suffix?: ReactNode | ChipProps
+    permission?: string
   }
 export type VerticalSubMenuDataType = Omit<VerticalSubMenuProps, 'children' | 'icon' | 'prefix' | 'suffix'> & {
   children: VerticalMenuDataType[]
   icon?: string
   prefix?: ReactNode | ChipProps
   suffix?: ReactNode | ChipProps
+  permission?: string
 }
 export type VerticalSectionDataType = Omit<VerticalMenuSectionProps, 'children'> & {
   isSection: boolean
   children: VerticalMenuDataType[]
+  permission?: string
 }
 export type VerticalMenuDataType = VerticalMenuItemDataType | VerticalSubMenuDataType | VerticalSectionDataType
 
@@ -51,11 +54,13 @@ export type HorizontalMenuItemDataType = Omit<
     icon?: string
     prefix?: ReactNode | ChipProps
     suffix?: ReactNode | ChipProps
+    permission?: string
   }
 export type HorizontalSubMenuDataType = Omit<HorizontalSubMenuProps, 'children' | 'icon' | 'prefix' | 'suffix'> & {
   children: HorizontalMenuDataType[]
   icon?: string
   prefix?: ReactNode | ChipProps
   suffix?: ReactNode | ChipProps
+  permission?: string
 }
 export type HorizontalMenuDataType = HorizontalMenuItemDataType | HorizontalSubMenuDataType

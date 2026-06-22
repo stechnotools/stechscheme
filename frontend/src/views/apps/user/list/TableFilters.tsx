@@ -27,7 +27,7 @@ const TableFilters = ({
 
   useEffect(() => {
     const filteredData = tableData?.filter(user => {
-      if (role && user.role !== role) return false
+      if (role && !(user.roles?.includes(role) ?? user.role === role)) return false
       if (status && user.status !== status) return false
 
       return true

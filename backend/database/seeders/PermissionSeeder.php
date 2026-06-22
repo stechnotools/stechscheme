@@ -15,6 +15,8 @@ class PermissionSeeder extends Seeder
             'dashboard.analytics',
             'branches.all',
             'branches.add',
+            'salesman.all',
+            'salesman.add',
             'customers.all',
             'customers.add',
             'kyc.pending',
@@ -28,7 +30,7 @@ class PermissionSeeder extends Seeder
             'membership.matured',
             'membership.redeemed',
             'membership.closed',
-            'membership.lifecycle',
+            'membership.opening',
             'installments.all',
             'installments.pending',
             'installments.paid',
@@ -71,6 +73,20 @@ class PermissionSeeder extends Seeder
             'lc.reports.ledger',
             'lc.reports.category-wise',
             'lc.reports.gift-achiever',
+            'commission.manage',
+            'accounts.chart-of-accounts',
+            'feedback.dashboard',
+            'feedback.capture',
+            'feedback.questions',
+            'dm.master',
+            'dm.rates',
+            'dm.sales',
+            'dm.purchase',
+            'dm.reports',
+            'dm.redeem',
+            'dm.buying',
+            'dm.voucher-setup',
+            'settings.general',
         ];
 
         foreach ($allPermissions as $permission) {
@@ -90,6 +106,8 @@ class PermissionSeeder extends Seeder
             'dashboard.overview',
             'branches.all',
             'branches.add',
+            'salesman.all',
+            'salesman.add',
             'customers.all',
             'customers.add',
             'kyc.pending',
@@ -103,7 +121,7 @@ class PermissionSeeder extends Seeder
             'membership.matured',
             'membership.redeemed',
             'membership.closed',
-            'membership.lifecycle',
+            'membership.opening',
             'installments.all',
             'installments.pending',
             'installments.paid',
@@ -132,6 +150,37 @@ class PermissionSeeder extends Seeder
             'lc.reports',
             'lc.reports.dashboard',
             'lc.reports.ledger',
+            'accounts.chart-of-accounts',
+            'feedback.capture',
+            'dm.master',
+            'dm.rates',
+            'dm.sales',
+            'dm.purchase',
+            'dm.reports',
+            'dm.redeem',
+            'dm.buying',
+            'dm.voucher-setup',
+        ];
+
+        $cashierPermissions = [
+            'dashboard.overview',
+            'customers.all',
+            'membership.active',
+            'membership.matured',
+            'schemes.all',
+            'payments.all',
+            'payments.history',
+            'payments.receipt',
+            'installments.all',
+            'installments.pending',
+            'installments.paid',
+            'installments.overdue',
+            'reports.daily-collection',
+            'reports.customer-ledger',
+            'reports.customer-statement',
+            'reports.receipts.register',
+            'lc.add-redeem',
+            'lc.customers',
         ];
 
         $customerPermissions = [];
@@ -139,12 +188,12 @@ class PermissionSeeder extends Seeder
         $branchManagerPermissions = [
             'dashboard.overview',
             'branches.all',
+            'salesman.all',
             'customers.all',
             'schemes.all',
             'membership.active',
             'membership.matured',
             'membership.redeemed',
-            'membership.lifecycle',
             'installments.all',
             'installments.pending',
             'installments.overdue',
@@ -162,8 +211,11 @@ class PermissionSeeder extends Seeder
             'reports.gold.liability',
         ];
 
+        $cashierRole = Role::findOrCreate('cashier', 'web');
+
         $branchManagerRole->syncPermissions($branchManagerPermissions);
         $staffRole->syncPermissions($staffPermissions);
+        $cashierRole->syncPermissions($cashierPermissions);
         $customerRole->syncPermissions($customerPermissions);
     }
 }

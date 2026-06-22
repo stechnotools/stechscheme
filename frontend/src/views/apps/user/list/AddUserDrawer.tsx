@@ -37,7 +37,7 @@ type FormValues = {
   email: string
   mobile: string
   password: string
-  role: string
+  role: string[]
   status: string
   branch_ids: number[]
 }
@@ -55,7 +55,7 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
       email: '',
       mobile: '',
       password: '',
-      role: roles[0] ?? '',
+      role: roles[0] ? [roles[0]] : [],
       status: 'active',
       branch_ids: []
     }
@@ -70,7 +70,7 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
         email: editingUser.email === '-' ? '' : editingUser.email,
         mobile: editingUser.contact === '-' ? '' : editingUser.contact,
         password: '',
-        role: editingUser.role || roles[0] || '',
+        role: editingUser.roles?.length ? editingUser.roles : editingUser.role ? [editingUser.role] : roles[0] ? [roles[0]] : [],
         status: editingUser.status || 'active',
         branch_ids: editingUser.branchIds || []
       })
@@ -80,7 +80,7 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
         email: '',
         mobile: '',
         password: '',
-        role: roles[0] ?? '',
+        role: roles[0] ? [roles[0]] : [],
         status: 'active',
         branch_ids: []
       })
@@ -104,7 +104,7 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
         mobile: data.mobile,
         password: data.password.trim() ? data.password : undefined,
         status: data.status,
-        role_names: data.role ? [data.role] : [],
+        role_names: data.role || [],
         branch_ids: data.branch_ids || []
       })
 
@@ -176,13 +176,20 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
             )}
           />
           <FormControl fullWidth error={Boolean(errors.role)}>
-            <InputLabel id='role-select'>Select Role</InputLabel>
+            <InputLabel id='role-select'>Select Role(s)</InputLabel>
             <Controller
               name='role'
               control={control}
-              rules={{ required: true }}
+              rules={{ required: true, validate: value => value.length > 0 }}
               render={({ field }) => (
-                <Select label='Select Role' labelId='role-select' {...field}>
+                <Select
+                  multiple
+                  label='Select Role(s)'
+                  labelId='role-select'
+                  {...field}
+                  value={field.value || []}
+                  renderValue={selected => (selected as string[]).join(', ')}
+                >
                   {roles.map(roleName => (
                     <MenuItem key={roleName} value={roleName}>
                       {roleName}
@@ -191,7 +198,7 @@ const AddUserDrawer = ({ open, handleClose, roles, branches, editingUser = null,
                 </Select>
               )}
             />
-            {errors.role ? <FormHelperText>This field is required.</FormHelperText> : null}
+            {errors.role ? <FormHelperText>Select at least one role.</FormHelperText> : null}
           </FormControl>
           <FormControl fullWidth>
             <InputLabel id='branch-select'>Select Branches</InputLabel>

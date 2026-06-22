@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
 import { useParams, useRouter } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
@@ -162,6 +164,7 @@ const RolePermissionAssign = () => {
 
         return !hiddenPermissionModules.has(moduleKey) && !hiddenPermissions.has(item.name)
       })
+
       const selected = new Set((roleResponse.data.permissions ?? []).map(item => item.name))
 
       setRole(roleResponse.data)
@@ -177,7 +180,8 @@ const RolePermissionAssign = () => {
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
-      return
+      
+return
     }
 
     if (status === 'authenticated') {
@@ -236,7 +240,8 @@ const RolePermissionAssign = () => {
 
     if (isSuperAdmin(role.name)) {
       setSuccess('Super-admin has automatic full access. No assignment required.')
-      return
+      
+return
     }
 
     setSaving(true)
@@ -278,7 +283,7 @@ const RolePermissionAssign = () => {
             )}
           </div>
           <Box className='flex items-center gap-2'>
-            <Button variant='outlined' color='secondary' onClick={() => router.push('/apps/roles')}>
+            <Button variant='outlined' color='secondary' onClick={() => router.push('/roles')}>
               Back to Roles
             </Button>
             <Button variant='contained' onClick={handleSave} disabled={saving || loading || (role ? isSuperAdmin(role.name) : false)}>

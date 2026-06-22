@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
 import Grid from '@mui/material/Grid'
 import type { UsersType } from '@/types/apps/userTypes'
+import { SkeletonStatCards, SkeletonTable } from '@/components/SkeletonLoader'
 import UserListCards from './UserListCards'
 import UserListTable from './UserListTable'
 
@@ -30,6 +31,8 @@ type ApiBranch = {
 
 type UsersResponse = {
   data: ApiUser[]
+  current_page?: number
+  last_page?: number
 }
 
 type RolesResponse = {
@@ -55,7 +58,7 @@ const mapStatus = (status: string | null | undefined): UsersType['status'] => {
 }
 
 const mapUser = (user: ApiUser): UsersType => {
-  const roleName = user.roles?.[0]?.name ?? 'staff'
+  const roleNames = user.roles?.map(r => r.name) ?? []
   const usernameBase = user.email || user.mobile || user.name
 
   return {
@@ -64,7 +67,8 @@ const mapUser = (user: ApiUser): UsersType => {
     fullName: user.name,
     username: usernameBase,
     email: user.email || user.mobile || '-',
-    role: roleName,
+    role: roleNames[0] ?? 'staff',
+    roles: roleNames,
     currentPlan: 'company',
     status: mapStatus(user.status),
     company: '-',
@@ -112,6 +116,27 @@ const UserList = () => {
     [accessToken]
   )
 
+  // The backend caps per_page at 100 regardless of what's requested, so a
+  // single request can silently truncate the list once there are more than
+  // 100 users. Page through every result so super-admin sees everyone.
+  const fetchAllUsers = useCallback(async (): Promise<ApiUser[]> => {
+    const all: ApiUser[] = []
+    let page = 1
+    let lastPage = 1
+
+    do {
+      const res = await request<UsersResponse>(
+        `/users?per_page=100&sort_by=created_at&sort_direction=desc&page=${page}`
+      )
+
+      all.push(...res.data)
+      lastPage = res.last_page ?? 1
+      page++
+    } while (page <= lastPage)
+
+    return all
+  }, [request])
+
   const loadData = useCallback(async () => {
     if (!accessToken) return
 
@@ -119,13 +144,13 @@ const UserList = () => {
     setError(null)
 
     try {
-      const [usersResponse, rolesResponse, branchesResponse] = await Promise.all([
-        request<UsersResponse>('/users?per_page=200&sort_by=created_at&sort_direction=desc'),
+      const [allUsers, rolesResponse, branchesResponse] = await Promise.all([
+        fetchAllUsers(),
         request<RolesResponse>('/roles?per_page=200&sort_by=name&sort_direction=asc'),
         request<BranchesResponse>('/branches?per_page=200&sort_by=name&sort_direction=asc')
       ])
 
-      setUsers(usersResponse.data.map(mapUser))
+      setUsers(allUsers.map(mapUser))
       setRoles(rolesResponse.data.map(item => item.name))
       setBranches(branchesResponse.data)
     } catch (err) {
@@ -133,7 +158,7 @@ const UserList = () => {
     } finally {
       setLoading(false)
     }
-  }, [accessToken, request])
+  }, [accessToken, request, fetchAllUsers])
 
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
@@ -146,6 +171,8 @@ const UserList = () => {
     }
   }, [status, accessToken, loadData])
 
+  const showSkeleton = status === 'loading' || (loading && users.length === 0)
+
   return (
     <Grid container spacing={6}>
       {error ? (
@@ -153,12 +180,25 @@ const UserList = () => {
           <Alert severity='error'>{error}</Alert>
         </Grid>
       ) : null}
-      <Grid size={{ xs: 12 }}>
-        <UserListCards users={users} />
-      </Grid>
-      <Grid size={{ xs: 12 }}>
-        <UserListTable users={users} roles={roles} branches={branches} loading={loading} onRefresh={loadData} request={request} />
-      </Grid>
+      {showSkeleton ? (
+        <>
+          <Grid size={{ xs: 12 }}>
+            <SkeletonStatCards count={4} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <SkeletonTable rows={8} cols={7} />
+          </Grid>
+        </>
+      ) : (
+        <>
+          <Grid size={{ xs: 12 }}>
+            <UserListCards users={users} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <UserListTable users={users} roles={roles} branches={branches} loading={loading} onRefresh={loadData} request={request} />
+          </Grid>
+        </>
+      )}
     </Grid>
   )
 }

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\DigitalMetalMaster;
+use App\Models\DigitalMetalMasterLog;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\MembershipService;
-use App\Services\MembershipLifecycleService;
 use App\Services\OneClickEnrollmentService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +18,6 @@ class MembershipController extends CrudController
 {
     public function __construct(
         private readonly MembershipService $membershipService,
-        private readonly MembershipLifecycleService $membershipLifecycleService,
         private readonly OneClickEnrollmentService $oneClickEnrollmentService
     )
     {
@@ -33,6 +34,92 @@ class MembershipController extends CrudController
     public function index(Request $request): JsonResponse
     {
         return response()->json($this->membershipService->paginate($request->all()));
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $membership = $this->freshModel($this->newQuery()->findOrFail($id))->toArray();
+
+        $this->attachInstallmentWeights($membership);
+
+        return response()->json(['data' => $membership]);
+    }
+
+    /**
+     * For Weight-type schemes, convert each installment's amount into gold weight (grams).
+     * Paid installments lock in the rate as of paid_date (or due_date if paid on/before
+     * the due date); unpaid installments show a live weight using today's rate.
+     */
+    private function attachInstallmentWeights(array &$membership): void
+    {
+        if (strtolower((string) ($membership['scheme']['scheme_type'] ?? '')) !== 'weight') {
+            return;
+        }
+
+        $itemGroup = trim((string) ($membership['scheme']['item_group'] ?? ''));
+
+        if ($itemGroup === '') {
+            return;
+        }
+
+        $metalMaster = DigitalMetalMaster::query()
+            ->get()
+            ->first(fn (DigitalMetalMaster $m) => trim(trim((string) $m->purity) . ' ' . $m->metal_name) === $itemGroup
+                || $m->metal_name === $itemGroup
+                || $m->display_text === $itemGroup);
+
+        if (! $metalMaster) {
+            return;
+        }
+
+        $rateLogs = DigitalMetalMasterLog::query()
+            ->where('digital_metal_master_id', $metalMaster->id)
+            ->orderBy('created_at')
+            ->get(['new_rate', 'created_at']);
+
+        $resolveRate = function (Carbon $date) use ($rateLogs, $metalMaster): float {
+            $rate = null;
+
+            foreach ($rateLogs as $log) {
+                if ($log->created_at->lte($date->copy()->endOfDay())) {
+                    $rate = (float) $log->new_rate;
+                } else {
+                    break;
+                }
+            }
+
+            return $rate ?? (float) ($metalMaster->rate_per ?? 0);
+        };
+
+        if (! isset($membership['installments']) || ! is_array($membership['installments'])) {
+            return;
+        }
+
+        foreach ($membership['installments'] as &$installment) {
+            $dueDate = Carbon::parse($installment['due_date']);
+            $paidDate = ! empty($installment['paid_date']) ? Carbon::parse($installment['paid_date']) : null;
+            $isPaid = (bool) ($installment['paid'] ?? false);
+
+            if ($isPaid) {
+                $targetDate = ($paidDate && $paidDate->gt($dueDate)) ? $paidDate : $dueDate;
+            } else {
+                $targetDate = Carbon::now();
+            }
+
+            $rate = $resolveRate($targetDate);
+            $amount = (float) ($installment['amount'] ?? 0);
+
+            if (isset($installment['manual_weight']) && $installment['manual_weight'] !== null) {
+                $manualWeight = (float) $installment['manual_weight'];
+
+                $installment['rate_per_gram'] = $manualWeight > 0 ? round($amount / $manualWeight, 2) : null;
+                $installment['weight'] = $manualWeight;
+            } else {
+                $installment['rate_per_gram'] = $rate ?: null;
+                $installment['weight'] = $rate > 0 ? round($amount / $rate, 4) : null;
+            }
+        }
+        unset($installment);
     }
 
     public function store(Request $request): JsonResponse
@@ -68,37 +155,13 @@ class MembershipController extends CrudController
             'payments.*.amount' => ['required', 'numeric', 'min:0'],
             'payments.*.transaction_id' => ['nullable', 'string', 'max:255'],
             'payments.*.payment_date' => ['nullable', 'date'],
+            'membership_no' => ['nullable', 'string', 'max:100'],
         ]);
 
         return response()->json([
             'message' => 'Customer enrolled successfully.',
             'data' => $this->oneClickEnrollmentService->enroll($validated, $request->user()),
         ], 201);
-    }
-
-    public function lifecyclePreview(Request $request, Membership $membership): JsonResponse
-    {
-        $validated = $request->validate([
-            'action' => ['required', Rule::in(['mature', 'maturity', 'redeem', 'redemption', 'close', 'closure', 'cancel', 'cancellation', 'settle', 'settlement'])],
-        ]);
-
-        return response()->json([
-            'data' => $this->membershipLifecycleService->preview($membership, (string) $validated['action']),
-        ]);
-    }
-
-    public function lifecycleAction(Request $request, Membership $membership): JsonResponse
-    {
-        $validated = $request->validate([
-            'action' => ['required', Rule::in(['mature', 'maturity', 'redeem', 'redemption', 'close', 'closure', 'cancel', 'cancellation', 'settle', 'settlement'])],
-            'status' => ['nullable', Rule::in(['matured', 'redeemed', 'closed', 'cancelled', 'settled'])],
-            'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        return response()->json([
-            'message' => 'Membership lifecycle action completed successfully.',
-            'data' => $this->membershipLifecycleService->apply($membership, (string) $validated['action'], $request->user(), $validated),
-        ]);
     }
 
     protected function rules(?Model $model = null): array

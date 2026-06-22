@@ -13,8 +13,111 @@ import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import CircularProgress from '@mui/material/CircularProgress'
+import Skeleton from '@mui/material/Skeleton'
 import { branchCurrencyFormatter, getBranchStatusColor, mapApiBranchToBranch, resolveBackendApiUrl, type ApiBranch } from './data'
+
+const BranchDetailSkeleton = () => {
+  return (
+    <Grid container spacing={6}>
+      <Grid size={{ xs: 12 }}>
+        <Card
+          sx={{
+            overflow: 'hidden',
+            position: 'relative',
+            color: 'common.white',
+            background: 'linear-gradient(135deg, #111827 0%, #166534 52%, #0f766e 100%)'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 5, md: 6 } }}>
+            <Stack
+              direction={{ xs: 'column', lg: 'row' }}
+              spacing={3}
+              justifyContent='space-between'
+              alignItems={{ xs: 'flex-start', lg: 'center' }}
+            >
+              <div>
+                <Stack direction='row' spacing={1.5} alignItems='center' sx={{ mb: 1.5 }}>
+                  <Skeleton width={200} height={40} animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+                  <Skeleton width={80} height={24} variant='rounded' animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+                </Stack>
+                <Skeleton width={350} height={20} animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Skeleton width={140} height={36} variant='rounded' animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+                <Skeleton width={120} height={36} variant='rounded' animation='wave' sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {[1, 2, 3].map(i => (
+        <Grid key={i} size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Skeleton width={120} height={20} animation='wave' />
+              <Skeleton width={160} height={36} animation='wave' sx={{ mt: 2, mb: 1 }} />
+              <Skeleton width={180} height={20} animation='wave' />
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+
+      <Grid size={{ xs: 12, lg: 8 }}>
+        <Card>
+          <CardContent>
+            <Stack spacing={3}>
+              <div>
+                <Skeleton width={180} height={28} animation='wave' />
+                <Skeleton width={320} height={20} animation='wave' sx={{ mt: 0.5 }} />
+              </div>
+
+              <Grid container spacing={3}>
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <Grid key={i} size={{ xs: 12, md: 6 }}>
+                    <Skeleton width={100} height={14} animation='wave' />
+                    <Skeleton width={180} height={24} animation='wave' sx={{ mt: 0.5 }} />
+                  </Grid>
+                ))}
+              </Grid>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid size={{ xs: 12, lg: 4 }}>
+        <Stack spacing={6}>
+          <Card>
+            <CardContent>
+              <Stack spacing={2}>
+                <Skeleton width={150} height={28} animation='wave' />
+                <Skeleton width='100%' height={32} variant='rounded' animation='wave' />
+                <Skeleton width='100%' height={32} variant='rounded' animation='wave' />
+                <Skeleton width='100%' height={32} variant='rounded' animation='wave' />
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Stack spacing={2}>
+                <Skeleton width={150} height={28} animation='wave' />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i}>
+                    <Skeleton width={100} height={14} animation='wave' />
+                    <Skeleton width={120} height={20} animation='wave' sx={{ mt: 0.5 }} />
+                    {i < 2 && <Divider sx={{ mt: 1 }} />}
+                  </div>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      </Grid>
+    </Grid>
+  )
+}
 
 const metricCards = (members: number, collections: number, dueToday: number) => [
   {
@@ -84,6 +187,10 @@ const BranchDetailPage = ({ branchId }: { branchId: number }) => {
 
     void loadBranch()
   }, [status, accessToken, branchId, request])
+
+  if (loading || status === 'loading') {
+    return <BranchDetailSkeleton />
+  }
 
   if (!branch) {
     return <Alert severity='error'>{error || 'Branch not found.'}</Alert>

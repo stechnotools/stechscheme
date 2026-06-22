@@ -65,6 +65,7 @@ class InstallmentController extends CrudController
             'paid' => ['sometimes', 'boolean'],
             'paid_date' => ['nullable', 'date'],
             'penalty' => ['nullable', 'numeric', 'min:0'],
+            'manual_weight' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

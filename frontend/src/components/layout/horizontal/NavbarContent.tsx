@@ -38,13 +38,13 @@ const shortcuts: ShortcutsType[] = [
     subtitle: 'Manage Accounts'
   },
   {
-    url: '/apps/user/list',
+    url: '/users',
     icon: 'ri-user-3-line',
     title: 'Users',
     subtitle: 'Manage Users'
   },
   {
-    url: '/apps/roles',
+    url: '/roles',
     icon: 'ri-computer-line',
     title: 'Role Management',
     subtitle: 'Permissions'

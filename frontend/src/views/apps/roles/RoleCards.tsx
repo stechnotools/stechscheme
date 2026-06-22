@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+
 import Link from 'next/link'
+
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -15,6 +17,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import AvatarGroup from '@mui/material/AvatarGroup'
 import IconButton from '@mui/material/IconButton'
+
 import CustomAvatar from '@core/components/mui/Avatar'
 import type { RoleApiType } from '@/types/apps/roleTypes'
 
@@ -31,6 +34,8 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
   const [roleName, setRoleName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   const cardData = useMemo(
     () =>
@@ -62,7 +67,8 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
 
     if (!trimmedName) {
       setError('Role name is required.')
-      return
+      
+return
     }
 
     setSubmitting(true)
@@ -90,8 +96,31 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
     }
   }
 
+  const handleDeleteRole = async (id: number, name: string, totalUsers: number) => {
+    if (totalUsers > 0) return
+
+    if (!confirm(`Delete the "${name}" role? This cannot be undone.`)) return
+
+    setDeletingId(id)
+    setDeleteError(null)
+
+    try {
+      await request(`/roles/${id}`, { method: 'DELETE' })
+      await onRefresh()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete role.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <>
+      {deleteError ? (
+        <Alert severity='error' className='mb-4' onClose={() => setDeleteError(null)}>
+          {deleteError}
+        </Alert>
+      ) : null}
       <Grid container spacing={6}>
         {cardData.map(item => (
           <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={item.id}>
@@ -121,7 +150,7 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
                           variant='text'
                           className='!px-0'
                           component={Link}
-                          href={`/apps/roles/${item.id}/permissions`}
+                          href={`/roles/${item.id}/permissions`}
                         >
                           Assign Permissions
                         </Button>
@@ -132,8 +161,12 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
                       </Typography>
                     )}
                   </div>
-                  <IconButton disabled>
-                    <i className='ri-file-copy-line text-secondary' />
+                  <IconButton
+                    disabled={isSuperAdminRole(item.title) || item.totalUsers > 0 || deletingId === item.id}
+                    title={item.totalUsers > 0 ? 'Cannot delete a role assigned to users' : 'Delete role'}
+                    onClick={() => void handleDeleteRole(item.id, item.title, item.totalUsers)}
+                  >
+                    <i className='ri-delete-bin-7-line text-secondary' />
                   </IconButton>
                 </div>
               </CardContent>
@@ -199,6 +232,7 @@ const RoleCards = ({ roles, loading, onRefresh, request }: Props) => {
 }
 
 export default RoleCards
+
   const isSuperAdminRole = (name: string) => {
     const normalized = name.toLowerCase().replace(/[_\s]+/g, '-')
 
