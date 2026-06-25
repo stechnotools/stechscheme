@@ -31,6 +31,18 @@ class StoreKycRequest extends FormRequest
             'status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
             'remarks' => ['nullable', 'string'],
             'verified_at' => ['nullable', 'date'],
+            'nominee_name' => ['nullable', 'string', 'max:255'],
+            'nominee_relation' => ['nullable', 'string', 'max:100'],
+            'nominee_mobile_1' => ['nullable', 'string', 'max:20'],
+            'nominee_mobile_2' => ['nullable', 'string', 'max:20'],
+            'nominee_block_no' => ['nullable', 'string', 'max:50'],
+            'nominee_building_name' => ['nullable', 'string', 'max:255'],
+            'nominee_street' => ['nullable', 'string', 'max:255'],
+            'nominee_area' => ['nullable', 'string', 'max:255'],
+            'nominee_city' => ['nullable', 'string', 'max:100'],
+            'nominee_zip_code' => ['nullable', 'string', 'max:20'],
+            'nominee_state' => ['nullable', 'string', 'max:100'],
+            'nominee_country' => ['nullable', 'string', 'max:100'],
         ];
     }
 

@@ -48,4 +48,29 @@ class Installment extends Model
     {
         return $this->hasMany(ReceiptDetail::class);
     }
+
+    /**
+     * Single source of truth for "overdue" — shared by the customer dashboard
+     * (in-memory collection filter) and the reminder command (DB query scope).
+     */
+    public function isOverdueNow(): bool
+    {
+        return ! $this->paid && $this->due_date !== null && $this->due_date->isPast();
+    }
+
+    public function scopeUnpaid($query)
+    {
+        return $query->where('paid', false);
+    }
+
+    public function scopeOverdue($query)
+    {
+        return $query->unpaid()->whereDate('due_date', '<', now()->toDateString());
+    }
+
+    public function scopeDueWithin($query, int $days)
+    {
+        return $query->unpaid()->whereDate('due_date', '>=', now()->toDateString())
+            ->whereDate('due_date', '<=', now()->addDays($days)->toDateString());
+    }
 }

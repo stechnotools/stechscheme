@@ -48,4 +48,9 @@ class DigitalMetalMaster extends Model
     {
         return $this->hasOne(DigitalMetalMasterLog::class, 'digital_metal_master_id')->latestOfMany();
     }
+
+    public function logs()
+    {
+        return $this->hasMany(DigitalMetalMasterLog::class, 'digital_metal_master_id');
+    }
 }

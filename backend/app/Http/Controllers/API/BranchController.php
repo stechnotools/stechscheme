@@ -28,6 +28,8 @@ class BranchController extends CrudController
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ];
     }

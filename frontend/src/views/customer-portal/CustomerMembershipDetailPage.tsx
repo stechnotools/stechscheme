@@ -11,7 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { customerPortalRequest } from '@/libs/customerPortal'
+import { customerPortalRequest, getCustomerPortalToken, resolveBackendApiUrl } from '@/libs/customerPortal'
 
 type MembershipDetailResponse = {
   data: {
@@ -41,6 +41,34 @@ const CustomerMembershipDetailPage = ({ membershipId }: { membershipId: number }
   const [membership, setMembership] = useState<MembershipDetailResponse['data'] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownloadStatement = async () => {
+    const token = getCustomerPortalToken()
+    if (!token) return
+
+    setDownloading(true)
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/customer-portal/memberships/${membershipId}/statement`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to download statement.')
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `statement-${membershipId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download statement.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -83,9 +111,14 @@ const CustomerMembershipDetailPage = ({ membershipId }: { membershipId: number }
               {membership.scheme?.code || 'No scheme code'} • Card {membership.card_no || '-'} • Ref {membership.card_reference || '-'}
             </Typography>
           </div>
-          <Button component={Link} href='/customer/panel' variant='outlined'>
-            Back to Panel
-          </Button>
+          <Stack direction='row' spacing={2}>
+            <Button variant='contained' onClick={() => void handleDownloadStatement()} disabled={downloading} startIcon={<i className='ri-file-download-line' />}>
+              {downloading ? 'Preparing...' : 'Download Statement'}
+            </Button>
+            <Button component={Link} href='/customer/panel' variant='outlined'>
+              Back to Panel
+            </Button>
+          </Stack>
         </Stack>
 
         <Grid container spacing={3}>

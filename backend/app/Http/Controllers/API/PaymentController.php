@@ -90,7 +90,7 @@ class PaymentController extends CrudController
         $membership = Membership::query()->with('installments')->findOrFail($mutated['membership_id']);
         $installmentId = $mutated['installment_id'];
         $paymentAmount = (float) $mutated['amount'];
-        $remainingPayable = $this->getRemainingPayableAmount($membership);
+        $remainingPayable = $membership->getRemainingPayableAmount();
 
         if ($paymentAmount > $remainingPayable + 0.001) {
             abort(
@@ -167,20 +167,6 @@ class PaymentController extends CrudController
         }
 
         return $validated;
-    }
-
-    private function getRemainingPayableAmount(Membership $membership): float
-    {
-        $installments = $membership->relationLoaded('installments')
-            ? $membership->installments
-            : $membership->installments()->get(['amount', 'penalty', 'paid_amount']);
-
-        return round((float) $installments->sum(function ($installment) {
-            return max(
-                0,
-                (float) $installment->amount + (float) ($installment->penalty ?? 0) - (float) ($installment->paid_amount ?? 0)
-            );
-        }), 2);
     }
 
     public function storeBulk(Request $request): JsonResponse

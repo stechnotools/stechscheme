@@ -1623,15 +1623,22 @@ const SchemeOpeningEntryPage = () => {
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Autocomplete
                   size="small"
+                  freeSolo
                   options={customers}
-                  getOptionLabel={(option: any) => option.name ? `${option.name} (${option.mobile})` : option.mobile || ''}
-                  value={customers.find((c: any) => c.name === selectedRow.account_name) || null}
+                  getOptionLabel={(option: any) => typeof option === 'string' ? option : (option.name ? `${option.name} (${option.mobile})` : option.mobile || '')}
+                  value={selectedRow.account_name || ''}
                   onChange={(event, newValue: any) => {
+                    const isOption = newValue && typeof newValue === 'object'
                     setSelectedRow({
                       ...selectedRow,
-                      account_name: newValue ? newValue.name : '',
-                      mobile_no: newValue ? newValue.mobile : ''
+                      account_name: isOption ? newValue.name : (newValue || ''),
+                      mobile_no: isOption ? newValue.mobile : selectedRow.mobile_no
                     })
+                  }}
+                  onInputChange={(event, newInputValue, reason) => {
+                    if (reason === 'input') {
+                      setSelectedRow((prev: any) => ({ ...prev, account_name: newInputValue }))
+                    }
                   }}
                   renderInput={(params) => (
                     <TextField {...params} label="Account Name" required />
@@ -1660,19 +1667,25 @@ const SchemeOpeningEntryPage = () => {
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Salesman</InputLabel>
-                  <Select
-                    label="Salesman"
-                    value={selectedRow.salesman || ''}
-                    onChange={(e) => setSelectedRow({ ...selectedRow, salesman: e.target.value })}
-                  >
-                    <MenuItem value=""><em>None</em></MenuItem>
-                    {salesmen.map((s: any) => (
-                      <MenuItem key={s.id} value={s.name}>{s.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Autocomplete
+                  size="small"
+                  freeSolo
+                  options={salesmen}
+                  getOptionLabel={(option: any) => typeof option === 'string' ? option : (option.name || '')}
+                  value={selectedRow.salesman || ''}
+                  onChange={(event, newValue: any) => {
+                    const isOption = newValue && typeof newValue === 'object'
+                    setSelectedRow({ ...selectedRow, salesman: isOption ? newValue.name : (newValue || '') })
+                  }}
+                  onInputChange={(event, newInputValue, reason) => {
+                    if (reason === 'input') {
+                      setSelectedRow((prev: any) => ({ ...prev, salesman: newInputValue }))
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Salesman" />
+                  )}
+                />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small">

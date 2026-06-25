@@ -34,6 +34,8 @@ const AddBranchPage = () => {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [address, setAddress] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   const [zone, setZone] = useState('south')
   const [defaultVisibility, setDefaultVisibility] = useState('all')
   const [active, setActive] = useState(true)
@@ -97,6 +99,8 @@ const AddBranchPage = () => {
           phone: phone.trim() || null,
           email: email.trim() || null,
           address: address.trim() || null,
+          latitude: latitude.trim() || null,
+          longitude: longitude.trim() || null,
           status: active ? 'active' : 'inactive'
         })
       })
@@ -174,6 +178,26 @@ const AddBranchPage = () => {
                 </Grid>
                 <Grid size={{ xs: 12 }}>
                   <TextField fullWidth multiline minRows={3} label='Address' placeholder='Door number, street, landmark' value={address} onChange={event => setAddress(event.target.value)} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    label='Latitude'
+                    placeholder='e.g. 13.0827'
+                    value={latitude}
+                    onChange={event => setLatitude(event.target.value.replace(/[^0-9.\-]/g, ''))}
+                    helperText='Used by the customer app store locator'
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    label='Longitude'
+                    placeholder='e.g. 80.2707'
+                    value={longitude}
+                    onChange={event => setLongitude(event.target.value.replace(/[^0-9.\-]/g, ''))}
+                    helperText='Used by the customer app store locator'
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField select fullWidth label='Collection Zone' value={zone} onChange={event => setZone(event.target.value)}>

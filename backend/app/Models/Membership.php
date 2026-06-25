@@ -54,4 +54,23 @@ class Membership extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    /**
+     * Single source of truth for "how much can still be paid on this membership" —
+     * shared by PaymentController (staff entry) and the customer-portal payment
+     * flow so both enforce identical limits.
+     */
+    public function getRemainingPayableAmount(): float
+    {
+        $installments = $this->relationLoaded('installments')
+            ? $this->installments
+            : $this->installments()->get(['amount', 'penalty', 'paid_amount']);
+
+        return round((float) $installments->sum(function ($installment) {
+            return max(
+                0,
+                (float) $installment->amount + (float) ($installment->penalty ?? 0) - (float) ($installment->paid_amount ?? 0)
+            );
+        }), 2);
+    }
 }

@@ -16,6 +16,8 @@ export type ApiBranch = {
   phone?: string | null
   email?: string | null
   address?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
   status?: 'active' | 'inactive' | null
   users?: ApiBranchUser[]
 }
@@ -35,6 +37,8 @@ export type Branch = {
   phone: string
   email: string
   address: string
+  latitude: number | null
+  longitude: number | null
   zone: 'north' | 'south' | 'west'
   defaultSchemeVisibility: 'all' | 'selected'
   active: boolean
@@ -58,6 +62,8 @@ export const branchRecords: Branch[] = [
     phone: '+91 98765 41001',
     email: 'tnagar@jewelleryscheme.in',
     address: '12 Pondy Bazaar, T. Nagar, Chennai',
+    latitude: null,
+    longitude: null,
     zone: 'south',
     defaultSchemeVisibility: 'all',
     active: true,
@@ -79,6 +85,8 @@ export const branchRecords: Branch[] = [
     phone: '+91 98765 41002',
     email: 'rspuram@jewelleryscheme.in',
     address: '44 DB Road, RS Puram, Coimbatore',
+    latitude: null,
+    longitude: null,
     zone: 'west',
     defaultSchemeVisibility: 'all',
     active: true,
@@ -100,6 +108,8 @@ export const branchRecords: Branch[] = [
     phone: '+91 98765 41003',
     email: 'madurai@jewelleryscheme.in',
     address: '9 West Masi Street, Madurai',
+    latitude: null,
+    longitude: null,
     zone: 'south',
     defaultSchemeVisibility: 'selected',
     active: true,
@@ -121,6 +131,8 @@ export const branchRecords: Branch[] = [
     phone: '+91 98765 41004',
     email: 'trichy@jewelleryscheme.in',
     address: '101 Salai Road, Trichy',
+    latitude: null,
+    longitude: null,
     zone: 'south',
     defaultSchemeVisibility: 'selected',
     active: true,
@@ -142,6 +154,8 @@ export const branchRecords: Branch[] = [
     phone: '+91 98765 41005',
     email: 'velachery@jewelleryscheme.in',
     address: '88 Velachery Main Road, Chennai',
+    latitude: null,
+    longitude: null,
     zone: 'south',
     defaultSchemeVisibility: 'all',
     active: true,
@@ -194,6 +208,8 @@ export const mapApiBranchToBranch = (branch: ApiBranch): Branch => {
     phone: branch.phone || preset?.phone || '-',
     email: branch.email || preset?.email || '-',
     address: branch.address || preset?.address || '-',
+    latitude: branch.latitude !== null && branch.latitude !== undefined ? Number(branch.latitude) : null,
+    longitude: branch.longitude !== null && branch.longitude !== undefined ? Number(branch.longitude) : null,
     zone: preset?.zone ?? 'south',
     defaultSchemeVisibility: preset?.defaultSchemeVisibility ?? 'all',
     active: !isInactive,

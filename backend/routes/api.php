@@ -45,9 +45,19 @@ Route::prefix('auth')->group(function () {
 
 Route::prefix('customer-auth')->group(function () {
     Route::post('login', [CustomerPortalAuthController::class, 'login']);
+
+    Route::middleware('throttle:6,1')->group(function () {
+        Route::post('forgot-password/request', [CustomerPortalAuthController::class, 'forgotPasswordRequest']);
+        Route::post('forgot-password/verify', [CustomerPortalAuthController::class, 'forgotPasswordVerify']);
+        Route::post('login-otp/request', [CustomerPortalAuthController::class, 'loginOtpRequest']);
+        Route::post('login-otp/verify', [CustomerPortalAuthController::class, 'loginOtpVerify']);
+    });
 });
 
 Route::post('feedback', [FeedbackController::class, 'store']);
+
+// PhonePe calls this server-to-server — must stay public (signature-verified inside).
+Route::post('phonepe/webhook', [\App\Http\Controllers\API\CustomerPaymentController::class, 'webhook']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('auth')->group(function () {
@@ -103,18 +113,56 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
     Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 
-    Route::prefix('customer-auth')->group(function () {
+    Route::prefix('scheme-join-requests')->group(function () {
+        Route::get('/', [\App\Http\Controllers\API\SchemeJoinRequestController::class, 'index']);
+        Route::post('{schemeJoinRequest}/approve', [\App\Http\Controllers\API\SchemeJoinRequestController::class, 'approve']);
+        Route::post('{schemeJoinRequest}/reject', [\App\Http\Controllers\API\SchemeJoinRequestController::class, 'reject']);
+    });
+
+    Route::post('push/broadcast', [\App\Http\Controllers\API\PushBroadcastController::class, 'store'])
+        ->middleware('role:super-admin,admin');
+
+    Route::prefix('appointments')->group(function () {
+        Route::get('/', [\App\Http\Controllers\API\AppointmentController::class, 'index']);
+        Route::put('{appointment}', [\App\Http\Controllers\API\AppointmentController::class, 'updateStatus']);
+    });
+
+    Route::prefix('customer-auth')->middleware('customer-portal-token')->group(function () {
         Route::get('me', [CustomerPortalAuthController::class, 'me']);
         Route::post('logout', [CustomerPortalAuthController::class, 'logout']);
     });
 
-    Route::prefix('customer-portal')->group(function () {
+    Route::prefix('customer-portal')->middleware('customer-portal-token')->group(function () {
         Route::get('dashboard', [CustomerPortalController::class, 'dashboard']);
         Route::get('profile', [CustomerPortalController::class, 'profile']);
         Route::get('memberships', [CustomerPortalController::class, 'memberships']);
         Route::get('memberships/{membership}', [CustomerPortalController::class, 'showMembership']);
+        Route::get('memberships/{membership}/statement', [CustomerPortalController::class, 'membershipStatement']);
         Route::get('installments', [CustomerPortalController::class, 'installments']);
         Route::get('payments', [CustomerPortalController::class, 'payments']);
+        Route::post('kyc', [CustomerPortalController::class, 'submitKyc']);
+        Route::get('schemes', [CustomerPortalController::class, 'schemes']);
+        Route::get('schemes/{scheme}', [CustomerPortalController::class, 'schemeDetail']);
+        Route::get('gold-rate', [CustomerPortalController::class, 'goldRate']);
+        Route::get('gold-rate/history', [CustomerPortalController::class, 'goldRateHistory']);
+        Route::post('support', [CustomerPortalController::class, 'submitSupportMessage']);
+        Route::get('support', [CustomerPortalController::class, 'supportMessages']);
+        Route::post('scheme-join-requests', [CustomerPortalController::class, 'submitSchemeJoinRequest']);
+        Route::get('scheme-join-requests', [CustomerPortalController::class, 'schemeJoinRequests']);
+        Route::post('push/subscribe', [CustomerPortalController::class, 'pushSubscribe']);
+        Route::post('push/unsubscribe', [CustomerPortalController::class, 'pushUnsubscribe']);
+        Route::get('push/status', [CustomerPortalController::class, 'pushStatus']);
+        Route::get('wallet', [CustomerPortalController::class, 'wallet']);
+        Route::get('wallet/transactions', [CustomerPortalController::class, 'walletTransactions']);
+        Route::get('catalog', [CustomerPortalController::class, 'catalog']);
+        Route::get('branches', [CustomerPortalController::class, 'branches']);
+        Route::post('appointments', [\App\Http\Controllers\API\AppointmentController::class, 'storeForCustomer']);
+        Route::get('appointments', [\App\Http\Controllers\API\AppointmentController::class, 'indexForCustomer']);
+        Route::post('payments/initiate', [\App\Http\Controllers\API\CustomerPaymentController::class, 'initiate']);
+        Route::get('payments/{merchantOrderId}/status', [\App\Http\Controllers\API\CustomerPaymentController::class, 'status']);
+        Route::post('gold-rate-alerts', [CustomerPortalController::class, 'createGoldRateAlert']);
+        Route::get('gold-rate-alerts', [CustomerPortalController::class, 'goldRateAlerts']);
+        Route::delete('gold-rate-alerts/{goldRateAlert}', [CustomerPortalController::class, 'deleteGoldRateAlert']);
     });
 
     Route::apiResource('permissions', PermissionController::class)

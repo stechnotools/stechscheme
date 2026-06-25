@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    'vapid' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:support@example.com'),
+    ],
+
+    'phonepe' => [
+        // Standard Checkout v2 (OAuth) credentials — from PhonePe's merchant dashboard.
+        'client_id' => env('PHONEPE_CLIENT_ID'),
+        'client_secret' => env('PHONEPE_CLIENT_SECRET'),
+        'client_version' => env('PHONEPE_CLIENT_VERSION', '1'),
+        'env' => env('PHONEPE_ENV', 'sandbox'), // 'sandbox' or 'production'
+        // Webhook Basic Auth credentials configured in the PhonePe dashboard's
+        // webhook settings — PhonePe sends Authorization: SHA256(username:password).
+        'webhook_username' => env('PHONEPE_WEBHOOK_USERNAME'),
+        'webhook_password' => env('PHONEPE_WEBHOOK_PASSWORD'),
+        'redirect_url' => env('PHONEPE_REDIRECT_URL'),
+    ],
+
 ];

@@ -35,7 +35,7 @@ class CustomerPortalService
                 'active_memberships_count' => $memberships->where('status', 'active')->count(),
                 'total_paid' => (float) $memberships->sum('total_paid'),
                 'pending_installments_count' => $installments->where('paid', false)->count(),
-                'overdue_installments_count' => $installments->filter(fn ($installment) => ! $installment->paid && $installment->due_date?->isPast())->count(),
+                'overdue_installments_count' => $installments->filter(fn ($installment) => $installment->isOverdueNow())->count(),
                 'next_due_date' => optional($installments->first(fn ($installment) => ! $installment->paid))->due_date?->toDateString(),
                 'latest_payment_date' => optional($payments->first())->payment_date?->toDateString(),
             ],

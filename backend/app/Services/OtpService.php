@@ -15,4 +15,23 @@ class OtpService
             'expires_at' => Carbon::now()->addMinutes(10),
         ]);
     }
+
+    public function verify(string $mobile, string $otp): bool
+    {
+        $record = Otp::query()
+            ->where('mobile', $mobile)
+            ->where('otp', $otp)
+            ->where('expires_at', '>', Carbon::now())
+            ->whereNull('verified_at')
+            ->latest('id')
+            ->first();
+
+        if (! $record) {
+            return false;
+        }
+
+        $record->update(['verified_at' => Carbon::now()]);
+
+        return true;
+    }
 }
