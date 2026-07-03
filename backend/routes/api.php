@@ -155,6 +155,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('wallet', [CustomerPortalController::class, 'wallet']);
         Route::get('wallet/transactions', [CustomerPortalController::class, 'walletTransactions']);
         Route::get('catalog', [CustomerPortalController::class, 'catalog']);
+        Route::get('catalog/{product}', [CustomerPortalController::class, 'catalogShow']);
         Route::get('branches', [CustomerPortalController::class, 'branches']);
         Route::post('appointments', [\App\Http\Controllers\API\AppointmentController::class, 'storeForCustomer']);
         Route::get('appointments', [\App\Http\Controllers\API\AppointmentController::class, 'indexForCustomer']);

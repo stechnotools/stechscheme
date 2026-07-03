@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             SystemChartOfAccountsSeeder::class,
             SchemeChartOfAccountsSeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

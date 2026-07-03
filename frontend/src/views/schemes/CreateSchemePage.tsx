@@ -629,7 +629,7 @@ return
       formData.append('free_installments', String(form.free_installments || 0))
       formData.append('scheme_type', form.scheme_type.trim())
       formData.append('item_group', form.item_group.trim() || '')
-      formData.append('is_closed', String(!form.is_closed ? 1 : 0))
+      formData.append('is_closed', String(form.is_closed ? 1 : 0))
       formData.append('no_of_installment_type', form.installment_value_type)
       formData.append('min_no_of_installments', form.installment_value_type === 'Variable' ? '1' : String(form.total_installments))
       formData.append('installment_duration', form.installment_duration.trim() || '')
@@ -779,7 +779,7 @@ return
                       <Stack spacing={2.5}>
                         <TextField fullWidth multiline minRows={2} label='Description' value={form.description} onChange={e => updateForm('description', e.target.value)} placeholder='Short description shown to customers during enrollment' sx={fieldSx} />
                         <TextField fullWidth multiline label='Remarks' value={form.remarks} onChange={e => updateForm('remarks', e.target.value)} sx={fieldSx} slotProps={{ input: { sx: { alignItems: 'flex-start', '& textarea': { height: '80px !important', overflow: 'auto', resize: 'none' } } } }} />
-                        <FormControlLabel control={<Checkbox checked={form.is_closed} onChange={e => updateForm('is_closed', e.target.checked)} />} label='Active' />
+                        <FormControlLabel control={<Checkbox checked={!form.is_closed} onChange={e => updateForm('is_closed', !e.target.checked)} />} label='Active' />
                         {form.scheme_type === 'Weight' && (
                           <FormControlLabel
                             control={<Checkbox checked={form.wt_booked_with_gst} onChange={e => updateForm('wt_booked_with_gst', e.target.checked)} />}
@@ -1054,7 +1054,7 @@ return
               <div>
                 <Typography variant='body2' color='text.secondary'>Bonus</Typography>
                 <Typography fontWeight={600}>{form.allow_bonus ? form.bonus_mode : 'Bonus disabled'}</Typography>
-                <Typography variant='body2' color='text.secondary'>{form.is_closed ? 'Active' : 'Inactive'}</Typography>
+                <Typography variant='body2' color='text.secondary'>{form.is_closed ? 'Inactive' : 'Active'}</Typography>
               </div>
             </Stack>
           </CardContent>

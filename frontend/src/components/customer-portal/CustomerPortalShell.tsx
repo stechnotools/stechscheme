@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import BottomNavigation from '@mui/material/BottomNavigation'
@@ -21,6 +23,7 @@ import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
+
 import { clearCustomerPortalToken, getCustomerPortalToken, customerPortalRequest } from '@/libs/customerPortal'
 import { INSTALL_DISMISSED_KEY, useInstallPrompt } from '@/libs/useInstallPrompt'
 
@@ -63,6 +66,15 @@ const DRAWER_SECTIONS: Array<{ label: string; items: DrawerItem[] }> = [
   }
 ]
 
+const greetingOf = () => {
+  const hour = new Date().getHours()
+
+  if (hour < 12) return 'Good Morning'
+  if (hour < 17) return 'Good Afternoon'
+
+  return 'Good Evening'
+}
+
 const initialsOf = (name?: string | null, mobile?: string | null) => {
   if (name && name.trim()) {
     return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('')
@@ -74,12 +86,14 @@ const initialsOf = (name?: string | null, mobile?: string | null) => {
 const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname() ?? ''
   const router = useRouter()
+
   const isLoginRoute =
     pathname === '/customer' ||
     pathname === '/customer/login' ||
     pathname === '/customer/forgot-password' ||
     pathname === '/customer/onboarding' ||
     pathname === '/customer/offline'
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { canInstall, promptInstall } = useInstallPrompt()
   const [bannerDismissed, setBannerDismissed] = useState(true)
@@ -107,6 +121,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
     customerPortalRequest<ProfileResponse>('/customer-portal/profile')
       .then(response => {
         const hasDue = (response.data.memberships || []).some(m => (m.installments || []).some(i => !i.paid))
+
         setProfile({
           name: response.data.name ?? null,
           mobile: response.data.mobile,
@@ -139,6 +154,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
       navigator.serviceWorker.getRegistrations().then(registrations => {
         registrations.forEach(registration => void registration.unregister())
       })
+
       return
     }
 
@@ -157,6 +173,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
     if (pathname.startsWith('/customer/panel/pay')) return 'pay'
     if (pathname.startsWith('/customer/panel/wallet')) return 'offers'
     if (pathname.startsWith('/customer/panel')) return 'home'
+
     return false
   }, [pathname])
 
@@ -201,33 +218,45 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
             <i className='ri-menu-line' style={{ fontSize: '1.3rem' }} />
           </IconButton>
 
-          {/* Absolutely positioned so it stays truly centered regardless of how
-              many icons end up on the left/right side. */}
-          <Stack
-            direction='row'
-            alignItems='center'
-            spacing={1}
-            sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
-          >
-            <Box
-              sx={{
-                width: 24,
-                height: 24,
-                borderRadius: '50%',
-                bgcolor: 'rgba(201,168,76,0.18)',
-                border: '1px solid rgba(201,168,76,0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <i className='ri-gem-line' style={{ fontSize: '0.8rem', color: '#E2C46A' }} />
+          {activeNav === 'home' ? (
+            <Box sx={{ ml: 1.5, minWidth: 0, overflow: 'hidden' }}>
+              <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.2 }}>
+                {greetingOf()},
+              </Typography>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.2 }} noWrap>
+                {profile?.name || profile?.mobile || 'Welcome'} <span role='img' aria-label='waving hand'>👋</span>
+              </Typography>
             </Box>
-            <Typography variant='subtitle1' sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-              Jewellery Scheme
-            </Typography>
-          </Stack>
+          ) : (
+
+            /* Absolutely positioned so it stays truly centered regardless of how
+                many icons end up on the left/right side. */
+            <Stack
+              direction='row'
+              alignItems='center'
+              spacing={1}
+              sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
+            >
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(201,168,76,0.18)',
+                  border: '1px solid rgba(201,168,76,0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <i className='ri-gem-line' style={{ fontSize: '0.8rem', color: '#E2C46A' }} />
+              </Box>
+              <Typography variant='subtitle1' sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+                Jewellery Scheme
+              </Typography>
+            </Stack>
+          )}
 
           <Stack direction='row' spacing={0.5} sx={{ ml: 'auto' }}>
             <IconButton color='inherit' size='small' component={Link} href='/customer/panel/schemes' aria-label='Search schemes'>
@@ -235,6 +264,30 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
             </IconButton>
             <IconButton color='inherit' size='small' component={Link} href='/customer/panel/settings' aria-label='Notifications'>
               <i className='ri-notification-3-line' style={{ fontSize: '1.2rem' }} />
+            </IconButton>
+            <IconButton
+              component={Link}
+              href='/customer/panel/profile'
+              aria-label='My profile'
+              sx={{ p: 0.25, ml: 0.25 }}
+            >
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(201,168,76,0.18)',
+                  border: '1.5px solid #C9A84C',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  color: '#E2C46A'
+                }}
+              >
+                {initialsOf(profile?.name, profile?.mobile)}
+              </Box>
             </IconButton>
           </Stack>
         </Toolbar>
@@ -403,6 +456,42 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
         <BottomNavigation showLabels value={activeNav} sx={{ height: 64 }}>
           {NAV_ITEMS.map(item => {
             const isActive = activeNav === item.value
+
+            // The center "Pay" action is raised into a floating circular button
+            // instead of a flat tab, matching the primary-action treatment on
+            // the mobile dashboard mock.
+            if (item.value === 'pay') {
+              return (
+                <BottomNavigationAction
+                  key={item.value}
+                  label={item.label}
+                  value={item.value}
+                  component={Link}
+                  href={item.href}
+                  sx={{
+                    '&.Mui-selected, &': { color: '#9A7828' },
+                    pt: 0
+                  }}
+                  icon={
+                    <Box
+                      sx={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(135deg, #9A7828 0%, #C9A84C 100%)',
+                        boxShadow: '0 6px 14px rgba(154,120,40,0.45)',
+                        transform: 'translateY(-14px)'
+                      }}
+                    >
+                      <i className={isActive ? item.activeIcon : item.icon} style={{ fontSize: '1.35rem', color: '#fff' }} />
+                    </Box>
+                  }
+                />
+              )
+            }
 
             return (
               <BottomNavigationAction

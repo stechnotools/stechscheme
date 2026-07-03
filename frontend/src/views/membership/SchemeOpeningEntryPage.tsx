@@ -801,6 +801,138 @@ const SchemeOpeningEntryPage = () => {
     URL.revokeObjectURL(url)
   }
 
+  const [downloadingFailed, setDownloadingFailed] = useState(false)
+
+  const downloadFailedRows = async () => {
+    if (!accessToken) return
+    setDownloadingFailed(true)
+    setError(null)
+
+    try {
+      // Failed rows can span multiple pages \u2014 pull every page for this status
+      // rather than just what's currently on screen.
+      const allFailed: any[] = []
+      let page = 1
+      let lastPage = 1
+
+      do {
+        const url = new URL(`${resolveBackendApiUrl()}/scheme-openings`)
+
+        url.searchParams.append('status', 'Failed')
+        url.searchParams.append('page', String(page))
+        url.searchParams.append('per_page', '200')
+
+        const response = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' }
+        })
+
+        const json = await response.json()
+
+        if (!response.ok) throw new Error(json.message || 'Failed to load failed rows.')
+
+        allFailed.push(...(json.data || []))
+        lastPage = json.last_page ?? 1
+        page += 1
+      } while (page <= lastPage)
+
+      if (allFailed.length === 0) {
+        setSuccess('No failed rows to download \u2014 nothing is currently marked Failed.')
+
+        return
+      }
+
+      // Same 10-column layout as the import template (so this file can be fixed
+      // and re-uploaded directly), plus a trailing Error Reason column for
+      // reference \u2014 the importer only reads columns 0-9 positionally, so the
+      // extra column is safely ignored on re-import.
+      const headers = [
+        'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
+        'Total Amount', 'Installment Amount', 'Number of Months', 'Branch', 'Scheme',
+        'Error Reason'
+      ]
+
+      const rows = allFailed.map(row => [
+        row.account_name ?? '',
+        row.city ?? '',
+        row.mobile_no ?? '',
+        row.salesman ?? '',
+        row.scheme_type ?? '',
+        row.total_amount ?? '',
+        row.installment_amount ?? '',
+        row.number_of_months ?? '',
+        row.branch_name ?? '',
+        row.scheme_name ?? '',
+        row.error_message ?? ''
+      ])
+
+      const csvLines = [
+        headers.join(','),
+        ...rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      ]
+
+      const csvContent = '\uFEFF' + csvLines.join('\r\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = `scheme_opening_failed_rows_${new Date().toISOString().slice(0, 10)}.csv`
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      setSuccess(`Downloaded ${allFailed.length} failed row${allFailed.length > 1 ? 's' : ''}.`)
+    } catch (err: any) {
+      setError(err.message || 'Failed to download failed rows.')
+    } finally {
+      setDownloadingFailed(false)
+    }
+  }
+
+  // Downloads rows that failed client-side "Verify & Validate Cells" checks —
+  // distinct from downloadFailedRows, which covers rows that failed after
+  // being posted to the database. This one needs no network call: the row
+  // data + per-column error messages are already sitting in validationResults
+  // from handleValidate().
+  const downloadValidationErrors = () => {
+    const invalidRows = (validationResults?.rows || []).filter((r: any) => !r.is_valid)
+
+    if (invalidRows.length === 0) return
+
+    const headers = [
+      'Row #', 'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
+      'Total Amount', 'Installment Amount', 'Number of Months', 'Branch', 'Scheme',
+      'Validation Errors'
+    ]
+
+    const rows = invalidRows.map((r: any) => {
+      const data = r.data || []
+      const errorText = (r.errors || []).map((e: any) => e.message).join(' | ')
+
+      return [r.index, ...Array.from({ length: 10 }, (_, i) => data[i] ?? ''), errorText]
+    })
+
+    const csvLines = [
+      headers.join(','),
+      ...rows.map((row: any[]) => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    ]
+
+    const csvContent = '﻿' + csvLines.join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `scheme_opening_validation_errors_${new Date().toISOString().slice(0, 10)}.csv`
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Box sx={{ p: 4, bgcolor: 'var(--mui-palette-background-default)', minHeight: '100vh' }}>
       
@@ -846,6 +978,21 @@ const SchemeOpeningEntryPage = () => {
           >
             Download Sample CSV
           </Button>
+          <Tooltip title="Export all rows currently marked Failed, including the reason for each failure, so you can fix and re-import them." arrow>
+            <span>
+              <Button
+                size='medium'
+                variant='outlined'
+                color='error'
+                startIcon={downloadingFailed ? <CircularProgress size={16} color='inherit' /> : <i className='ri-error-warning-line' />}
+                onClick={downloadFailedRows}
+                disabled={downloadingFailed}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                {downloadingFailed ? 'Downloading...' : 'Download Failed Rows'}
+              </Button>
+            </span>
+          </Tooltip>
 
           {selectedRows.length > 0 && (
             <>
@@ -1142,6 +1289,18 @@ const SchemeOpeningEntryPage = () => {
               </Typography>
               {validationResults && validationResults.rows && validationResults.rows.some((r: any) => !r.is_valid) && (
                 <Box sx={{ mt: 3, maxHeight: '200px', overflowY: 'auto', bgcolor: 'rgba(211, 47, 47, 0.04)', p: 3, borderRadius: '6px', border: '1px dashed rgba(211, 47, 47, 0.2)' }}>
+                  <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      startIcon={<i className="ri-download-2-line" />}
+                      onClick={downloadValidationErrors}
+                      sx={{ fontWeight: 600, textTransform: 'none' }}
+                    >
+                      Download Validation Errors CSV
+                    </Button>
+                  </Stack>
                   {validationResults.rows.filter((r: any) => !r.is_valid).map((r: any) => (
                     <Box key={r.index} sx={{ mb: 1.5, fontSize: '0.825rem' }}>
                       <span style={{ fontWeight: 700, color: 'var(--mui-palette-error-main)' }}>Row {r.index}:</span>

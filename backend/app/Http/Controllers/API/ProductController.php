@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 
 class ProductController extends CrudController
 {
@@ -19,8 +20,18 @@ class ProductController extends CrudController
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
-            'image' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
+    }
+
+    protected function mutateValidatedData(array $validated, ?Model $model): array
+    {
+        if (isset($validated['image']) && $validated['image'] instanceof UploadedFile) {
+            $path = $validated['image']->store('products', 'public');
+            $validated['image'] = "/storage/{$path}";
+        }
+
+        return $validated;
     }
 
     protected function applySearch($query, string $search): void

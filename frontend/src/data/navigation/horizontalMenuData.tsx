@@ -21,6 +21,8 @@ const horizontalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary
         { label: 'Add Customer', href: '/customers/add', permission: 'customers.add' },
         { label: 'Scheme Master', href: '/schemes', permission: 'schemes.all' },
         { label: 'Create Scheme', href: '/schemes/create', permission: 'schemes.create' },
+        { label: 'Product Master', href: '/products', permission: 'products.all' },
+        { label: 'Add Product', href: '/products/add', permission: 'products.add' },
         { label: 'Chart of Accounts', href: '/chart-of-accounts', permission: 'accounts.chart-of-accounts' }
       ]
     },

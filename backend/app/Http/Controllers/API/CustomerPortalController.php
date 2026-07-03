@@ -443,6 +443,15 @@ class CustomerPortalController extends Controller
         return response()->json($products);
     }
 
+    public function catalogShow(int $product): JsonResponse
+    {
+        $model = Product::query()->findOrFail($product);
+
+        return response()->json([
+            'data' => $model->only(['id', 'name', 'category', 'price', 'image']),
+        ]);
+    }
+
     public function branches(): JsonResponse
     {
         $branches = Branch::where('status', 'active')

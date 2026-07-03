@@ -9,6 +9,20 @@ export const resolveBackendApiUrl = () => {
   return normalized.endsWith('/api') ? normalized : `${normalized}/api`
 }
 
+// Uploaded assets (e.g. product images) are stored as backend-relative paths
+// like "/storage/products/xxx.jpg" and need to be resolved against the
+// backend origin — the customer portal and API are served from different
+// origins in dev and often in production too.
+export const resolveCustomerAssetUrl = (value?: string | null) => {
+  if (!value) return ''
+  if (/^(blob:|data:|https?:\/\/)/i.test(value)) return value
+
+  const backendOrigin = resolveBackendApiUrl().replace(/\/api$/, '')
+  const normalizedValue = value.startsWith('/') ? value : `/${value}`
+
+  return `${backendOrigin}${normalizedValue}`
+}
+
 export const getCustomerPortalToken = () =>
   typeof window === 'undefined' ? null : window.localStorage.getItem(CUSTOMER_PORTAL_TOKEN_KEY)
 
@@ -31,6 +45,7 @@ export const clearCustomerPortalToken = () => {
 const redirectToLogin = () => {
   if (typeof window === 'undefined') return
   clearCustomerPortalToken()
+
   if (window.location.pathname !== '/customer/login') {
     window.location.href = '/customer/login'
   }
@@ -67,6 +82,7 @@ export async function customerPortalRequest<T>(path: string, init?: RequestInit)
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+
       // Let the browser set its own multipart boundary for FormData bodies —
       // forcing application/json here would silently break file uploads.
       ...(init?.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),

@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
+import Link from 'next/link'
+
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -11,7 +14,8 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { customerPortalRequest } from '@/libs/customerPortal'
+
+import { customerPortalRequest, resolveCustomerAssetUrl } from '@/libs/customerPortal'
 
 type Product = {
   id: number
@@ -40,6 +44,7 @@ const CustomerPortalCatalogPage = () => {
   const loadPage = async (targetPage: number) => {
     try {
       const response = await customerPortalRequest<CatalogResponse>(`/customer-portal/catalog?page=${targetPage}`)
+
       setProducts(prev => (targetPage === 1 ? response.data : [...prev, ...response.data]))
       setPage(response.current_page)
       setLastPage(response.last_page)
@@ -77,9 +82,9 @@ const CustomerPortalCatalogPage = () => {
           <Grid container spacing={3}>
             {products.map(product => (
               <Grid key={product.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <Card sx={{ borderRadius: 2, height: '100%' }}>
+                <Card component={Link} href={`/customer/panel/catalog/${product.id}`} sx={{ borderRadius: 2, height: '100%', display: 'block', textDecoration: 'none' }}>
                   {product.image ? (
-                    <CardMedia component='img' height='160' image={product.image} alt={product.name} sx={{ objectFit: 'cover' }} />
+                    <CardMedia component='img' height='160' image={resolveCustomerAssetUrl(product.image)} alt={product.name} sx={{ objectFit: 'cover' }} />
                   ) : (
                     <Box sx={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'action.hover' }}>
                       <i className='ri-image-line' style={{ fontSize: '2.5rem', opacity: 0.4 }} />

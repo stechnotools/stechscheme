@@ -19,6 +19,7 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
         { label: 'Salesman Master', href: '/salesmen', permission: 'salesman.all' },
         { label: 'Customer Master', href: '/customers', permission: 'customers.all' },
         { label: 'Scheme Master', href: '/schemes', permission: 'schemes.all' },
+        { label: 'Product Master', href: '/products', permission: 'products.all' },
         { label: 'Chart of Accounts', href: '/chart-of-accounts', permission: 'accounts.chart-of-accounts' }
       ]
     },
