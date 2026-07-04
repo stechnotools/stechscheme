@@ -24,7 +24,9 @@ import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 
+import AppLockScreen from '@/components/customer-portal/AppLockScreen'
 import { clearCustomerPortalToken, getCustomerPortalToken, customerPortalRequest } from '@/libs/customerPortal'
+import { isAppLockEnabled, isUnlockedThisSession } from '@/libs/customerAppLock'
 import { INSTALL_DISMISSED_KEY, useInstallPrompt } from '@/libs/useInstallPrompt'
 
 const NAV_ITEMS = [
@@ -42,7 +44,7 @@ const DRAWER_SECTIONS: Array<{ label: string; items: DrawerItem[] }> = [
     label: 'Navigation',
     items: [
       { label: 'Dashboard', href: '/customer/panel', icon: 'ri-home-5-line' },
-      { label: 'My Schemes', href: '/customer/panel/schemes', icon: 'ri-store-2-line' },
+      { label: 'My Schemes', href: '/customer/panel/my-schemes', icon: 'ri-store-2-line' },
       { label: 'Payments', href: '/customer/panel/pay', icon: 'ri-bank-card-line', badge: 'due' },
       { label: 'My Account', href: '/customer/panel/profile', icon: 'ri-user-3-line' }
     ]
@@ -98,6 +100,15 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
   const { canInstall, promptInstall } = useInstallPrompt()
   const [bannerDismissed, setBannerDismissed] = useState(true)
   const [profile, setProfile] = useState<{ name: string | null; mobile: string; points: number; hasDue: boolean } | null>(null)
+  const [locked, setLocked] = useState(false)
+
+  // Gate the portal behind the MPIN/biometric lock screen on every fresh app
+  // open (sessionStorage clears when the tab/PWA closes), but not while the
+  // customer is still on login/onboarding routes.
+  useEffect(() => {
+    if (isLoginRoute) return
+    setLocked(isAppLockEnabled() && !isUnlockedThisSession())
+  }, [isLoginRoute])
 
   useEffect(() => {
     setBannerDismissed(typeof window !== 'undefined' && !!window.localStorage.getItem(INSTALL_DISMISSED_KEY))
@@ -194,6 +205,10 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
 
   if (isLoginRoute) {
     return <>{children}</>
+  }
+
+  if (locked) {
+    return <AppLockScreen onUnlock={() => setLocked(false)} />
   }
 
   return (
@@ -450,10 +465,23 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
           right: 0,
           bottom: 0,
           zIndex: theme => theme.zIndex.appBar,
-          pb: 'env(safe-area-inset-bottom)'
+          pb: 'env(safe-area-inset-bottom)',
+          background: 'linear-gradient(120deg, #0f172a 0%, #1f2937 60%, #3a2c12 100%)',
+          borderTop: '1px solid rgba(201,168,76,0.2)'
         }}
       >
-        <BottomNavigation showLabels value={activeNav} sx={{ height: 64 }}>
+        <BottomNavigation
+          showLabels
+          value={activeNav}
+          sx={{
+            height: 64,
+            bgcolor: 'transparent',
+            '& .MuiBottomNavigationAction-root': {
+              color: 'rgba(255,255,255,0.55)',
+              '&.Mui-selected': { color: '#E2C46A' }
+            }
+          }}
+        >
           {NAV_ITEMS.map(item => {
             const isActive = activeNav === item.value
 
@@ -469,7 +497,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
                   component={Link}
                   href={item.href}
                   sx={{
-                    '&.Mui-selected, &': { color: '#9A7828' },
+                    '&.Mui-selected, &': { color: '#E2C46A' },
                     pt: 0
                   }}
                   icon={
@@ -482,7 +510,8 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         background: 'linear-gradient(135deg, #9A7828 0%, #C9A84C 100%)',
-                        boxShadow: '0 6px 14px rgba(154,120,40,0.45)',
+                        boxShadow: '0 6px 14px rgba(0,0,0,0.4)',
+                        border: '2px solid #160B33',
                         transform: 'translateY(-14px)'
                       }}
                     >

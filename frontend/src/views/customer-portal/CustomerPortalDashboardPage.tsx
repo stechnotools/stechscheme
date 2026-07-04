@@ -136,9 +136,10 @@ const pickFeaturedMembership = (memberships: PortalMembership[]) => {
 const QUICK_ACTIONS = [
   { label: 'Pay Installment', href: '/customer/panel/pay', icon: 'ri-bank-card-line', gradient: `linear-gradient(135deg, ${PALETTE.purpleLt} 0%, ${PALETTE.purple} 100%)` },
   { label: 'Join New Scheme', href: '/customer/panel/schemes', icon: 'ri-add-circle-line', gradient: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)' },
-  { label: 'Payment History', href: '/customer/panel/pay', icon: 'ri-file-list-3-line', gradient: 'linear-gradient(135deg, #14B8A6 0%, #0D6E63 100%)' },
+  { label: 'Payment History', href: '/customer/panel/pay', icon: 'ri-file-list-3-line', gradient: 'linear-gradient(135deg, #22C55E 0%, #15803D 100%)' },
   { label: 'Offers & Rewards', href: '/customer/panel/wallet', icon: 'ri-gift-line', gradient: `linear-gradient(135deg, ${PALETTE.goldLt} 0%, ${PALETTE.goldDk} 100%)` },
-  { label: 'Store Locator', href: '/customer/panel/store-locator', icon: 'ri-map-pin-line', gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' }
+  { label: 'Store Locator', href: '/customer/panel/store-locator', icon: 'ri-map-pin-line', gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' },
+  { label: 'Calculator', href: '/customer/panel/gold-rate', icon: 'ri-calculator-line', gradient: 'linear-gradient(135deg, #A78BFA 0%, #6D28D9 100%)' }
 ]
 
 const CustomerPortalDashboardPage = () => {
@@ -301,60 +302,92 @@ const CustomerPortalDashboardPage = () => {
                 position: 'relative',
                 overflow: 'hidden',
                 borderRadius: 3,
-                background: `linear-gradient(135deg, ${PALETTE.purpleDk} 0%, ${PALETTE.purple} 55%, ${PALETTE.purpleLt} 100%)`,
-                p: 2.5
+                minHeight: 158,
+                backgroundImage: 'url(/images/pwa/gold-rate-banner.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
               }}
             >
-              <i
-                className='ri-copper-coin-line'
-                style={{ position: 'absolute', right: -16, bottom: -26, fontSize: '7rem', color: 'rgba(255,255,255,0.08)', transform: 'rotate(-8deg)' }}
+              {/* Darkens the left portion so text stays legible regardless of exactly
+                  how the banner crops at different card widths. */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: `linear-gradient(90deg, ${PALETTE.purpleDk}CC 0%, ${PALETTE.purpleDk}66 45%, transparent 75%)`
+                }}
               />
 
-              <Stack spacing={1.25} sx={{ position: 'relative' }}>
-                <Stack direction='row' spacing={0.75} alignItems='center'>
-                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: PALETTE.goldLt }} />
-                  <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                    Live Gold Rate
-                  </Typography>
-                </Stack>
+              <Stack sx={{ position: 'relative' }}>
+                <Stack spacing={1.1} sx={{ maxWidth: '68%', p: 2.5 }}>
+                  <Stack direction='row' spacing={0.75} alignItems='center'>
+                    <Chip
+                      size='small'
+                      label='LIVE'
+                      sx={{
+                        height: 18,
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.4px',
+                        color: PALETTE.purpleDk,
+                        bgcolor: PALETTE.gold,
+                        '& .MuiChip-label': { px: 0.9 }
+                      }}
+                    />
+                    <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      Gold Rate
+                    </Typography>
+                  </Stack>
 
-                <Typography sx={{ color: '#fff', fontSize: '1.9rem', fontWeight: 700, lineHeight: 1 }}>
-                  {currencyFormatter.format(primaryRate.effective_sell_rate)}
-                  <Typography component='span' sx={{ fontSize: '0.85rem', fontWeight: 400, color: 'rgba(255,255,255,0.75)' }}>
-                    {' '}/ {primaryRate.rate_per_unit}
+                  <Typography sx={{ color: '#fff', fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}>
+                    {currencyFormatter.format(primaryRate.effective_sell_rate)}
+                    <Typography component='span' sx={{ fontSize: '0.8rem', fontWeight: 400, color: 'rgba(255,255,255,0.75)' }}>
+                      {' '}/ {primaryRate.rate_per_unit}
+                    </Typography>
                   </Typography>
-                </Typography>
 
-                <Stack direction='row' spacing={1} alignItems='center' flexWrap='wrap'>
                   {rateChange && (
-                    <Stack direction='row' spacing={0.4} alignItems='center' sx={{ color: rateChange.amount >= 0 ? '#5FE0A0' : '#F08A8A' }}>
-                      <i className={rateChange.amount >= 0 ? 'ri-arrow-up-line' : 'ri-arrow-down-line'} style={{ fontSize: '0.8rem' }} />
-                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 600 }}>
-                        {currencyFormatter.format(Math.abs(rateChange.amount))} ({Math.abs(rateChange.pct).toFixed(2)}%)
-                      </Typography>
-                    </Stack>
+                    <Chip
+                      size='small'
+                      icon={<i className={rateChange.amount >= 0 ? 'ri-arrow-up-line' : 'ri-arrow-down-line'} style={{ fontSize: '0.7rem', color: rateChange.amount >= 0 ? '#16A34A' : '#DC2626' }} />}
+                      label={`${currencyFormatter.format(Math.abs(rateChange.amount))} (${Math.abs(rateChange.pct).toFixed(2)}%)`}
+                      sx={{
+                        alignSelf: 'flex-start',
+                        height: 22,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        color: rateChange.amount >= 0 ? '#16A34A' : '#DC2626',
+                        bgcolor: rateChange.amount >= 0 ? 'rgba(22,163,74,0.16)' : 'rgba(220,38,38,0.16)',
+                        '& .MuiChip-icon': { ml: 0.7 }
+                      }}
+                    />
                   )}
-                  <Typography sx={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.65)' }}>
-                    {rateChange ? '|' : null} Today, {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </Typography>
-                </Stack>
 
-                <Button
-                  component={Link}
-                  href='/customer/panel/gold-rate'
-                  size='small'
-                  variant='outlined'
-                  endIcon={<i className='ri-arrow-right-up-line' />}
-                  sx={{
-                    alignSelf: 'flex-start',
-                    mt: 0.5,
-                    color: '#fff',
-                    borderColor: 'rgba(255,255,255,0.45)',
-                    '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' }
-                  }}
-                >
-                  View Gold Rate
-                </Button>
+                  <Stack direction='row' spacing={0.5} alignItems='center'>
+                    <i className='ri-time-line' style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)' }} />
+                    <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.65)' }}>
+                      {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </Typography>
+                  </Stack>
+
+                  <Button
+                    component={Link}
+                    href='/customer/panel/gold-rate'
+                    size='small'
+                    endIcon={<i className='ri-arrow-right-line' />}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      mt: 0.5,
+                      bgcolor: PALETTE.gold,
+                      color: PALETTE.purpleDk,
+                      fontWeight: 700,
+                      px: 2,
+                      '&:hover': { bgcolor: PALETTE.goldLt }
+                    }}
+                  >
+                    View Gold Rate
+                  </Button>
+                </Stack>
               </Stack>
             </Box>
           </Box>
@@ -412,7 +445,7 @@ const CustomerPortalDashboardPage = () => {
         <Box sx={{ px: 2 }}>
           <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ mb: 1.5 }}>
             <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: PALETTE.ink }}>My Active Scheme</Typography>
-            <Button component={Link} href='/customer/panel/schemes' size='small' endIcon={<i className='ri-arrow-right-s-line' />} sx={{ color: PALETTE.purpleLt }}>
+            <Button component={Link} href='/customer/panel/my-schemes' size='small' endIcon={<i className='ri-arrow-right-s-line' />} sx={{ color: PALETTE.purpleLt }}>
               View All
             </Button>
           </Stack>
@@ -523,7 +556,7 @@ const CustomerPortalDashboardPage = () => {
           {otherMembershipsCount > 0 && (
             <Typography sx={{ fontSize: '0.72rem', color: PALETTE.muted, mt: 1 }}>
               +{otherMembershipsCount} more scheme{otherMembershipsCount > 1 ? 's' : ''} —{' '}
-              <Link href='/customer/panel/schemes' style={{ color: PALETTE.purpleLt, fontWeight: 600 }}>
+              <Link href='/customer/panel/my-schemes' style={{ color: PALETTE.purpleLt, fontWeight: 600 }}>
                 view all
               </Link>
             </Typography>
@@ -533,19 +566,19 @@ const CustomerPortalDashboardPage = () => {
         {/* Quick Actions */}
         <Box sx={{ px: 2 }}>
           <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: PALETTE.ink, mb: 1.5 }}>Quick Actions</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${QUICK_ACTIONS.length}, 1fr)`, justifyItems: 'center' }}>
             {QUICK_ACTIONS.map(action => (
               <Box
                 key={action.label}
                 component={Link}
                 href={action.href}
-                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none', gap: 0.75 }}
+                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none', gap: 0.6 }}
               >
                 <Box
                   sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: '14px',
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
                     background: action.gradient,
                     boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
                     display: 'flex',
@@ -553,11 +586,27 @@ const CustomerPortalDashboardPage = () => {
                     justifyContent: 'center'
                   }}
                 >
-                  <i className={action.icon} style={{ color: '#fff', fontSize: '1.25rem' }} />
+                  <i className={action.icon} style={{ color: '#fff', fontSize: '1.15rem' }} />
                 </Box>
-                <Typography sx={{ fontSize: '0.62rem', color: PALETTE.ink, textAlign: 'center', lineHeight: 1.2 }}>{action.label}</Typography>
+                <Typography sx={{ fontSize: '0.58rem', color: PALETTE.ink, textAlign: 'center', lineHeight: 1.2 }}>{action.label}</Typography>
               </Box>
             ))}
+          </Box>
+        </Box>
+
+        {/* Exclusive making-charge offer banner */}
+        <Box sx={{ px: 2 }}>
+          <Box
+            component={Link}
+            href='/customer/panel/catalog'
+            sx={{ display: 'block', borderRadius: 3, overflow: 'hidden', lineHeight: 0 }}
+          >
+            <Box
+              component='img'
+              src='/images/pwa/offer-banner.png'
+              alt='Exclusive Offer for You — 10% extra value on making charges of gold jewellery, limited time offer'
+              sx={{ width: '100%', height: 'auto', display: 'block' }}
+            />
           </Box>
         </Box>
 

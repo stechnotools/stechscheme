@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class OneClickEnrollmentService
 {
-    private static ?int $customerCount = null;
     public function __construct(
         private readonly CustomerService $customerService,
         private readonly MembershipService $membershipService,
@@ -72,7 +71,7 @@ class OneClickEnrollmentService
                     'user_id' => data_get($validated, 'user_id') ?: $staffUser?->id ?: $customer->user_id,
                     'scheme_id' => $scheme->id,
                     'installment_value' => data_get($validated, 'installment_value'),
-                    'membership_no' => $targetMembershipNo ?: $membershipSeed['membership_no'],
+                    'membership_no' => $targetMembershipNo ?: null,
                     'card_no' => $membershipSeed['card_no'],
                     'card_reference' => $membershipSeed['card_reference'],
                     'card_issued_at' => now(),
@@ -81,6 +80,18 @@ class OneClickEnrollmentService
                 ], [
                     'skip_kyc_check' => true,
                 ]);
+
+                // Derive membership_no from the row's own auto-increment id — the
+                // database guarantees this is unique and assigned atomically.
+                // (Previously used a process-static counter that reset on every
+                // request/queue worker and had no DB-level uniqueness check,
+                // which produced duplicate membership_no values under concurrent
+                // enrollments — most visibly during rapid bulk CSV imports.)
+                if (! $targetMembershipNo) {
+                    $membership->forceFill([
+                        'membership_no' => sprintf('MEM-%s-%s', now()->format('ymd'), str_pad((string) $membership->id, 4, '0', STR_PAD_LEFT)),
+                    ])->save();
+                }
             }
 
             $skipCommission = (bool) data_get($validated, 'skip_commission', false);
@@ -178,16 +189,7 @@ class OneClickEnrollmentService
 
     private function buildMembershipIdentifiers(Customer $customer, Scheme $scheme): array
     {
-        $stamp = now()->format('ymd');
-        if (self::$customerCount === null) {
-            self::$customerCount = (int) Customer::query()->count();
-        } else {
-            self::$customerCount++;
-        }
-        $sequence = str_pad((string) (self::$customerCount + (int) $scheme->id), 4, '0', STR_PAD_LEFT);
-
         return [
-            'membership_no'  => sprintf('MEM-%s-%s', $stamp, $sequence),
             'card_no'        => sprintf('CARD-%d-%s', $customer->id, Str::upper(Str::random(6))),
             'card_reference' => sprintf('JS-%d-%d-%s', $customer->id, $scheme->id, Str::upper(Str::random(8))),
         ];
