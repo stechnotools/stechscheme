@@ -60,28 +60,15 @@ const CustomerPortalSplashPage = () => {
     >
       <Stack spacing={4} alignItems='center'>
         <Box
-          sx={{
-            width: 88,
-            height: 88,
-            borderRadius: '50%',
-            bgcolor: 'common.white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
-          }}
-        >
-          <i className='ri-gem-line' style={{ fontSize: '2.6rem', color: '#9A7828' }} />
-        </Box>
+          component='img'
+          src='/images/pwa/logo-full.png'
+          alt='City Jewelers'
+          sx={{ width: 168, height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.18))' }}
+        />
 
-        <Stack spacing={1} alignItems='center'>
-          <Typography sx={{ color: 'common.white', fontSize: '1.6rem', fontWeight: 600, letterSpacing: '1px' }}>
-            Jewellery Scheme
-          </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}>
-            Your Trusted Jewellery Savings Partner
-          </Typography>
-        </Stack>
+        <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}>
+          Your Trusted Jewellery Savings Partner
+        </Typography>
 
         <CircularProgress size={28} sx={{ color: 'common.white', mt: 2 }} />
       </Stack>

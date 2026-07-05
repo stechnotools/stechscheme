@@ -120,7 +120,7 @@ const DashboardCRM = async () => {
             />
             <Stack spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
               <Chip
-                label='Jewellery Scheme Control Center'
+                label='City Jewelers Control Center'
                 sx={{
                   alignSelf: 'flex-start',
                   bgcolor: 'rgba(255,255,255,0.14)',

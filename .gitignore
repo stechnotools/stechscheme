@@ -53,3 +53,9 @@ backend/Homestead.yaml
 # Docs template build artifacts
 docs/
 .pnpm-store/
+
+# Temporary / scratch files (verification scripts, caches, one-off installs)
+.tmp-*
+**/.tmp-*
+.tmp-npm-cache/
+.tmp-playwright-browsers/

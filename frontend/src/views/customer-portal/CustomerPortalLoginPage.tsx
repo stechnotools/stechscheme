@@ -221,20 +221,11 @@ const CustomerPortalLoginPage = () => {
         }}
       >
         <Box
-          sx={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            bgcolor: 'common.white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 20px rgba(0,0,0,0.18)'
-          }}
-        >
-          <i className='ri-gem-line' style={{ fontSize: '1.9rem', color: '#9A7828' }} />
-        </Box>
-        <Typography sx={{ color: 'common.white', fontWeight: 600, fontSize: '1.1rem' }}>Jewellery Scheme</Typography>
+          component='img'
+          src='/images/pwa/logo-full.png'
+          alt='City Jewelers'
+          sx={{ width: 118, height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.18))' }}
+        />
         <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.78rem' }}>Customer Panel</Typography>
       </Stack>
 

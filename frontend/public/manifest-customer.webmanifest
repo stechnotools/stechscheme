@@ -1,6 +1,6 @@
 {
-  "name": "Jewellery Scheme Customer Panel",
-  "short_name": "Scheme Panel",
+  "name": "City Jewelers Customer Panel",
+  "short_name": "City Jewelers",
   "description": "Track your jewellery savings scheme membership, installments, payments, and maturity benefits.",
   "start_url": "/customer",
   "scope": "/customer/",

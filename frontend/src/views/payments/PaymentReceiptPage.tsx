@@ -323,7 +323,7 @@ const PaymentReceiptPage = ({ paymentId }: { paymentId: number | string }) => {
         <Stack direction='row' justifyContent='space-between' alignItems='flex-start'>
           <Stack spacing={0.5}>
             <Typography variant='h5' fontWeight={700}>RECEIPT</Typography>
-            <Typography color='text.secondary'>Jewellery Scheme Collections</Typography>
+            <Typography color='text.secondary'>City Jewelers Collections</Typography>
           </Stack>
           <Stack spacing={0.5} alignItems='flex-end'>
             <Typography variant='body2' sx={labelSx}>Receipt No</Typography>

@@ -3,7 +3,7 @@ import type { ChildrenType } from '@core/types'
 import CustomerPortalShell from '@/components/customer-portal/CustomerPortalShell'
 
 export const metadata: Metadata = {
-  title: 'Customer Panel | Jewellery Scheme',
+  title: 'Customer Panel | City Jewelers',
   description: 'Track your jewellery savings scheme membership, installments, payments, and maturity benefits.',
   manifest: '/manifest-customer.webmanifest',
   icons: {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Scheme Panel'
+    title: 'City Jewelers'
   }
 }
 

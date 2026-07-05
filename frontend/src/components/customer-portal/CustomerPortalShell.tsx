@@ -253,22 +253,13 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
               sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
             >
               <Box
-                sx={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(201,168,76,0.18)',
-                  border: '1px solid rgba(201,168,76,0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <i className='ri-gem-line' style={{ fontSize: '0.8rem', color: '#E2C46A' }} />
-              </Box>
+                component='img'
+                src='/images/pwa/logo-emblem.png'
+                alt='City Jewelers'
+                sx={{ width: 26, height: 26, objectFit: 'contain', flexShrink: 0 }}
+              />
               <Typography variant='subtitle1' sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-                Jewellery Scheme
+                City Jewelers
               </Typography>
             </Stack>
           )}
@@ -323,7 +314,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
           />
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant='body2' sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-              Install Jewellery App
+              Install City Jewelers App
             </Typography>
             <Typography variant='caption' color='text.secondary'>
               Add to your home screen for quick, full-screen access.
@@ -447,7 +438,7 @@ const CustomerPortalShell = ({ children }: { children: ReactNode }) => {
           <Box sx={{ p: 3 }}>
             <Divider sx={{ mb: 2 }} />
             <Typography variant='caption' color='text.secondary' align='center' display='block'>
-              Scheme Panel • v1.0
+              City Jewelers • v1.0
             </Typography>
           </Box>
         </Box>

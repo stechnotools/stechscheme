@@ -70,7 +70,7 @@ export const enrollBiometric = async (customerName: string): Promise<void> => {
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge: randomChallenge(),
-      rp: { name: 'Jewellery Scheme', id: window.location.hostname },
+      rp: { name: 'City Jewelers', id: window.location.hostname },
       user: {
         id: encoder.encode(customerName || 'customer'),
         name: customerName || 'customer',

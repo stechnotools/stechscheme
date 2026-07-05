@@ -104,11 +104,11 @@ self.addEventListener('push', event => {
   try {
     payload = event.data.json()
   } catch {
-    payload = { title: 'Jewellery Scheme', body: event.data.text() }
+    payload = { title: 'City Jewelers', body: event.data.text() }
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Jewellery Scheme', {
+    self.registration.showNotification(payload.title || 'City Jewelers', {
       body: payload.body || '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
