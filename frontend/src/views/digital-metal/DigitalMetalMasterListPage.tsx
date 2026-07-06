@@ -33,6 +33,7 @@ import {
 import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
 import Paper from '@mui/material/Paper'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type DigitalMetalMaster = {
   id: number
@@ -47,12 +48,7 @@ type DigitalMetalMaster = {
   updated_at?: string | null
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const DigitalMetalMasterListPage = () => {
   const { data: session, status } = useSession()

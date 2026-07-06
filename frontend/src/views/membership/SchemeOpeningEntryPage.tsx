@@ -30,6 +30,7 @@ import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import { styled } from '@mui/material/styles'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 // Styled components for the dropzone
 const Dropzone = styled(Box)(({ theme }) => ({
@@ -46,11 +47,7 @@ const Dropzone = styled(Box)(({ theme }) => ({
   }
 }))
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const SchemeOpeningEntryPage = () => {
   const { data: session } = useSession()

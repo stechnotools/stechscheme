@@ -45,6 +45,7 @@ import Typography from '@mui/material/Typography'
 import { alpha, styled } from '@mui/material/styles'
 import type { BoxProps } from '@mui/material/Box'
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 const BannerDropzone = styled(AppReactDropzone)<BoxProps>(({ theme }) => ({
   '& .dropzone': {
@@ -270,13 +271,7 @@ type SchemeFormState = {
   va_discount_percentage: string
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-
-return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

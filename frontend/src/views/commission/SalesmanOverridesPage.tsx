@@ -30,6 +30,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type CommissionType = { id: number; code: string; name: string }
 type UserOption = { id: number; name: string }
@@ -51,12 +52,7 @@ type SalesmanOverride = {
   slabs?: Array<{ id: number; from_amount: string; to_amount: string | null; value_type: string; commission_value: string }>
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const emptyForm = {
   salesman_id: '',

@@ -45,6 +45,8 @@ import PermissionDialog from '@components/dialogs/permission-dialog'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
 declare module '@tanstack/react-table' {
   interface FilterFns {
     fuzzy: FilterFn<unknown>
@@ -75,12 +77,7 @@ type Colors = {
   [key: string]: ThemeColor
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

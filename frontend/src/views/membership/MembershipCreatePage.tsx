@@ -25,6 +25,7 @@ import Typography from '@mui/material/Typography'
 import DirectionalIcon from '@components/DirectionalIcon'
 import StepperCustomDot from '@components/stepper-dot'
 import StepperWrapper from '@core/styles/stepper'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type SchemeOption = {
   id: number
@@ -98,12 +99,7 @@ const steps = [
   { title: 'Payment Confirmation', subtitle: 'Collect and confirm payment', iconClass: 'ri-bank-card-line' }
 ] as const
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const getBackendOrigin = () => resolveBackendApiUrl().replace(/\/api$/, '')
 

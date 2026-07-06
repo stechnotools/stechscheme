@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useSession } from 'next-auth/react'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type CreateCustomerResponse = {
   data: {
@@ -29,12 +30,7 @@ type BranchesResponse = {
   data: BranchOption[]
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 interface CustomerModalFormProps {
   onSuccess?: (customerId: number) => void

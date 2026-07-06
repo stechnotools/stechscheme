@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
 export type ApiProduct = {
   id: number
   name: string
@@ -8,12 +10,7 @@ export type ApiProduct = {
   updated_at?: string
 }
 
-export const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+export const resolveBackendApiUrl = getApiBaseUrl
 
 const backendOrigin = resolveBackendApiUrl().replace(/\/api$/, '')
 

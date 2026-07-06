@@ -44,18 +44,13 @@ import { format } from 'date-fns'
 
 // Lib/Hook Imports
 import type { DashboardReport, Payment } from '@/libs/jewelleryApi'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 // Dynamically import ApexCharts to avoid SSR issues
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'), { ssr: false })
 
 // Helper to normalize backend API URL
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  
-return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

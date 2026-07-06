@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -27,11 +27,9 @@ import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

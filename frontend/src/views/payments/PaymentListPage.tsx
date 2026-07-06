@@ -27,6 +27,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Skeleton from '@mui/material/Skeleton'
 import InputAdornment from '@mui/material/InputAdornment'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 const PaymentSkeleton = () => (
   <Grid container spacing={6}>
@@ -79,13 +80,7 @@ type PaymentItem = {
 type PaymentsResponse = { data: PaymentItem[] }
 type MembershipsResponse = { data: MembershipOption[] }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  
-return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const buildQueryString = (baseQuery: string, customerId?: string | null, filters?: any) => {
   const params = new URLSearchParams(baseQuery)

@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
 export type BranchStatus = 'Performing' | 'Needs Attention' | 'New Launch'
 
 export type ApiBranchUser = {
@@ -166,12 +168,7 @@ export const branchRecords: Branch[] = [
 
 export const getBranchById = (branchId: number) => branchRecords.find(branch => branch.id === branchId) ?? null
 
-export const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+export const resolveBackendApiUrl = getApiBaseUrl
 
 export const branchCurrencyFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',

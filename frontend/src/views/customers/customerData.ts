@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
 export type CustomerKyc = {
   id?: number
   family_head?: string | null
@@ -139,12 +141,7 @@ export type CustomerResponse = {
   data: Customer
 }
 
-export const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+export const resolveBackendApiUrl = getApiBaseUrl
 
 export const getCustomerName = (customer: Customer) => customer.name?.trim() || 'Unnamed customer'
 

@@ -20,6 +20,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import { SkeletonTable } from '@/components/SkeletonLoader'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type ChartOfAccount = {
   id: number
@@ -60,12 +61,7 @@ const initialFormState: ChartOfAccountFormState = {
   is_active: true
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

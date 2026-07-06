@@ -37,6 +37,7 @@ import Typography from '@mui/material/Typography'
 
 import { usePageLoading } from '@/contexts/pageLoadingContext'
 import { CustomerModalForm } from '../customers/CustomerModalForm'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type InstallmentItem = {
   id: number
@@ -217,12 +218,7 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 2
 })
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

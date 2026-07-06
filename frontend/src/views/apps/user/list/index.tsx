@@ -8,6 +8,7 @@ import type { UsersType } from '@/types/apps/userTypes'
 import { SkeletonStatCards, SkeletonTable } from '@/components/SkeletonLoader'
 import UserListCards from './UserListCards'
 import UserListTable from './UserListTable'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type ApiUser = {
   id: number
@@ -43,12 +44,7 @@ type BranchesResponse = {
   data: ApiBranch[]
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const backendApiUrl = resolveBackendApiUrl()
 

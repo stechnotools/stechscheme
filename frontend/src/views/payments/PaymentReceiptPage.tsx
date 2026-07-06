@@ -21,6 +21,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme } from '@mui/material/styles'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type PaymentReceipt = {
   id: number
@@ -109,12 +110,7 @@ type PaymentReceiptResponse = {
   data: PaymentReceipt | PaymentReceipt[]
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const getStatusColor = (status: string) => {
   if (status === 'success') return 'success'

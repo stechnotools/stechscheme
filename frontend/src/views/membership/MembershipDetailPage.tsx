@@ -103,12 +103,7 @@ type MembershipResponse = { data: MembershipDetail }
 
 
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const money = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -142,6 +137,7 @@ return 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0f766e 100%)'
 
 
 import Skeleton from '@mui/material/Skeleton'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 const MembershipDetailSkeleton = () => (
   <Grid container spacing={6}>

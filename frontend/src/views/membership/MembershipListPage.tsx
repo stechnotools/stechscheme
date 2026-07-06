@@ -27,6 +27,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
 import MenuItem from '@mui/material/MenuItem'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 const MembershipSkeleton = () => (
   <Grid container spacing={6}>
@@ -89,13 +90,7 @@ type MembershipItem = {
 
 type MembershipsResponse = { data: MembershipItem[] }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  
-return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',

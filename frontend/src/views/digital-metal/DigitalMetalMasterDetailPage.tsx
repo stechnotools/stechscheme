@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
@@ -31,12 +31,9 @@ import {
 } from '@mui/material'
 import Link from 'next/link'
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const DigitalMetalMasterDetailPage = () => {
   const router = useRouter()

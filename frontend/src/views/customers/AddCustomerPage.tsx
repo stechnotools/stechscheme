@@ -19,6 +19,7 @@ import Divider from '@mui/material/Divider'
 import Accordion from '@mui/material/Accordion'
 import AccordionSummary from '@mui/material/AccordionSummary'
 import AccordionDetails from '@mui/material/AccordionDetails'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type CreateCustomerResponse = {
   data: {
@@ -37,12 +38,7 @@ type BranchesResponse = {
   data: BranchOption[]
 }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const getFileExtension = (filename: string) => filename.split('.').pop()?.toLowerCase() || ''
 const isPdfFile = (filename: string) => getFileExtension(filename) === 'pdf'

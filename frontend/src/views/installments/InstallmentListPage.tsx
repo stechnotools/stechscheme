@@ -15,6 +15,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
 import { SkeletonCard } from '@/components/SkeletonLoader'
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type InstallmentItem = {
   id: number
@@ -31,12 +32,7 @@ type InstallmentItem = {
 
 type InstallmentsResponse = { data: InstallmentItem[] }
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
-
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
+const resolveBackendApiUrl = getApiBaseUrl
 
 const InstallmentListPage = ({ title, query }: { title: string; query: string }) => {
   const { data: session } = useSession()
