@@ -28,11 +28,13 @@ const RootLayout = async (props: ChildrenType) => {
   const { children } = props
   const systemMode = await getSystemMode()
 
-  // Read fresh on every request (API_URL is not NEXT_PUBLIC_-prefixed, so
-  // Next.js never inlines it at build time) so client code can pick up a
-  // changed backend URL after a container restart, without a rebuild.
+  // Read fresh on every request so the browser picks up a changed backend
+  // URL after a container restart, without a rebuild. Must be the publicly
+  // reachable URL (NEXT_PUBLIC_API_URL) — API_URL is often a Docker-internal
+  // hostname (e.g. http://nginx/api) that only resolves for server-side
+  // fetches (auth.ts, jewelleryApi.ts), never from the user's browser.
   const runtimeConfig = {
-    apiUrl: process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:8000/api'
   }
 
   return (
