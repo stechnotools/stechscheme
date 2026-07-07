@@ -10,16 +10,20 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . ./
 
-ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_API_URL
-ARG API_URL
-ARG NEXTAUTH_URL
-ARG NEXTAUTH_SECRET
-ARG NEXTAUTH_BASEPATH
-ARG BASEPATH
-ARG NEXT_PUBLIC_DOCS_URL
-ARG MAPBOX_ACCESS_TOKEN
-ARG NEXTAUTH_TRUST_HOST
+# Defaults mirror docker-compose.yml's ${VAR:-default} values so a bare
+# `docker build` (no --build-arg, no compose) still produces a working
+# production image instead of silently falling back to the localhost
+# values in frontend/.env.
+ARG NEXT_PUBLIC_APP_URL=https://crm.stechnotools.com
+ARG NEXT_PUBLIC_API_URL=https://crm.stechnotools.com/api
+ARG API_URL=http://nginx/api
+ARG NEXTAUTH_URL=https://crm.stechnotools.com
+ARG NEXTAUTH_SECRET=jewellery-scheme-nextauth-secret
+ARG NEXTAUTH_BASEPATH=/api/auth
+ARG BASEPATH=
+ARG NEXT_PUBLIC_DOCS_URL=https://demos.pixinvent.com/materialize-nextjs-admin-template/documentation
+ARG MAPBOX_ACCESS_TOKEN=
+ARG NEXTAUTH_TRUST_HOST=true
 
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
