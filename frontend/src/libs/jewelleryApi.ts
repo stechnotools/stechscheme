@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
+
 export type DashboardReport = {
   customers_count: number
   schemes_count: number
@@ -108,7 +110,7 @@ type PaginatedResponse<T> = {
   data: T[]
 }
 
-const backendApiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
+const backendApiUrl = getApiBaseUrl()
 
 async function fetchJson<T>(path: string, accessToken: string): Promise<T> {
   const res = await fetch(`${backendApiUrl}${path}`, {

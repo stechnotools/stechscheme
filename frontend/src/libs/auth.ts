@@ -2,14 +2,9 @@
 import CredentialProvider from 'next-auth/providers/credentials'
 import type { NextAuthOptions } from 'next-auth'
 
-const resolveBackendApiUrl = () => {
-  const rawUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
-  const normalized = rawUrl.replace(/\/+$/, '')
+import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`
-}
-
-const backendApiUrl = resolveBackendApiUrl()
+const backendApiUrl = getApiBaseUrl()
 
 const flattenPermissions = (roles: unknown, directPermissions: unknown): string[] => {
   const rolePermissions = Array.isArray(roles)
