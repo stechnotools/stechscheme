@@ -14,7 +14,7 @@ class CheckGoldRateAlerts extends Command
 
     public function handle(PushNotificationService $pushNotificationService): int
     {
-        $alerts = GoldRateAlert::with(['customer.user', 'digitalMetalMaster'])
+        $alerts = GoldRateAlert::with(['customer.user', 'digitalMetalMaster.lastLog'])
             ->where('triggered', false)
             ->get();
 
@@ -26,7 +26,9 @@ class CheckGoldRateAlerts extends Command
                 continue;
             }
 
-            $effectiveRate = (float) $master->rate_per + (float) $master->sell_markup_amount;
+            $ratePer = $master->lastLog ? (float) $master->lastLog->new_rate : (float) $master->rate_per;
+            $sellMarkup = $master->lastLog ? (float) $master->lastLog->new_sell_markup : (float) $master->sell_markup_amount;
+            $effectiveRate = $ratePer + $sellMarkup;
             $crossed = $alert->direction === 'above'
                 ? $effectiveRate >= (float) $alert->target_rate
                 : $effectiveRate <= (float) $alert->target_rate;
