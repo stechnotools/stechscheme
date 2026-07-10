@@ -268,6 +268,7 @@ class CustomerPortalController extends Controller
             'id' => $master->id,
             'metal_name' => $master->metal_name,
             'purity' => $master->purity,
+            'display_text' => $master->display_text,
             'rate_per_unit' => $master->rate_per_unit,
             'rate_per_display_text' => $master->rate_per_display_text,
             'effective_sell_rate' => $ratePer + $sellMarkup,

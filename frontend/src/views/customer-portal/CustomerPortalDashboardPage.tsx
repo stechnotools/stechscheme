@@ -74,6 +74,7 @@ type GoldRate = {
   id: number
   metal_name: string
   purity: string
+  display_text?: string | null
   rate_per_unit: string
   effective_sell_rate: number
 }
@@ -147,7 +148,9 @@ const CustomerPortalDashboardPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [goldRates, setGoldRates] = useState<GoldRate[]>([])
-  const [rateChange, setRateChange] = useState<{ amount: number; pct: number } | null>(null)
+  const [rateChanges, setRateChanges] = useState<Record<number, { amount: number; pct: number }>>({})
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<Date | null>(null)
+  const [refreshingRates, setRefreshingRates] = useState(false)
   const [wallet, setWallet] = useState<WalletSummary | null>(null)
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [showOffersPopup, setShowOffersPopup] = useState(false)
@@ -168,12 +171,22 @@ const CustomerPortalDashboardPage = () => {
     void load()
   }, [])
 
-  useEffect(() => {
-    customerPortalRequest<{ data: GoldRate[] }>('/customer-portal/gold-rate')
-      .then(response => setGoldRates(response.data))
+  const loadGoldRates = () => {
+    setRefreshingRates(true)
+
+    return customerPortalRequest<{ data: GoldRate[] }>('/customer-portal/gold-rate')
+      .then(response => {
+        setGoldRates(response.data)
+        setRatesUpdatedAt(new Date())
+      })
       .catch(() => {
         // Ticker is a nice-to-have — don't block the rest of the dashboard on it.
       })
+      .finally(() => setRefreshingRates(false))
+  }
+
+  useEffect(() => {
+    void loadGoldRates()
 
     customerPortalRequest<{ data: WalletSummary }>('/customer-portal/wallet')
       .then(response => setWallet(response.data))
@@ -201,19 +214,24 @@ const CustomerPortalDashboardPage = () => {
   useEffect(() => {
     if (!goldRates.length) return
 
-    customerPortalRequest<{ data: { history: GoldRateHistoryPoint[] } }>(`/customer-portal/gold-rate/history?master_id=${goldRates[0].id}`)
-      .then(response => {
-        const hist = response.data.history
+    goldRates.forEach(rate => {
+      customerPortalRequest<{ data: { history: GoldRateHistoryPoint[] } }>(`/customer-portal/gold-rate/history?master_id=${rate.id}`)
+        .then(response => {
+          const hist = response.data.history
 
-        if (hist.length < 2) return
-        const latest = hist[hist.length - 1].rate
-        const previous = hist[hist.length - 2].rate
+          if (hist.length < 2) return
+          const latest = hist[hist.length - 1].rate
+          const previous = hist[hist.length - 2].rate
 
-        setRateChange({ amount: latest - previous, pct: previous !== 0 ? ((latest - previous) / previous) * 100 : 0 })
-      })
-      .catch(() => {
-        // Trend badge is decorative — the live rate itself still renders without it.
-      })
+          setRateChanges(prev => ({
+            ...prev,
+            [rate.id]: { amount: latest - previous, pct: previous !== 0 ? ((latest - previous) / previous) * 100 : 0 }
+          }))
+        })
+        .catch(() => {
+          // Trend badge is decorative — the live rate itself still renders without it.
+        })
+    })
   }, [goldRates])
 
   if (loading && !payload) {
@@ -233,7 +251,20 @@ const CustomerPortalDashboardPage = () => {
   }
 
   const hasOverdue = payload.summary.overdue_installments_count > 0
-  const primaryRate = goldRates[0]
+  // Show gold purities in the order customers expect to scan them (24K, then
+  // 22K, then 18K), falling back to server order for anything unrecognized.
+  const karatRank = (rate: GoldRate) => {
+    const label = `${rate.purity} ${rate.display_text || ''}`
+    if (/24\s*k/i.test(label)) return 0
+    if (/22\s*k/i.test(label)) return 1
+    if (/18\s*k/i.test(label)) return 2
+
+    return 3
+  }
+  const displayedGoldRates = goldRates
+    .filter(rate => rate.metal_name.toLowerCase() === 'gold')
+    .sort((a, b) => karatRank(a) - karatRank(b))
+    .slice(0, 3)
   const featured = payload.memberships.length ? pickFeaturedMembership(payload.memberships) : null
   const otherMembershipsCount = payload.memberships.length ? payload.memberships.length - 1 : 0
 
@@ -295,31 +326,30 @@ const CustomerPortalDashboardPage = () => {
         {error ? <Alert severity='warning' sx={{ mx: 2 }}>{error}</Alert> : null}
 
         {/* Live gold rate hero */}
-        {primaryRate && (
+        {displayedGoldRates.length > 0 && (
           <Box sx={{ px: 2 }}>
             <Box
               sx={{
                 position: 'relative',
                 overflow: 'hidden',
                 borderRadius: 3,
-                minHeight: 158,
                 backgroundImage: 'url(/images/pwa/gold-rate-banner.png)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
               }}
             >
-              {/* Darkens the left portion so text stays legible regardless of exactly
-                  how the banner crops at different card widths. */}
+              {/* Darkens the banner so the rate rows stay legible over the gold-bar
+                  photograph at any card width. */}
               <Box
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  background: `linear-gradient(90deg, ${PALETTE.purpleDk}CC 0%, ${PALETTE.purpleDk}66 45%, transparent 75%)`
+                  background: `linear-gradient(100deg, ${PALETTE.purpleDk}F2 0%, ${PALETTE.purpleDk}DE 55%, ${PALETTE.purpleDk}AD 100%)`
                 }}
               />
 
-              <Stack sx={{ position: 'relative' }}>
-                <Stack spacing={1.1} sx={{ maxWidth: '68%', p: 2.5 }}>
+              <Stack spacing={1.75} sx={{ position: 'relative', p: 2.25 }}>
+                <Stack direction='row' alignItems='center' justifyContent='space-between'>
                   <Stack direction='row' spacing={0.75} alignItems='center'>
                     <Chip
                       size='small'
@@ -334,58 +364,102 @@ const CustomerPortalDashboardPage = () => {
                         '& .MuiChip-label': { px: 0.9 }
                       }}
                     />
-                    <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                      Gold Rate
+                    <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 600 }}>
+                      Gold Rate · per gram
                     </Typography>
                   </Stack>
 
-                  <Typography sx={{ color: '#fff', fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}>
-                    {currencyFormatter.format(primaryRate.effective_sell_rate)}
-                    <Typography component='span' sx={{ fontSize: '0.8rem', fontWeight: 400, color: 'rgba(255,255,255,0.75)' }}>
-                      {' '}/ {primaryRate.rate_per_unit}
+                  <Box
+                    component='button'
+                    type='button'
+                    onClick={() => void loadGoldRates()}
+                    aria-label='Refresh gold rate'
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5, border: 'none', background: 'transparent', p: 0, cursor: 'pointer' }}
+                  >
+                    <Typography sx={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.6)' }}>
+                      {ratesUpdatedAt
+                        ? `Updated ${ratesUpdatedAt.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                        : 'Updating…'}
                     </Typography>
-                  </Typography>
+                    {refreshingRates ? (
+                      <CircularProgress size={11} sx={{ color: PALETTE.goldLt }} />
+                    ) : (
+                      <i className='ri-refresh-line' style={{ fontSize: '0.8rem', color: PALETTE.goldLt }} />
+                    )}
+                  </Box>
+                </Stack>
 
-                  {rateChange && (
-                    <Chip
-                      size='small'
-                      icon={<i className={rateChange.amount >= 0 ? 'ri-arrow-up-line' : 'ri-arrow-down-line'} style={{ fontSize: '0.7rem', color: rateChange.amount >= 0 ? '#16A34A' : '#DC2626' }} />}
-                      label={`${currencyFormatter.format(Math.abs(rateChange.amount))} (${Math.abs(rateChange.pct).toFixed(2)}%)`}
-                      sx={{
-                        alignSelf: 'flex-start',
-                        height: 22,
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        color: rateChange.amount >= 0 ? '#16A34A' : '#DC2626',
-                        bgcolor: rateChange.amount >= 0 ? 'rgba(22,163,74,0.16)' : 'rgba(220,38,38,0.16)',
-                        '& .MuiChip-icon': { ml: 0.7 }
-                      }}
-                    />
-                  )}
+                <Stack spacing={1}>
+                  {displayedGoldRates.map((rate, idx) => {
+                    const change = rateChanges[rate.id]
+                    const label = rate.purity || rate.display_text || rate.metal_name
+                    const subLabel = rate.display_text && rate.display_text !== rate.purity ? rate.display_text : null
 
-                  <Stack direction='row' spacing={0.5} alignItems='center'>
-                    <i className='ri-time-line' style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)' }} />
-                    <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.65)' }}>
-                      {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </Typography>
-                  </Stack>
+                    return (
+                      <Stack
+                        key={rate.id}
+                        direction='row'
+                        alignItems='center'
+                        justifyContent='space-between'
+                        sx={{
+                          pb: idx < displayedGoldRates.length - 1 ? 1 : 0,
+                          borderBottom: idx < displayedGoldRates.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none'
+                        }}
+                      >
+                        <Box>
+                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{label}</Typography>
+                          {subLabel && (
+                            <Typography sx={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>{subLabel}</Typography>
+                          )}
+                        </Box>
 
+                        <Stack alignItems='flex-end' spacing={0.25}>
+                          <Typography sx={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>
+                            {currencyFormatter.format(rate.effective_sell_rate)}
+                          </Typography>
+                          {change && (
+                            <Stack direction='row' spacing={0.3} alignItems='center'>
+                              <i
+                                className={change.amount >= 0 ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}
+                                style={{ fontSize: '0.6rem', color: change.amount >= 0 ? '#4ADE80' : '#F87171' }}
+                              />
+                              <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: change.amount >= 0 ? '#4ADE80' : '#F87171' }}>
+                                {Math.abs(change.pct).toFixed(2)}%
+                              </Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </Stack>
+                    )
+                  })}
+                </Stack>
+
+                <Stack direction='row' spacing={1.25}>
+                  <Button
+                    component={Link}
+                    href='/customer/panel/schemes'
+                    fullWidth
+                    size='small'
+                    startIcon={<i className='ri-shopping-bag-3-line' />}
+                    sx={{ bgcolor: PALETTE.gold, color: PALETTE.purpleDk, fontWeight: 700, '&:hover': { bgcolor: PALETTE.goldLt } }}
+                  >
+                    Buy Digi Gold
+                  </Button>
                   <Button
                     component={Link}
                     href='/customer/panel/gold-rate'
+                    fullWidth
                     size='small'
-                    endIcon={<i className='ri-arrow-right-line' />}
+                    variant='outlined'
+                    startIcon={<i className='ri-line-chart-line' />}
                     sx={{
-                      alignSelf: 'flex-start',
-                      mt: 0.5,
-                      bgcolor: PALETTE.gold,
-                      color: PALETTE.purpleDk,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: '#fff',
                       fontWeight: 700,
-                      px: 2,
-                      '&:hover': { bgcolor: PALETTE.goldLt }
+                      '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' }
                     }}
                   >
-                    View Gold Rate
+                    Price History
                   </Button>
                 </Stack>
               </Stack>
