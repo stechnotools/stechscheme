@@ -30,12 +30,12 @@ use App\Http\Controllers\API\SchemeMaturityBenefitController;
 use App\Http\Controllers\API\SettingController;
 use App\Http\Controllers\API\TransactionController;
 use App\Http\Controllers\API\UserController;
-use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\API\FeedbackController;
 
-use App\Http\Controllers\Api\DigitalMetalMasterController;
-use App\Http\Controllers\Api\DigitalMetalSaleController;
-use App\Http\Controllers\Api\DigitalMetalPurchaseController;
-use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\API\DigitalMetalMasterController;
+use App\Http\Controllers\API\DigitalMetalSaleController;
+use App\Http\Controllers\API\DigitalMetalPurchaseController;
+use App\Http\Controllers\API\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -208,7 +208,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/actions', [FeedbackController::class, 'addAction']);
     });
     
-    Route::apiResource('feedback-questions', \App\Http\Controllers\Api\FeedbackQuestionController::class);
+    Route::apiResource('feedback-questions', \App\Http\Controllers\API\FeedbackQuestionController::class);
 
     // Loyalty Sale Import
     Route::post('loyalty-sale-import/validate', [\App\Http\Controllers\LoyaltySaleImportController::class, 'validateImport']);
@@ -256,6 +256,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('loyalty-reports/sync-balances', [\App\Http\Controllers\LoyaltyReportController::class, 'recalculateBalances']);
 });
 
-Route::get('feedback-questions', [\App\Http\Controllers\Api\FeedbackQuestionController::class, 'index']); // Public access to fetch questions for kiosk
+Route::get('feedback-questions', [\App\Http\Controllers\API\FeedbackQuestionController::class, 'index']); // Public access to fetch questions for kiosk
 
 Route::get('/test-speed', function() { return 'Fast!'; });
