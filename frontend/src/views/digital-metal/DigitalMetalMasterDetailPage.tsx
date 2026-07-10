@@ -103,6 +103,10 @@ const DigitalMetalMasterDetailPage = () => {
     }
   }
 
+  const effectiveRatePer = metal?.last_log ? metal.last_log.new_rate : metal?.rate_per
+  const effectiveBuyMarkup = metal?.last_log ? metal.last_log.new_buy_markup : metal?.buy_markup_amount
+  const effectiveSellMarkup = metal?.last_log ? metal.last_log.new_sell_markup : metal?.sell_markup_amount
+
   const labelSx = { fontWeight: 'bold', color: '#333' }
   const valueSx = { borderBottom: '1px solid #eaeaea', pb: 0.5, color: '#666', minHeight: '1.5em' }
 
@@ -163,7 +167,7 @@ const DigitalMetalMasterDetailPage = () => {
                       <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Rate Per</Typography></Grid>
                       <Grid size={{ xs: 7 }}>
                         <Box display="flex" justifyContent="space-between" sx={valueSx}>
-                          <Typography>{metal.rate_per}</Typography>
+                          <Typography>{effectiveRatePer}</Typography>
                           <Typography>{metal.rate_per_unit}</Typography>
                         </Box>
                       </Grid>
@@ -176,7 +180,7 @@ const DigitalMetalMasterDetailPage = () => {
 
                     <Grid container>
                       <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Buy Markup Amount</Typography></Grid>
-                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.buy_markup_amount}</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{effectiveBuyMarkup}</Typography></Grid>
                     </Grid>
 
                     <Grid container>
@@ -216,7 +220,7 @@ const DigitalMetalMasterDetailPage = () => {
 
                     <Grid container>
                       <Grid size={{ xs: 5 }}><Typography sx={labelSx}>Sell Markup Amount</Typography></Grid>
-                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{metal.sell_markup_amount}</Typography></Grid>
+                      <Grid size={{ xs: 7 }}><Typography sx={valueSx}>{effectiveSellMarkup}</Typography></Grid>
                     </Grid>
 
                     <Grid container>

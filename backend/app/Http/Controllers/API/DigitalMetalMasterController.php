@@ -15,7 +15,7 @@ class DigitalMetalMasterController extends Controller
      */
     public function index()
     {
-        $masters = DigitalMetalMaster::with(['creator', 'lastLog'])->get();
+        $masters = DigitalMetalMaster::with(['creator', 'lastLog.user'])->get();
 
         return response()->json([
             'success' => true,
@@ -71,7 +71,7 @@ class DigitalMetalMasterController extends Controller
      */
     public function show(string $id)
     {
-        $master = DigitalMetalMaster::with('creator')->find($id);
+        $master = DigitalMetalMaster::with(['creator', 'lastLog.user'])->find($id);
 
         if (!$master) {
             return response()->json([

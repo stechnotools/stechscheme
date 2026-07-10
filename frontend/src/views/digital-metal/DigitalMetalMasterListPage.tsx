@@ -35,6 +35,13 @@ import Divider from '@mui/material/Divider'
 import Paper from '@mui/material/Paper'
 import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
+type DigitalMetalMasterLog = {
+  new_rate: string | null
+  new_buy_markup: string | null
+  new_sell_markup: string | null
+  user?: { name?: string | null } | null
+}
+
 type DigitalMetalMaster = {
   id: number
   metal_name: string
@@ -46,6 +53,8 @@ type DigitalMetalMaster = {
   status: string
   updated_by?: string | null
   updated_at?: string | null
+  last_log?: DigitalMetalMasterLog | null
+  creator?: { name?: string | null } | null
 }
 
 const resolveBackendApiUrl = getApiBaseUrl
@@ -143,6 +152,12 @@ const DigitalMetalMasterListPage = () => {
   const paginatedMetals = filteredMetals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   const headCellSx = { fontWeight: 700, whiteSpace: 'nowrap' as const }
+
+  const effectiveRatePer = (metal: DigitalMetalMaster) =>
+    metal.last_log ? metal.last_log.new_rate : metal.rate_per
+
+  const effectiveUpdatedBy = (metal: DigitalMetalMaster) =>
+    metal.last_log?.user?.name || metal.creator?.name || metal.updated_by
 
   return (
     <Box>
@@ -251,7 +266,7 @@ const DigitalMetalMasterListPage = () => {
                       <TableCell>{metal.erp_metal_id || '-'}</TableCell>
                       <TableCell>{metal.display_text || '-'}</TableCell>
                       <TableCell>{metal.purity || '-'}</TableCell>
-                      <TableCell>{metal.rate_per || '-'}</TableCell>
+                      <TableCell>{effectiveRatePer(metal) || '-'}</TableCell>
                       <TableCell>{metal.rate_per_display_text || '-'}</TableCell>
                       <TableCell>
                         <Chip
@@ -261,7 +276,7 @@ const DigitalMetalMasterListPage = () => {
                           variant="tonal"
                         />
                       </TableCell>
-                      <TableCell>{metal.updated_by || '-'}</TableCell>
+                      <TableCell>{effectiveUpdatedBy(metal) || '-'}</TableCell>
                       <TableCell align="center">
                         <Stack direction="row" justifyContent="center" spacing={1}>
                           <IconButton 

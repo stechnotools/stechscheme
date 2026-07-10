@@ -216,6 +216,7 @@ class CustomerPortalController extends Controller
     public function goldRate(): JsonResponse
     {
         $rates = DigitalMetalMaster::query()
+            ->with('lastLog')
             ->where('status', 'Active')
             ->get()
             ->map(fn (DigitalMetalMaster $master) => $this->customerFacingRate($master));
@@ -230,6 +231,7 @@ class CustomerPortalController extends Controller
         $masterId = $request->integer('master_id');
 
         $master = DigitalMetalMaster::query()
+            ->with('lastLog')
             ->where('status', 'Active')
             ->when($masterId > 0, fn ($query) => $query->where('id', $masterId))
             ->firstOrFail();
@@ -255,13 +257,20 @@ class CustomerPortalController extends Controller
 
     private function customerFacingRate(DigitalMetalMaster $master): array
     {
+        // Bulk rate updates only append to digital_metal_master_logs and
+        // deliberately leave rate_per/sell_markup_amount on the master
+        // untouched, so the current effective rate must be resolved from
+        // the latest log entry when one exists.
+        $ratePer = $master->lastLog ? (float) $master->lastLog->new_rate : (float) $master->rate_per;
+        $sellMarkup = $master->lastLog ? (float) $master->lastLog->new_sell_markup : (float) $master->sell_markup_amount;
+
         return [
             'id' => $master->id,
             'metal_name' => $master->metal_name,
             'purity' => $master->purity,
             'rate_per_unit' => $master->rate_per_unit,
             'rate_per_display_text' => $master->rate_per_display_text,
-            'effective_sell_rate' => (float) $master->rate_per + (float) $master->sell_markup_amount,
+            'effective_sell_rate' => $ratePer + $sellMarkup,
         ];
     }
 
