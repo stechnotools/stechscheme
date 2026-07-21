@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react'
 
 
 import Alert from '@mui/material/Alert'
+import Autocomplete from '@mui/material/Autocomplete'
 import Backdrop from '@mui/material/Backdrop'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -1357,6 +1358,18 @@ return rows
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        type='date'
+                        label={activeMembership ? 'Payment Date' : 'Joining Date'}
+                        value={paymentDate}
+                        onChange={event => setPaymentDate(event.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        helperText={activeMembership ? 'Back-date this payment if collected on an earlier date' : 'Back-date if this customer actually joined earlier'}
+                        sx={inputSx}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
                         label='Scheme Value'
                         type='number'
                         disabled={!selectedScheme}
@@ -1408,14 +1421,15 @@ return rows
                       <TextField fullWidth label='Late Fee' value={totals.lateFee.toFixed(2)} InputProps={{ readOnly: true }} sx={inputSx} />
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField select fullWidth label='Salesman' value={salesman} onChange={event => setSalesman(event.target.value)} sx={inputSx}>
-                        <MenuItem value='None'>None</MenuItem>
-                        {salesmen.map(item => (
-                          <MenuItem key={item.id} value={item.name}>
-                            {item.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                      <Autocomplete
+                        fullWidth
+                        options={salesmen}
+                        getOptionLabel={option => option.name}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        value={salesmen.find(item => item.name === salesman) || null}
+                        onChange={(_, value) => setSalesman(value ? value.name : 'None')}
+                        renderInput={params => <TextField {...params} label='Salesman' placeholder='Search salesman...' sx={inputSx} />}
+                      />
                     </Grid>
                   </Grid>
                 </Stack>

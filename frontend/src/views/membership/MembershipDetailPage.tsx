@@ -33,6 +33,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import TextField from '@mui/material/TextField'
+import Autocomplete from '@mui/material/Autocomplete'
 
 type MembershipDetail = {
   id: number
@@ -47,6 +48,7 @@ type MembershipDetail = {
   maturity_date: string
   total_paid: string | number
   status: string
+  user?: { id: number; name?: string | null } | null
   customer?: {
     id: number
     name?: string | null
@@ -240,6 +242,22 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
+  const [undoDialogOpen, setUndoDialogOpen] = useState(false)
+  const [undoSaving, setUndoSaving] = useState(false)
+  const [undoError, setUndoError] = useState<string | null>(null)
+
+  const [openingEditOpen, setOpeningEditOpen] = useState(false)
+  const [openingEditForm, setOpeningEditForm] = useState({
+    start_date: '',
+    membership_no: '',
+    card_no: '',
+    card_reference: '',
+    card_issued_at: '',
+    user_id: null as number | null
+  })
+  const [openingEditSaving, setOpeningEditSaving] = useState(false)
+  const [openingEditError, setOpeningEditError] = useState<string | null>(null)
+  const [salesmen, setSalesmen] = useState<Array<{ id: number; name: string }>>([])
 
   const receipts = useMemo(() => {
     if (!membership?.payments) return []
@@ -382,6 +400,84 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     }
   }
 
+  const handleUndoForceClose = async () => {
+    setUndoSaving(true)
+    setUndoError(null)
+
+    try {
+      await request(`/memberships/${membershipId}/undo-force-close`, { method: 'POST' })
+      setUndoDialogOpen(false)
+      await loadMembership()
+    } catch (err) {
+      setUndoError(err instanceof Error ? err.message : 'Failed to undo force close.')
+    } finally {
+      setUndoSaving(false)
+    }
+  }
+
+  const openOpeningEditDialog = async () => {
+    if (!membership) return
+
+    setOpeningEditForm({
+      start_date: membership.start_date ? membership.start_date.slice(0, 10) : '',
+      membership_no: membership.membership_no || '',
+      card_no: membership.card_no || '',
+      card_reference: membership.card_reference || '',
+      card_issued_at: membership.card_issued_at ? membership.card_issued_at.slice(0, 10) : '',
+      user_id: membership.user_id ?? null
+    })
+    setOpeningEditError(null)
+    setOpeningEditOpen(true)
+
+    if (salesmen.length === 0) {
+      try {
+        const response = await request<{ data: Array<{ id: number; name: string }> }>(
+          '/users?per_page=100&sort_by=name&sort_direction=asc&status=active'
+        )
+
+        setSalesmen(response.data)
+      } catch {
+        // Salesman list is a nice-to-have — the field just shows unassigned if this fails.
+      }
+    }
+  }
+
+  const closeOpeningEditDialog = () => {
+    if (openingEditSaving) return
+    setOpeningEditOpen(false)
+    setOpeningEditError(null)
+  }
+
+  const handleSaveOpeningEdit = async () => {
+    if (!membership) return
+
+    setOpeningEditSaving(true)
+    setOpeningEditError(null)
+
+    try {
+      await request(`/memberships/${membershipId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          customer_id: membership.customer_id,
+          scheme_id: membership.scheme_id,
+          status: membership.status,
+          start_date: openingEditForm.start_date,
+          membership_no: openingEditForm.membership_no || null,
+          card_no: openingEditForm.card_no || null,
+          card_reference: openingEditForm.card_reference || null,
+          card_issued_at: openingEditForm.card_issued_at || null,
+          user_id: openingEditForm.user_id
+        })
+      })
+
+      setOpeningEditOpen(false)
+      await loadMembership()
+    } catch (err) {
+      setOpeningEditError(err instanceof Error ? err.message : 'Failed to update opening entry details.')
+    } finally {
+      setOpeningEditSaving(false)
+    }
+  }
 
 
   if (error) {
@@ -404,6 +500,13 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   // Installments calculation
   const totalInstallments = membership.installments?.length || membership.scheme?.total_installments || 0
   const paidInstallments = membership.installments?.filter(item => item.paid).length || 0
+
+  // Ensure the currently-assigned salesman always appears as a selectable option,
+  // even if they're not in the active-staff list the dropdown fetches (e.g. the
+  // membership's user_id was auto-resolved to the customer's own linked account).
+  const salesmanOptions = membership.user && !salesmen.some(item => item.id === membership.user!.id)
+    ? [{ id: membership.user.id, name: membership.user.name || `User #${membership.user.id}` }, ...salesmen]
+    : salesmen
   const progressPercent = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0
 
   // Total paid calculation
@@ -487,6 +590,15 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                   variant='tonal'
                   sx={{ py: 1.5, px: 2, fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase' }}
                 />
+                {membership.status === 'closed' ? (
+                  <Button onClick={() => setUndoDialogOpen(true)} variant='contained' color='warning' size='medium' startIcon={<i className='ri-arrow-go-back-line' />}>
+                    Undo Force Close
+                  </Button>
+                ) : (
+                  <Button component={Link} href={`/membership/${membership.id}/closing-preview`} variant='contained' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }} size='medium'>
+                    Close Scheme
+                  </Button>
+                )}
                 <Button component={Link} href='/subscriptions' variant='contained' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }} size='medium'>
                   Back to List
                 </Button>
@@ -799,16 +911,33 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                 </CardContent>
               </Card>
 
-              {/* Physical Card Metadata Card */}
+              {/* Opening Entry Details Card */}
               <Card sx={{ boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
                 <CardContent>
-                  <Stack direction='row' alignItems='center' spacing={2} sx={{ mb: 4 }}>
-                    <Avatar sx={{ bgcolor: 'info.light', color: 'info.main', width: 36, height: 36 }}>
-                      <i className='ri-bank-card-line' style={{ fontSize: '1.1rem' }} />
-                    </Avatar>
-                    <Typography variant='h6' sx={{ fontWeight: 700 }}>Card Metadata</Typography>
+                  <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ mb: 4 }}>
+                    <Stack direction='row' alignItems='center' spacing={2}>
+                      <Avatar sx={{ bgcolor: 'info.light', color: 'info.main', width: 36, height: 36 }}>
+                        <i className='ri-bank-card-line' style={{ fontSize: '1.1rem' }} />
+                      </Avatar>
+                      <Typography variant='h6' sx={{ fontWeight: 700 }}>Opening Entry Details</Typography>
+                    </Stack>
+                    <IconButton size='small' onClick={() => void openOpeningEditDialog()} title='Edit opening entry details'>
+                      <i className='ri-edit-box-line' style={{ fontSize: '1.1rem' }} />
+                    </IconButton>
                   </Stack>
                   <Stack spacing={3}>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Opening Date</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {new Date(membership.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography variant='caption' color='text.secondary' display='block'>Salesman</Typography>
+                      <Typography variant='body2' fontWeight={600}>
+                        {membership.user?.name || 'Unassigned'}
+                      </Typography>
+                    </div>
                     <div>
                       <Typography variant='caption' color='text.secondary' display='block'>Membership No.</Typography>
                       <Typography variant='body2' fontWeight={600}>
@@ -870,8 +999,98 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={undoDialogOpen} onClose={() => !undoSaving && setUndoDialogOpen(false)} maxWidth='xs' fullWidth>
+        <DialogTitle>Undo Force Close?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {undoError && <Alert severity='error'>{undoError}</Alert>}
+            <Alert severity='warning'>
+              This reverses the force-closure — a reversal entry is posted against the original closing voucher
+              (nothing is deleted) and the scheme reopens to its status before it was force-closed.
+            </Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUndoDialogOpen(false)} disabled={undoSaving}>Cancel</Button>
+          <Button variant='contained' color='warning' onClick={() => void handleUndoForceClose()} disabled={undoSaving}>
+            {undoSaving ? 'Undoing...' : 'Undo Force Close'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openingEditOpen} onClose={closeOpeningEditDialog} maxWidth='sm' fullWidth>
+        <DialogTitle>Edit Opening Entry Details</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {openingEditError && <Alert severity='error'>{openingEditError}</Alert>}
+            <Alert severity='info'>
+              Customer and Scheme can&apos;t be changed here — reassigning either would orphan the installment and
+              payment history already generated against this membership.
+            </Alert>
+
+            <TextField
+              fullWidth
+              type='date'
+              label='Opening Date'
+              value={openingEditForm.start_date}
+              onChange={e => setOpeningEditForm(prev => ({ ...prev, start_date: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <Autocomplete
+              fullWidth
+              options={salesmanOptions}
+              getOptionLabel={option => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              value={salesmanOptions.find(item => item.id === openingEditForm.user_id) || null}
+              onChange={(_, value) => setOpeningEditForm(prev => ({ ...prev, user_id: value ? value.id : null }))}
+              renderInput={params => <TextField {...params} label='Salesman' placeholder='Search salesman...' />}
+            />
+
+            <Stack direction='row' spacing={2}>
+              <TextField
+                fullWidth
+                label='Membership No.'
+                value={openingEditForm.membership_no}
+                onChange={e => setOpeningEditForm(prev => ({ ...prev, membership_no: e.target.value }))}
+              />
+              <TextField
+                fullWidth
+                label='Physical Card No.'
+                value={openingEditForm.card_no}
+                onChange={e => setOpeningEditForm(prev => ({ ...prev, card_no: e.target.value }))}
+              />
+            </Stack>
+
+            <Stack direction='row' spacing={2}>
+              <TextField
+                fullWidth
+                label='Card Reference'
+                value={openingEditForm.card_reference}
+                onChange={e => setOpeningEditForm(prev => ({ ...prev, card_reference: e.target.value }))}
+              />
+              <TextField
+                fullWidth
+                type='date'
+                label='Card Issued At'
+                value={openingEditForm.card_issued_at}
+                onChange={e => setOpeningEditForm(prev => ({ ...prev, card_issued_at: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeOpeningEditDialog} disabled={openingEditSaving}>Cancel</Button>
+          <Button variant='contained' onClick={() => void handleSaveOpeningEdit()} disabled={openingEditSaving}>
+            {openingEditSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   )
 }
 
 export default MembershipDetailPage
+

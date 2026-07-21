@@ -110,6 +110,12 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
     Route::post('memberships/enroll', [MembershipController::class, 'enroll']);
+    Route::get('memberships/{id}/closing-preview', [MembershipController::class, 'closingPreview']);
+    Route::get('memberships/{id}/closing-preview/pdf', [MembershipController::class, 'closingPreviewPdf']);
+    Route::post('memberships/{id}/close', [MembershipController::class, 'close']);
+    Route::get('memberships/{id}/force-closing-preview', [MembershipController::class, 'forceClosingPreview']);
+    Route::post('memberships/{id}/force-close', [MembershipController::class, 'forceClose']);
+    Route::post('memberships/{id}/undo-force-close', [MembershipController::class, 'undoForceClose']);
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
     Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 

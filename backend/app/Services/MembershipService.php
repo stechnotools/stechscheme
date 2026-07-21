@@ -89,6 +89,15 @@ class MembershipService
                 abort(422, 'Customer KYC must be approved before enrollment.');
             }
 
+            // Lock in the scheme's terms as they exist right now, so later
+            // edits to the Scheme template (installment value, closing
+            // penalty, bonus rules, etc.) never retroactively change what
+            // this membership already agreed to.
+            $schemeSnapshot = array_merge(
+                $scheme->only(Membership::SCHEME_SNAPSHOT_FIELDS),
+                ['installment_value' => $installmentAmount ?? (float) ($scheme->installment_value ?? 0)]
+            );
+
             $membership = Membership::query()->create([
                 ...$membershipPayload,
                 'membership_no' => $validated['membership_no'] ?? null,
@@ -98,6 +107,7 @@ class MembershipService
                 'maturity_date' => $this->resolveMaturityDate((string) $validated['start_date'], $scheme),
                 'total_paid' => $validated['total_paid'] ?? 0,
                 'status' => $validated['status'] ?? 'active',
+                'scheme_snapshot' => $schemeSnapshot,
             ]);
 
             $this->generateInstallments($membership, $scheme, $installmentAmount);
@@ -111,6 +121,35 @@ class MembershipService
         $months = max(1, (int) ($scheme->total_installments ?? 1));
 
         return Carbon::parse($startDate)->copy()->addMonthsNoOverflow($months - 1)->toDateString();
+    }
+
+    /**
+     * Recompute maturity_date and every installment's due_date from the
+     * membership's (already-updated) start_date, using the same formula
+     * generateInstallments()/resolveMaturityDate() use at enrollment — so
+     * correcting the opening date after the fact keeps the whole schedule
+     * internally consistent instead of leaving stale due dates behind.
+     * paid_date, paid_amount, penalty and payment history are untouched;
+     * only the due_date label moves.
+     */
+    public function realignScheduleToStartDate(Membership $membership): void
+    {
+        DB::transaction(function () use ($membership) {
+            $scheme = $membership->scheme ?? Scheme::query()->find($membership->scheme_id);
+            $startDate = Carbon::parse($membership->start_date);
+
+            $membership->installments()->orderBy('installment_no')->get()->each(function (Installment $installment) use ($startDate) {
+                $installment->update([
+                    'due_date' => $startDate->copy()->addMonthsNoOverflow($installment->installment_no - 1)->toDateString(),
+                ]);
+            });
+
+            if ($scheme) {
+                $membership->update([
+                    'maturity_date' => $this->resolveMaturityDate($startDate->toDateString(), $scheme),
+                ]);
+            }
+        });
     }
 
     private function generateInstallments(Membership $membership, Scheme $scheme, ?float $customInstallmentAmount = null): void

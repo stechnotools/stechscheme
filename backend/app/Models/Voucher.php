@@ -14,12 +14,15 @@ class Voucher extends Model
         'reference_table',
         'reference_id',
         'narration',
+        'reversed_at',
+        'reversal_of_voucher_id',
     ];
 
     protected function casts(): array
     {
         return [
             'voucher_date' => 'date',
+            'reversed_at' => 'datetime',
         ];
     }
 
@@ -31,5 +34,10 @@ class Voucher extends Model
     public function transactions()
     {
         return $this->hasMany(VoucherTransaction::class);
+    }
+
+    public function reversalOf()
+    {
+        return $this->belongsTo(self::class, 'reversal_of_voucher_id');
     }
 }

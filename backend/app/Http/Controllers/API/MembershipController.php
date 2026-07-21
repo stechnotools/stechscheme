@@ -8,6 +8,8 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Services\MembershipService;
 use App\Services\OneClickEnrollmentService;
+use App\Services\SchemeClosingService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +20,8 @@ class MembershipController extends CrudController
 {
     public function __construct(
         private readonly MembershipService $membershipService,
-        private readonly OneClickEnrollmentService $oneClickEnrollmentService
+        private readonly OneClickEnrollmentService $oneClickEnrollmentService,
+        private readonly SchemeClosingService $schemeClosingService
     )
     {
     }
@@ -40,9 +43,51 @@ class MembershipController extends CrudController
     {
         $membership = $this->freshModel($this->newQuery()->findOrFail($id))->toArray();
 
+        $this->applySchemeSnapshot($membership);
         $this->attachInstallmentWeights($membership);
 
         return response()->json(['data' => $membership]);
+    }
+
+    /**
+     * Same as CrudController::update(), except: when start_date actually
+     * changes, the installment schedule (and maturity_date) is realigned to
+     * the corrected opening date instead of being left stale.
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+        $originalStartDate = $membership->start_date?->toDateString();
+
+        $validated = $request->validate($this->rules($membership));
+        $membership->update($this->mutateValidatedData($validated, $membership));
+
+        if (array_key_exists('start_date', $validated) && $membership->start_date->toDateString() !== $originalStartDate) {
+            $this->membershipService->realignScheduleToStartDate($membership);
+        }
+
+        return response()->json([
+            'message' => 'Membership updated successfully.',
+            'data' => $this->freshModel($membership),
+        ]);
+    }
+
+    /**
+     * Overlay the terms locked in at enrollment (scheme_snapshot) onto the
+     * `scheme` payload, so the detail page — and attachInstallmentWeights()
+     * below, which reads scheme_type/item_group from this same array —
+     * shows what this customer actually agreed to, not whatever the Scheme
+     * template currently says after later edits.
+     */
+    private function applySchemeSnapshot(array &$membership): void
+    {
+        $snapshot = $membership['scheme_snapshot'] ?? null;
+
+        if (! $snapshot || ! isset($membership['scheme']) || ! is_array($membership['scheme'])) {
+            return;
+        }
+
+        $membership['scheme'] = array_merge($membership['scheme'], $snapshot);
     }
 
     /**
@@ -164,6 +209,81 @@ class MembershipController extends CrudController
         ], 201);
     }
 
+    public function closingPreview(int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+
+        return response()->json([
+            'data' => $this->schemeClosingService->evaluate($membership),
+        ]);
+    }
+
+    public function close(Request $request, int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+        $narration = $request->string('narration')->trim()->value() ?: null;
+        $voucher = $this->schemeClosingService->closeMembership($membership, $narration);
+
+        return response()->json([
+            'message' => 'Scheme closed successfully.',
+            'data' => $voucher->load('transactions'),
+        ]);
+    }
+
+    public function forceClosingPreview(int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+
+        return response()->json([
+            'data' => $this->schemeClosingService->evaluateForceClose($membership),
+        ]);
+    }
+
+    public function forceClose(Request $request, int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+        $narration = $request->string('narration')->trim()->value() ?: null;
+        $voucher = $this->schemeClosingService->forceCloseMembership($membership, $narration);
+
+        return response()->json([
+            'message' => 'Scheme force-closed successfully.',
+            'data' => $voucher->load('transactions'),
+        ]);
+    }
+
+    public function undoForceClose(int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+        $voucher = $this->schemeClosingService->undoForceClose($membership);
+
+        return response()->json([
+            'message' => 'Force closure undone successfully.',
+            'data' => $voucher->load('transactions'),
+        ]);
+    }
+
+    public function closingPreviewPdf(int $id)
+    {
+        $membership = Membership::query()->with('customer', 'scheme')->findOrFail($id);
+
+        $evaluation = $this->schemeClosingService->evaluate($membership);
+        $mode = 'close';
+
+        if (! $evaluation['eligible']) {
+            $evaluation = $this->schemeClosingService->evaluateForceClose($membership);
+            $mode = 'force-close';
+        }
+
+        $pdf = Pdf::loadView('pdf.scheme-closure-preview', [
+            'membership' => $membership,
+            'mode' => $mode,
+            'evaluation' => $evaluation,
+            'generatedAt' => now()->format('d-m-Y H:i'),
+        ]);
+
+        return $pdf->download("scheme-closure-{$membership->membership_no}.pdf");
+    }
+
     protected function rules(?Model $model = null): array
     {
         return [
@@ -174,6 +294,10 @@ class MembershipController extends CrudController
             'maturity_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'total_paid' => ['nullable', 'numeric', 'min:0'],
             'status' => ['nullable', Rule::in(['active', 'paused', 'completed', 'matured', 'cancelled', 'closed', 'redeemed', 'settled'])],
+            'membership_no' => ['nullable', 'string', 'max:100'],
+            'card_no' => ['nullable', 'string', 'max:100'],
+            'card_reference' => ['nullable', 'string', 'max:100'],
+            'card_issued_at' => ['nullable', 'date'],
         ];
     }
 
