@@ -9,6 +9,7 @@ import TabPanel from '@mui/lab/TabPanel'
 import CustomTabList from '@core/components/mui/TabList'
 
 type SettingsTabKey =
+  | 'general-settings'
   | 'company-info'
   | 'payment-gateway'
   | 'sms-gateway'
@@ -26,6 +27,14 @@ const SettingsTabsLayout = ({ activeTab, children }: Props) => {
       <Grid container spacing={6}>
         <Grid size={{ xs: 12 }}>
           <CustomTabList variant='scrollable' pill='true'>
+            <Tab
+              label='General Setup'
+              icon={<i className='ri-settings-4-line' />}
+              iconPosition='start'
+              value='general-settings'
+              component={Link}
+              href='/settings/general-settings'
+            />
             <Tab
               label='Company Info'
               icon={<i className='ri-building-line' />}

@@ -70,7 +70,24 @@ const GeneralSetupForm = () => {
 
     // Tab 4 fields: Salesman Commission Setup
     salesman_commission_enabled: 'No',
-    salesman_commission_percent: '1'
+    salesman_commission_percent: '1',
+
+    // Tab 5 fields: Scheme General Setting
+    scheme_account_prefix: 'SCH-',
+    auto_generate_scheme_no: 'Yes',
+    allow_multiple_schemes_per_customer: 'Yes',
+    allow_online_scheme_joining: 'Yes',
+    default_installment_due_day: '5',
+    default_grace_period_days: '7',
+    allow_custom_installment_amount: 'No',
+    allow_advance_installments: 'Yes',
+    max_advance_installments: '3',
+    gold_rate_policy_default: 'Daily Board Rate',
+    min_installments_preclosure: '6',
+    auto_close_on_maturity: 'No',
+    send_due_installment_reminder: 'Yes',
+    due_reminder_days_before: '3',
+    send_overdue_notice: 'Yes'
   })
 
   const [loading, setLoading] = useState(false)
@@ -183,6 +200,7 @@ const GeneralSetupForm = () => {
             <Tab label="Digital Gold Setup" sx={{ fontWeight: 600 }} />
             <Tab label="Terms & Conditions" sx={{ fontWeight: 600 }} />
             <Tab label="Salesman Commission Setup" sx={{ fontWeight: 600 }} />
+            <Tab label="Scheme General Setting" sx={{ fontWeight: 600 }} />
           </Tabs>
         </Box>
       </Grid>
@@ -506,6 +524,287 @@ const GeneralSetupForm = () => {
               </Grid>
             </CardContent>
           </Card>
+        </Grid>
+      )}
+
+      {/* Tab 5: Scheme General Setting */}
+      {activeTab === 4 && (
+        <Grid container spacing={6} size={{ xs: 12 }}>
+          {/* Card 1: Scheme Identification & Enrollment Setup */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)', height: '100%' }}>
+              <CardContent sx={{ p: 6 }}>
+                <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
+                  <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: 'rgba(115, 103, 240, 0.1)', color: '#7367F0', mr: 3, display: 'flex' }}>
+                    <i className="ri-shield-star-line" style={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant='h6' sx={{ fontWeight: 600 }}>Scheme Identification & Enrollment Setup</Typography>
+                </Box>
+
+                <Grid container spacing={5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Scheme Account No. Prefix"
+                      placeholder="e.g. SCH-"
+                      helperText="Prefix appended to auto-generated scheme account numbers"
+                      value={form.scheme_account_prefix ?? ''}
+                      onChange={e => setForm({ ...form, scheme_account_prefix: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Auto-generate Scheme Account Number
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.auto_generate_scheme_no ?? 'Yes'}
+                        onChange={e => setForm({ ...form, auto_generate_scheme_no: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Allow Multiple Active Schemes Per Customer
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.allow_multiple_schemes_per_customer ?? 'Yes'}
+                        onChange={e => setForm({ ...form, allow_multiple_schemes_per_customer: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Allow Online Scheme Joining (Portal & App)
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.allow_online_scheme_joining ?? 'Yes'}
+                        onChange={e => setForm({ ...form, allow_online_scheme_joining: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Card 2: Installment & Due Date Rules */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)', height: '100%' }}>
+              <CardContent sx={{ p: 6 }}>
+                <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
+                  <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: 'rgba(255, 159, 67, 0.1)', color: '#FF9F43', mr: 3, display: 'flex' }}>
+                    <i className="ri-calendar-event-line" style={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant='h6' sx={{ fontWeight: 600 }}>Installment & Due Date Rules</Typography>
+                </Box>
+
+                <Grid container spacing={5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Default Monthly Due Day"
+                      value={form.default_installment_due_day ?? '5'}
+                      onChange={e => setForm({ ...form, default_installment_due_day: e.target.value })}
+                    >
+                      {Array.from({ length: 28 }, (_, i) => (i + 1).toString()).map(day => (
+                        <MenuItem key={day} value={day}>
+                          Day {day} of every month
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Grace Period (Days)"
+                      helperText="Grace days before applying late fee"
+                      value={form.default_grace_period_days ?? '7'}
+                      onChange={e => setForm({ ...form, default_grace_period_days: e.target.value })}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Allow Variable / Custom Installment Amount
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.allow_custom_installment_amount ?? 'No'}
+                        onChange={e => setForm({ ...form, allow_custom_installment_amount: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Allow Advance Installments
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.allow_advance_installments ?? 'Yes'}
+                        onChange={e => setForm({ ...form, allow_advance_installments: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Max Advance Installments Allowed"
+                      disabled={(form.allow_advance_installments ?? 'Yes') !== 'Yes'}
+                      value={form.max_advance_installments ?? '3'}
+                      onChange={e => setForm({ ...form, max_advance_installments: e.target.value })}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Card 3: Gold Rate & Pre-closure Policy */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)', height: '100%' }}>
+              <CardContent sx={{ p: 6 }}>
+                <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
+                  <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: 'rgba(40, 199, 111, 0.1)', color: '#28C76F', mr: 3, display: 'flex' }}>
+                    <i className="ri-coins-line" style={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant='h6' sx={{ fontWeight: 600 }}>Gold Rate & Pre-closure Policy</Typography>
+                </Box>
+
+                <Grid container spacing={5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Default Gold Rate Lock Policy"
+                      value={form.gold_rate_policy_default ?? 'Daily Board Rate'}
+                      onChange={e => setForm({ ...form, gold_rate_policy_default: e.target.value })}
+                    >
+                      <MenuItem value="Daily Board Rate">Daily Board Rate</MenuItem>
+                      <MenuItem value="Booking Time Rate">Booking Time Rate</MenuItem>
+                      <MenuItem value="Maturity Rate">Maturity Rate</MenuItem>
+                    </TextField>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Min Installments for Pre-closure"
+                      helperText="Minimum paid installments required to pre-close"
+                      value={form.min_installments_preclosure ?? '6'}
+                      onChange={e => setForm({ ...form, min_installments_preclosure: e.target.value })}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Auto-close Scheme Membership on Maturity
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.auto_close_on_maturity ?? 'No'}
+                        onChange={e => setForm({ ...form, auto_close_on_maturity: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Card 4: Notifications & Reminders Setup */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 18px 0 rgba(47, 43, 61, 0.1)', height: '100%' }}>
+              <CardContent sx={{ p: 6 }}>
+                <Box display="flex" alignItems="center" sx={{ mb: 6 }}>
+                  <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: 'rgba(0, 207, 232, 0.1)', color: '#00CFE8', mr: 3, display: 'flex' }}>
+                    <i className="ri-notification-badge-line" style={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant='h6' sx={{ fontWeight: 600 }}>Notifications & Reminders</Typography>
+                </Box>
+
+                <Grid container spacing={5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Send Due Installment Reminders
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.send_due_installment_reminder ?? 'Yes'}
+                        onChange={e => setForm({ ...form, send_due_installment_reminder: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Reminder Days Before Due"
+                      disabled={(form.send_due_installment_reminder ?? 'Yes') !== 'Yes'}
+                      value={form.due_reminder_days_before ?? '3'}
+                      onChange={e => setForm({ ...form, due_reminder_days_before: e.target.value })}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <FormControl fullWidth>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}>
+                        Send Overdue Payment Notices
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={form.send_overdue_notice ?? 'Yes'}
+                        onChange={e => setForm({ ...form, send_overdue_notice: e.target.value })}
+                      >
+                        <FormControlLabel value='Yes' control={<Radio />} label='Yes' />
+                        <FormControlLabel value='No' control={<Radio />} label='No' />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       )}
     </Grid>

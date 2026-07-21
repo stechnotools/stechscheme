@@ -91,6 +91,8 @@ services:
       dockerfile: Dockerfile
     container_name: jewelleryscheme-nginx
     restart: unless-stopped
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
     ports:
       - "${HTTP_PORT:-9080}:80"
       # - "${HTTPS_PORT:-443}:443"
