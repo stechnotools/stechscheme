@@ -1,0 +1,291 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[96msrc/app/(blank-layout-pages)/(guest-only)/layout.tsx[0m:[93m5[0m:[93m28[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/hocs/GuestOnlyRoute' or its corresponding type declarations.
+
+[7m5[0m import GuestOnlyRoute from '@/hocs/GuestOnlyRoute'
+[7m [0m [91m                           ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/(dashboard)/(private)/layout.tsx[0m:[93m21[0m:[93m23[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/hocs/AuthGuard' or its corresponding type declarations.
+
+[7m21[0m import AuthGuard from '@/hocs/AuthGuard'
+[7m  [0m [91m                      ~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/apps/academy/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/academy' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/apps/academy'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/apps/ecommerce/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/ecommerce' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/apps/ecommerce'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/apps/invoice/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/invoice' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/apps/invoice'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/apps/logistics/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/logistics' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/apps/logistics'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/apps/user-list/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/userList' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/apps/userList'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/pages/faq/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/faq' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/pages/faq'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/pages/pricing/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/pricing' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/pages/pricing'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/pages/profile/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/userProfile' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/pages/userProfile'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/api/pages/widget-examples/route.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/widgetExamples' or its corresponding type declarations.
+
+[7m13[0m import { db } from '@/fake-db/pages/widgetExamples'
+[7m  [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m9[0m:[93m37[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/ecommerce' or its corresponding type declarations.
+
+[7m9[0m import { db as eCommerceData } from '@/fake-db/apps/ecommerce'
+[7m [0m [91m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m10[0m:[93m35[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/academy' or its corresponding type declarations.
+
+[7m10[0m import { db as academyData } from '@/fake-db/apps/academy'
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m11[0m:[93m35[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/logistics' or its corresponding type declarations.
+
+[7m11[0m import { db as vehicleData } from '@/fake-db/apps/logistics'
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m12[0m:[93m35[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/invoice' or its corresponding type declarations.
+
+[7m12[0m import { db as invoiceData } from '@/fake-db/apps/invoice'
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m13[0m:[93m32[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/userList' or its corresponding type declarations.
+
+[7m13[0m import { db as userData } from '@/fake-db/apps/userList'
+[7m  [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m14[0m:[93m35[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/userProfile' or its corresponding type declarations.
+
+[7m14[0m import { db as profileData } from '@/fake-db/pages/userProfile'
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m15[0m:[93m31[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/faq' or its corresponding type declarations.
+
+[7m15[0m import { db as faqData } from '@/fake-db/pages/faq'
+[7m  [0m [91m                              ~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m16[0m:[93m35[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/pricing' or its corresponding type declarations.
+
+[7m16[0m import { db as pricingData } from '@/fake-db/pages/pricing'
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/app/server/actions.ts[0m:[93m17[0m:[93m38[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/pages/widgetExamples' or its corresponding type declarations.
+
+[7m17[0m import { db as statisticsData } from '@/fake-db/pages/widgetExamples'
+[7m  [0m [91m                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/redux-store/slices/calendar.ts[0m:[93m10[0m:[93m24[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/calendar' or its corresponding type declarations.
+
+[7m10[0m import { events } from '@/fake-db/apps/calendar'
+[7m  [0m [91m                       ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m9[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/chat' or its corresponding type declarations.
+
+[7m9[0m import { db } from '@/fake-db/apps/chat'
+[7m [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m16[0m:[93m46[0m - [91merror[0m[90m TS7006: [0mParameter 'user' implicitly has an 'any' type.
+
+[7m16[0m       const activeUser = state.contacts.find(user => user.id === action.payload)
+[7m  [0m [91m                                             ~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m18[0m:[93m37[0m - [91merror[0m[90m TS7006: [0mParameter 'chat' implicitly has an 'any' type.
+
+[7m18[0m       const chat = state.chats.find(chat => chat.userId === action.payload)
+[7m  [0m [91m                                    ~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m32[0m:[93m27[0m - [91merror[0m[90m TS7006: [0mParameter 'contact' implicitly has an 'any' type.
+
+[7m32[0m       state.contacts.find(contact => {
+[7m  [0m [91m                          ~~~~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m33[0m:[93m52[0m - [91merror[0m[90m TS7006: [0mParameter 'chat' implicitly has an 'any' type.
+
+[7m33[0m         if (contact.id === id && !state.chats.find(chat => chat.userId === contact.id)) {
+[7m  [0m [91m                                                   ~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m54[0m:[93m45[0m - [91merror[0m[90m TS7006: [0mParameter 'chat' implicitly has an 'any' type.
+
+[7m54[0m       const existingChat = state.chats.find(chat => chat.userId === state.activeUser?.id)
+[7m  [0m [91m                                            ~~~~[0m
+
+[96msrc/redux-store/slices/chat.ts[0m:[93m69[0m:[93m42[0m - [91merror[0m[90m TS7006: [0mParameter 'chat' implicitly has an 'any' type.
+
+[7m69[0m         state.chats = state.chats.filter(chat => chat.userId !== state.activeUser?.id)
+[7m  [0m [91m                                         ~~~~[0m
+
+[96msrc/redux-store/slices/email.ts[0m:[93m8[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/email' or its corresponding type declarations.
+
+[7m8[0m import { db } from '@/fake-db/apps/email'
+[7m [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m8[0m:[93m20[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/fake-db/apps/kanban' or its corresponding type declarations.
+
+[7m8[0m import { db } from '@/fake-db/apps/kanban'
+[7m [0m [91m                   ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m15[0m:[93m51[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m15[0m       const maxId = Math.max(...state.columns.map(column => column.id))
+[7m  [0m [91m                                                  ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m29[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m29[0m       const column = state.columns.find(column => column.id === id)
+[7m  [0m [91m                                        ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m38[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m38[0m       const column = state.columns.find(column => column.id === columnId)
+[7m  [0m [91m                                        ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m40[0m:[93m44[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m40[0m       state.columns = state.columns.filter(column => column.id !== columnId)
+[7m  [0m [91m                                           ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m43[0m:[93m42[0m - [91merror[0m[90m TS7006: [0mParameter 'task' implicitly has an 'any' type.
+
+[7m43[0m         state.tasks = state.tasks.filter(task => !column.taskIds.includes(task.id))
+[7m  [0m [91m                                         ~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m54[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m54[0m       state.columns = state.columns.map(column => {
+[7m  [0m [91m                                        ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m71[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m71[0m       const column = state.columns.find(column => column.id === columnId)
+[7m  [0m [91m                                        ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m85[0m:[93m37[0m - [91merror[0m[90m TS7006: [0mParameter 'task' implicitly has an 'any' type.
+
+[7m85[0m       const task = state.tasks.find(task => task.id === id)
+[7m  [0m [91m                                    ~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m97[0m:[93m40[0m - [91merror[0m[90m TS7006: [0mParameter 'task' implicitly has an 'any' type.
+
+[7m97[0m       state.tasks = state.tasks.filter(task => task.id !== taskId)
+[7m  [0m [91m                                       ~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m98[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m98[0m       state.columns = state.columns.map(column => {
+[7m  [0m [91m                                        ~~~~~~[0m
+
+[96msrc/redux-store/slices/kanban.ts[0m:[93m101[0m:[93m42[0m - [91merror[0m[90m TS7006: [0mParameter 'id' implicitly has an 'any' type.
+
+[7m101[0m           taskIds: column.taskIds.filter(id => id !== taskId)
+[7m   [0m [91m                                         ~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m38[0m:[93m55[0m - [91merror[0m[90m TS7006: [0mParameter 'column' implicitly has an 'any' type.
+
+[7m38[0m     const maxId = Math.max(...kanbanStore.columns.map(column => column.id))
+[7m  [0m [91m                                                      ~~~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m45[0m:[93m46[0m - [91merror[0m[90m TS7006: [0mParameter 'task' implicitly has an 'any' type.
+
+[7m45[0m   const currentTask = kanbanStore.tasks.find(task => task.id === kanbanStore.currentTaskId)
+[7m  [0m [91m                                             ~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m58[0m:[93m18[0m - [91merror[0m[90m TS18046: [0m'column' is of type 'unknown'.
+
+[7m58[0m             key={column.id}
+[7m  [0m [91m                 ~~~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m60[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType 'unknown' is not assignable to type 'ColumnType'.
+
+[7m60[0m             column={column}
+[7m  [0m [91m            ~~~~~~[0m
+
+  [96msrc/views/apps/kanban/KanbanList.tsx[0m:[93m31[0m:[93m3[0m
+    [7m31[0m   column: ColumnType
+    [7m  [0m [96m  ~~~~~~[0m
+    The expected type comes from property 'column' which is declared here on type 'IntrinsicAttributes & KanbanListProps'
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m63[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType 'unknown[]' is not assignable to type 'ColumnType[]'.
+  Type 'unknown' is not assignable to type 'ColumnType'.
+
+[7m63[0m             columns={columns}
+[7m  [0m [91m            ~~~~~~~[0m
+
+  [96msrc/views/apps/kanban/KanbanList.tsx[0m:[93m36[0m:[93m3[0m
+    [7m36[0m   columns: ColumnType[]
+    [7m  [0m [96m  ~~~~~~~[0m
+    The expected type comes from property 'columns' which is declared here on type 'IntrinsicAttributes & KanbanListProps'
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m66[0m:[93m20[0m - [91merror[0m[90m TS18046: [0m'column' is of type 'unknown'.
+
+[7m66[0m             tasks={column.taskIds.map(taskId => kanbanStore.tasks.find(task => task.id === taskId))}
+[7m  [0m [91m                   ~~~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m66[0m:[93m39[0m - [91merror[0m[90m TS7006: [0mParameter 'taskId' implicitly has an 'any' type.
+
+[7m66[0m             tasks={column.taskIds.map(taskId => kanbanStore.tasks.find(task => task.id === taskId))}
+[7m  [0m [91m                                      ~~~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m66[0m:[93m72[0m - [91merror[0m[90m TS7006: [0mParameter 'task' implicitly has an 'any' type.
+
+[7m66[0m             tasks={column.taskIds.map(taskId => kanbanStore.tasks.find(task => task.id === taskId))}
+[7m  [0m [91m                                                                       ~~~~[0m
+
+[96msrc/views/apps/kanban/KanbanBoard.tsx[0m:[93m77[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'unknown[]' is not assignable to type 'ColumnType[]'.
+  Type 'unknown' is not assignable to type 'ColumnType'.
+
+[7m77[0m           columns={columns}
+[7m  [0m [91m          ~~~~~~~[0m
+
+  [96msrc/views/apps/kanban/KanbanDrawer.tsx[0m:[93m46[0m:[93m3[0m
+    [7m46[0m   columns: ColumnType[]
+    [7m  [0m [96m  ~~~~~~~[0m
+    The expected type comes from property 'columns' which is declared here on type 'IntrinsicAttributes & KanbanDrawerProps'
+
+
+Found 50 errors in 17 files.
+
+Errors  Files
+     1  src/app/(blank-layout-pages)/(guest-only)/layout.tsx[90m:5[0m
+     1  src/app/(dashboard)/(private)/layout.tsx[90m:21[0m
+     1  src/app/api/apps/academy/route.ts[90m:13[0m
+     1  src/app/api/apps/ecommerce/route.ts[90m:13[0m
+     1  src/app/api/apps/invoice/route.ts[90m:13[0m
+     1  src/app/api/apps/logistics/route.ts[90m:13[0m
+     1  src/app/api/apps/user-list/route.ts[90m:13[0m
+     1  src/app/api/pages/faq/route.ts[90m:13[0m
+     1  src/app/api/pages/pricing/route.ts[90m:13[0m
+     1  src/app/api/pages/profile/route.ts[90m:13[0m
+     1  src/app/api/pages/widget-examples/route.ts[90m:13[0m
+     9  src/app/server/actions.ts[90m:9[0m
+     1  src/redux-store/slices/calendar.ts[90m:10[0m
+     7  src/redux-store/slices/chat.ts[90m:9[0m
+     1  src/redux-store/slices/email.ts[90m:8[0m
+    12  src/redux-store/slices/kanban.ts[90m:8[0m
+     9  src/views/apps/kanban/KanbanBoard.tsx[90m:38[0m

@@ -68,6 +68,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('reports/dashboard', [ReportController::class, 'dashboard'])
         ->middleware('role:super-admin,admin,cashier');
 
+    Route::get('reports/daily-collection', [ReportController::class, 'dailyCollection'])
+        ->middleware('role:super-admin,admin,cashier');
+
+    Route::get('reports/daily-collection/csv', [ReportController::class, 'dailyCollectionCsv'])
+        ->middleware('role:super-admin,admin,cashier');
+
+    Route::get('reports/daily-collection/pdf', [ReportController::class, 'dailyCollectionPdf'])
+        ->middleware('role:super-admin,admin,cashier');
+
+    Route::get('reports/customer-ledger', [ReportController::class, 'customerLedger'])
+        ->middleware('role:super-admin,admin,cashier');
+
+    Route::get('reports/installments/pending', [ReportController::class, 'pendingInstallments'])
+        ->middleware('role:super-admin,admin,cashier');
+
+    Route::get('reports/installments/overdue', [ReportController::class, 'overdueInstallments'])
+        ->middleware('role:super-admin,admin,cashier');
 
     
     Route::get('digital-metal-masters/logs', [DigitalMetalMasterController::class, 'getAllLogs']);

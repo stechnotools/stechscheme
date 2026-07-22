@@ -239,6 +239,8 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
   const [editingInstallment, setEditingInstallment] = useState<NonNullable<MembershipDetail['installments']>[number] | null>(null)
   const [editWeight, setEditWeight] = useState('')
   const [editPenalty, setEditPenalty] = useState('')
+  const [editPaidDate, setEditPaidDate] = useState('')
+  const [editPayableAmount, setEditPayableAmount] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -348,6 +350,8 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     setEditingInstallment(item)
     setEditWeight(String(item.manual_weight ?? item.weight ?? ''))
     setEditPenalty(String(item.penalty ?? '0'))
+    setEditPaidDate(item.paid_date ? item.paid_date.slice(0, 10) : '')
+    setEditPayableAmount(String(item.amount ?? ''))
     setEditError(null)
   }
 
@@ -362,6 +366,13 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
 
     const weightValue = Number(editWeight)
     const penaltyValue = Number(editPenalty || 0)
+
+    const payableAmountValue = Number(editPayableAmount || 0)
+
+    if (!Number.isFinite(payableAmountValue) || payableAmountValue < 0) {
+      setEditError('Enter a valid payable amount.')
+      return
+    }
 
     if (!Number.isFinite(weightValue) || weightValue < 0) {
       setEditError('Enter a valid weight.')
@@ -383,9 +394,9 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
           membership_id: membership.id,
           installment_no: editingInstallment.installment_no,
           due_date: editingInstallment.due_date,
-          amount: Number(editingInstallment.amount ?? 0),
+          amount: payableAmountValue,
           paid: editingInstallment.paid,
-          paid_date: editingInstallment.paid_date ?? null,
+          paid_date: editPaidDate || null,
           penalty: penaltyValue,
           manual_weight: weightValue
         })
@@ -681,9 +692,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                             <TableCell align='right' sx={{ fontWeight: 600 }}>Weight (g)</TableCell>
                           )}
                           <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                          {isWeightScheme && (
-                            <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
-                          )}
+                          <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -729,15 +738,13 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                                   <Chip size='small' label='Pending' color='warning' variant='tonal' />
                                 )}
                               </TableCell>
-                              {isWeightScheme && (
-                                <TableCell align='right'>
-                                  {item.paid && (
-                                    <IconButton size='small' color='primary' onClick={() => openEditInstallment(item)}>
-                                      <i className='ri-edit-line' style={{ fontSize: '1.1rem' }} />
-                                    </IconButton>
-                                  )}
-                                </TableCell>
-                              )}
+                              <TableCell align='right'>
+                                {item.paid && (
+                                  <IconButton size='small' color='primary' onClick={() => openEditInstallment(item)}>
+                                    <i className='ri-edit-line' style={{ fontSize: '1.1rem' }} />
+                                  </IconButton>
+                                )}
+                              </TableCell>
                             </TableRow>
                           )
                         })}
@@ -976,12 +983,20 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
           <Stack spacing={3} sx={{ mt: 1 }}>
             {editError && <Alert severity='error'>{editError}</Alert>}
             <TextField
-              label='Weight (g)'
-              type='number'
-              value={editWeight}
-              onChange={e => setEditWeight(e.target.value)}
+              label='Paid Date'
+              type='date'
+              value={editPaidDate}
+              onChange={e => setEditPaidDate(e.target.value)}
               fullWidth
+              InputLabelProps={{ shrink: true }}
               autoFocus
+            />
+            <TextField
+              label='Payable Amount'
+              type='number'
+              value={editPayableAmount}
+              onChange={e => setEditPayableAmount(e.target.value)}
+              fullWidth
             />
             <TextField
               label='Penalty'
@@ -990,6 +1005,15 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
               onChange={e => setEditPenalty(e.target.value)}
               fullWidth
             />
+            {isWeightScheme && (
+              <TextField
+                label='Weight (g)'
+                type='number'
+                value={editWeight}
+                onChange={e => setEditWeight(e.target.value)}
+                fullWidth
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
