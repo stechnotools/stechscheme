@@ -555,7 +555,7 @@ return {
               <Grid size={{ xs: 6 }}>
                 <Button
                   component={Link}
-                  href='/subscriptions/create'
+                  href='/membership/create'
                   variant='outlined'
                   fullWidth
                   className='flex flex-col items-center gap-2 py-4'

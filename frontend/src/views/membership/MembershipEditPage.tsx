@@ -37,6 +37,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
 import { usePageLoading } from '@/contexts/pageLoadingContext'
+import { usePermissions } from '@/hooks/usePermissions'
 import { CustomerModalForm } from '../customers/CustomerModalForm'
 import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
@@ -69,12 +70,15 @@ type MembershipLookup = {
   membership_no?: string | null
   card_no?: string | null
   card_reference?: string | null
+  card_issued_at?: string | null
+  user_id?: number | null
   start_date?: string
   maturity_date?: string
   total_paid?: string | number
   status?: string
   customer?: { id: number; name?: string | null; mobile: string; email?: string | null } | null
   scheme?: SchemeOption | null
+  user?: { id: number; name?: string | null } | null
   installments?: InstallmentItem[]
   passbook_no?: string | null
   ticket_no?: string | null
@@ -259,17 +263,25 @@ const inputSx = {
 
 const summaryPair = (label: string, value: string | number) => ({ label, value })
 
-const SubscriptionCreatePage = () => {
+const MembershipEditPage = ({ membershipId }: { membershipId?: number } = {}) => {
   const customerFormRef = useRef<import('../customers/CustomerModalForm').CustomerModalFormHandle>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const initialMembershipId = searchParams.get('membership_id')
+  const isEditMode = Boolean(membershipId)
+  const initialMembershipId = searchParams.get('membership_id') || (membershipId ? String(membershipId) : null)
   const initialInstallmentId = searchParams.get('installment_id')
   const searchAbortRef = useRef<AbortController | null>(null)
   const customerDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const { data: session, status } = useSession()
   const accessToken = (session as { accessToken?: string } | null)?.accessToken
+  const { roles: userRoles, isSuperAdmin } = usePermissions()
+
+  // Editing Scheme Value triggers a destructive full schedule reset (regenerate-schedule),
+  // so it's restricted to the same roles allowed to hit that endpoint server-side
+  // (routes/api.php: role:super-admin,admin,cashier) — kept in sync manually since there's
+  // no shared source of truth for role lists between the two apps.
+  const canEditSchemeValue = isSuperAdmin || userRoles.includes('admin') || userRoles.includes('cashier')
 
   const [accountSearch, setAccountSearch] = useState('')
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
@@ -343,6 +355,23 @@ const SubscriptionCreatePage = () => {
   const [success, setSuccess] = useState<string | null>(null)
   const { startLoading, stopLoading } = usePageLoading()
 
+  // Edit page's Installment Details starts out showing paid history; editing Scheme Value or
+  // Payable Amount flips this to reset the table to the to-be-paid view, starting from the
+  // first unpaid installment.
+  const [paymentInputsTouched, setPaymentInputsTouched] = useState(false)
+
+  // Tracks edits to the Scheme Value field specifically (not Payable Amount, which also
+  // flips paymentInputsTouched) — only a genuine Scheme Value edit should trigger the
+  // backend's full installment-schedule regeneration on Save.
+  const [schemeValueTouched, setSchemeValueTouched] = useState(false)
+
+  // Confirmation dialog for the destructive schedule reset — collects the mandatory
+  // reason the regenerate-schedule endpoint requires before Save can proceed.
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
+  const [resetReason, setResetReason] = useState('')
+
+  const [deleting, setDeleting] = useState(false)
+
   const request = useCallback(
     async <T,>(path: string, init?: RequestInit): Promise<T> => {
       if (!accessToken) throw new Error('Missing access token')
@@ -403,8 +432,19 @@ const SubscriptionCreatePage = () => {
       setSelectedInstallmentIds(
         preferredId && pending.some(item => item.id === preferredId) ? [preferredId] : pending[0] ? [pending[0].id] : []
       )
+
+      setSalesman(selected.user?.name || 'None')
+      setPaymentInputsTouched(false)
+      setSchemeValueTouched(false)
+
+      // In Edit mode, "Joining Date" represents this membership's start_date (its helper text
+      // says as much) — initialize it from the loaded record instead of leaving it at today's
+      // date, so opening Edit and saving without touching it doesn't silently move start_date.
+      if (isEditMode && selected.start_date) {
+        setPaymentDate(selected.start_date.slice(0, 10))
+      }
     },
-    [loadMembership, request]
+    [isEditMode, loadMembership, request]
   )
 
   useEffect(() => {
@@ -467,7 +507,7 @@ return {
 
         await applyMembershipSelection(membership, initialInstallmentId)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load subscription.')
+        setError(err instanceof Error ? err.message : 'Failed to load membership.')
       } finally {
         setLoading(false)
         stopLoading()
@@ -501,7 +541,7 @@ return {
     return installment?.amount != null ? Number(installment.amount) : null
   }, [activeMembership])
 
-  const currentInstallmentValue = activeMembership
+  const currentInstallmentValue = activeMembership && !isEditMode
     ? Number(activeInstallmentValue ?? selectedScheme?.installment_value ?? 0)
     : Number(editableInstallmentValue || selectedScheme?.installment_value || 0)
 
@@ -517,19 +557,22 @@ return {
     }, 0)
   }, [activeMembership])
 
-  const payableLimit = activeMembership
+  // A Scheme Value edit replaces the old schedule (and its remaining balance) with a brand-new
+  // one sized to the scheme's total_installments — so the payable cap must switch to that full
+  // new capacity instead of whatever was left unpaid under the OLD per-installment amount.
+  const payableLimit = activeMembership && !(isEditMode && schemeValueTouched)
     ? remainingPayableAmount
     : Number(selectedScheme?.total_installments || 0) * currentInstallmentValue
 
   const payableAmountError = useMemo(() => {
-    if (!selectedScheme || isWeightScheme || !payableAmount) return null
+    if (!selectedScheme || !payableAmount) return null
 
     const enteredAmount = Number(payableAmount || 0)
 
     if (enteredAmount > payableLimit) {
-      const label = activeMembership ? 'remaining payable amount' : 'total installment amount'
+      const label = activeMembership && !(isEditMode && schemeValueTouched) ? 'remaining payable amount' : 'total installment amount'
 
-      
+
 return `Payable amount (${currencyFormatter.format(enteredAmount)}) cannot be greater than the ${label} (${currencyFormatter.format(payableLimit)}).`
     }
 
@@ -540,16 +583,16 @@ return `Payable amount (${currencyFormatter.format(enteredAmount)}) cannot be gr
     }
 
     return null
-  }, [activeMembership, currentInstallmentValue, payableAmount, payableLimit, selectedScheme, isWeightScheme])
+  }, [activeMembership, currentInstallmentValue, isEditMode, payableAmount, payableLimit, schemeValueTouched, selectedScheme])
 
   useEffect(() => {
     if (selectedScheme) {
       const val = Number(activeMembership ? activeInstallmentValue ?? selectedScheme.installment_value ?? 0 : selectedScheme.installment_value || 0).toFixed(2)
 
       setEditableInstallmentValue(val)
-      setPayableAmount(val)
+      setPayableAmount(isEditMode && activeMembership ? Number(activeMembership.total_paid || 0).toFixed(2) : val)
     }
-  }, [activeInstallmentValue, activeMembership, selectedScheme])
+  }, [activeInstallmentValue, activeMembership, isEditMode, selectedScheme])
 
   // Auto-sync first payment method amount when payableAmount changes
   useEffect(() => {
@@ -627,15 +670,46 @@ return null
     const enteredAmount = Number(payableAmount || 0)
 
     if (activeMembership) {
+      // Editing Scheme Value rebuilds the entire schedule server-side (regenerateInstallments()),
+      // so the preview must be synthesized fresh too — slicing the existing pending installments
+      // would cap the row count at however many happened to be pending under the OLD schedule.
+      if (isEditMode && schemeValueTouched) {
+        const numInstallments = installmentVal > 0 && enteredAmount > 0
+          ? Math.max(1, Math.floor(enteredAmount / installmentVal))
+          : 1
+
+        // Joining Date (paymentDate) is what actually gets sent as the new start_date on
+        // Save — preview due dates off it, not the membership's old, about-to-be-replaced
+        // start_date, so the preview matches what the reset will actually produce.
+        const rows: InstallmentItem[] = []
+
+        for (let i = 0; i < numInstallments; i++) {
+          rows.push({
+            id: -(i + 1),
+            installment_no: i + 1,
+            due_date: addMonthsToDate(paymentDate, i),
+            paid: false,
+            amount: installmentVal,
+            penalty: 0
+          })
+        }
+
+
+return rows
+      }
+
+      const applyEditedAmount = (rows: InstallmentItem[]) =>
+        isEditMode ? rows.map(item => ({ ...item, amount: installmentVal })) : rows
+
       if (installmentVal > 0 && enteredAmount > 0) {
         const numInstallments = Math.max(1, Math.floor(enteredAmount / installmentVal))
 
-        
-return pendingInstallments.slice(0, numInstallments)
+
+return applyEditedAmount(pendingInstallments.slice(0, numInstallments))
       }
 
-      
-return pendingInstallments.slice(0, 1)
+
+return applyEditedAmount(pendingInstallments.slice(0, 1))
     }
 
     if (!isFirstMembershipMode) return []
@@ -669,9 +743,38 @@ return rows
         penalty: 0
       }
     ]
-  }, [activeMembership, currentInstallmentValue, editableInstallmentValue, isFirstMembershipMode, payableAmount, paymentDate, pendingInstallments, selectedScheme])
+  }, [activeMembership, currentInstallmentValue, editableInstallmentValue, isEditMode, isFirstMembershipMode, payableAmount, paymentDate, pendingInstallments, schemeValueTouched, selectedScheme])
 
   const selectedRows = useMemo(() => tableRows.filter(item => selectedInstallmentIds.includes(item.id)), [selectedInstallmentIds, tableRows])
+
+  // Edit mode starts by showing paid history. The moment Scheme Value or Payable Amount is
+  // touched, it resets to the to-be-paid view — initialized from the first unpaid installment,
+  // covering however many the edited Payable Amount ÷ Scheme Value works out to — with each
+  // shown row's amount reflecting the edited Scheme Value.
+  const displayedInstallmentRows = useMemo(() => {
+    if (!isEditMode || !activeMembership?.installments) return tableRows
+
+    // Scheme Value edits rebuild the whole schedule from scratch — tableRows already holds the
+    // synthesized full preview for that case, so show it as-is instead of slicing the old rows.
+    if (schemeValueTouched) return tableRows
+
+    const sorted = [...activeMembership.installments].sort((a, b) => a.installment_no - b.installment_no)
+
+    if (!paymentInputsTouched) {
+      return sorted.filter(item => item.paid)
+    }
+
+    const enteredAmount = Number(payableAmount || 0)
+
+    const numCovered = currentInstallmentValue > 0 && enteredAmount > 0
+      ? Math.max(1, Math.floor(enteredAmount / currentInstallmentValue))
+      : 1
+
+    return sorted
+      .filter(item => !item.paid)
+      .slice(0, numCovered)
+      .map((item, index) => ({ ...item, installment_no: index + 1, amount: currentInstallmentValue }))
+  }, [activeMembership, currentInstallmentValue, isEditMode, paymentInputsTouched, payableAmount, schemeValueTouched, tableRows])
 
   const totals = useMemo(() => {
     const amount = selectedRows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
@@ -763,7 +866,7 @@ return rows
         setSelectedSchemeId('')
         setSelectedInstallmentIds([])
         setAccountSearch(query.trim())
-        setSuccess('New customer ready. Choose scheme and save first subscription.')
+        setSuccess('New customer ready. Choose scheme and save first membership.')
 
         return
       }
@@ -784,7 +887,7 @@ return rows
         setSelectedMembershipId('')
         setSelectedSchemeId('')
         setSelectedInstallmentIds([])
-        setSuccess('Customer found. No active subscription yet, continue with first subscription entry.')
+        setSuccess('Customer found. No active membership yet, continue with first membership entry.')
 
         return
       }
@@ -931,9 +1034,9 @@ return rows
       const membership = await loadMembership(membershipId)
 
       await applyMembershipSelection(membership)
-      setSuccess('Subscription loaded successfully.')
+      setSuccess('Membership loaded successfully.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load subscription.')
+      setError(err instanceof Error ? err.message : 'Failed to load membership.')
     } finally {
       setLoading(false)
     }
@@ -944,6 +1047,8 @@ return rows
     setLastSavedPaymentId(null)
     setSuccess(null)
     setError(null)
+    setPaymentInputsTouched(false)
+    setSchemeValueTouched(false)
 
     const membership = customerMemberships.find(item => String(item.id) === membershipId)
 
@@ -967,7 +1072,48 @@ return rows
     )
   }
 
+  const handleDeleteMembership = async () => {
+    if (!activeMembership) return
+
+    if (!confirm('Are you sure you want to delete this membership? This cannot be undone.')) return
+
+    setDeleting(true)
+    setError(null)
+
+    try {
+      await request(`/memberships/${activeMembership.id}`, { method: 'DELETE' })
+      router.push('/membership')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete membership.')
+      setDeleting(false)
+    }
+  }
+
   const handleSave = async () => {
+    if (activeMembership && isEditMode && schemeValueTouched) {
+      if (!canEditSchemeValue) {
+        setError('You do not have permission to change the Scheme Value for this membership.')
+
+        return
+      }
+
+      setResetReason('')
+      setResetConfirmOpen(true)
+
+      return
+    }
+
+    await performSave()
+  }
+
+  const handleConfirmScheduleReset = async () => {
+    if (!resetReason.trim()) return
+
+    setResetConfirmOpen(false)
+    await performSave(resetReason.trim())
+  }
+
+  const performSave = async (reason?: string) => {
     setSaving(true)
     setError(null)
     setSuccess(null)
@@ -977,7 +1123,7 @@ return rows
         throw new Error(payableAmountError)
       }
 
-      if (activeMembership && payableAmount && Number(payableAmount) > remainingPayableAmount + 0.01) {
+      if (activeMembership && !(isEditMode && schemeValueTouched) && payableAmount && Number(payableAmount) > remainingPayableAmount + 0.01) {
         throw new Error(
           `Payable amount cannot exceed the remaining balance of ${currencyFormatter.format(remainingPayableAmount)}.`
         )
@@ -994,7 +1140,7 @@ return rows
       }
 
       if (!activeMembership) {
-        if (!selectedScheme) throw new Error('Select scheme for first subscription.')
+        if (!selectedScheme) throw new Error('Select scheme for first membership.')
         if (!customerMobile.trim()) throw new Error('Choose customer or enter new customer mobile.')
         if (!selectedInstallmentIds.includes(-1)) throw new Error('Select first installment row.')
 
@@ -1029,8 +1175,42 @@ return rows
         const membershipId = response.data.membership?.id
 
         if (customerId && membershipId) {
-          router.push(`/subscriptions/${membershipId}`)
+          router.push(`/membership/${membershipId}`)
         }
+      } else if (isEditMode && schemeValueTouched) {
+        if (!selectedScheme) throw new Error('Select a scheme.')
+        if (!canEditSchemeValue) throw new Error('You do not have permission to change the Scheme Value for this membership.')
+        if (!reason?.trim()) throw new Error('A reason is required to reset the schedule.')
+
+        const newInstallmentValue = Number(editableInstallmentValue || selectedScheme.installment_value || 0)
+        const payablePool = paymentMethods.filter(p => Number(p.amount) > 0).map(p => ({ ...p, amount: Number(p.amount) }))
+        const payableAmountValue = Number(payableAmount || 0)
+
+        // Single atomic call: resets start_date/maturity_date and every installment's payable
+        // value together, optionally records an immediate payment against the freshly
+        // regenerated schedule, and is itself gated/logged/reasoned on the backend
+        // (MembershipController::regenerateSchedule) — no separate PUT + bulk-pay round trip.
+        const response = await request<{ message?: string; data: MembershipLookup }>(
+          `/memberships/${activeMembership.id}/regenerate-schedule`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              installment_value: newInstallmentValue,
+              start_date: paymentDate,
+              reason: reason.trim(),
+              payable_amount: payableAmountValue > 0 ? payableAmountValue : undefined,
+              gateway: paymentMethods[0]?.gateway || 'cash',
+              transaction_id: paymentMethods[0]?.transaction_id || null,
+              payment_date: paymentDate,
+              payments: payablePool.length ? payablePool : undefined
+            })
+          }
+        )
+
+        const refreshedMembership = await loadMembership(activeMembership.id)
+
+        await applyMembershipSelection(refreshedMembership)
+        setSuccess(response.message || 'Membership schedule regenerated successfully.')
       } else {
         if (!selectedInstallmentIds.length) throw new Error('Select installment rows.')
 
@@ -1113,14 +1293,14 @@ return rows
                 <Stack direction={{ xs: 'column', lg: 'row' }} justifyContent='space-between' spacing={2}>
                   <div>
                     <Typography variant='h4' sx={{ color: 'common.white' }}>
-                      {activeMembership ? 'Installment Payment' : 'New Enrollment'}
+                      {isEditMode ? 'Edit Membership' : activeMembership ? 'Installment Payment' : 'New Enrollment'}
                     </Typography>
                     <Typography sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.75 }}>
-                      Subscription management and installment entry.
+                      Membership management and installment entry.
                     </Typography>
                   </div>
                   <Stack direction='row' spacing={1} flexWrap='wrap'>
-                    <Chip label={activeMembership ? 'Existing Subscription' : 'New Subscription'} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'common.white' }} />
+                    <Chip label={activeMembership ? 'Existing Membership' : 'New Membership'} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'common.white' }} />
                     <Chip label={selectedScheme ? `${selectedScheme.name} (${selectedScheme.code})` : 'No scheme selected'} sx={{ bgcolor: 'rgba(255,255,255,0.14)', color: 'common.white' }} />
                   </Stack>
                 </Stack>
@@ -1332,12 +1512,12 @@ return rows
             <Card sx={cardSx}>
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3}>
-                  <Typography variant='h6'>Subscription Entry Details</Typography>
+                  <Typography variant='h6'>Membership Entry Details</Typography>
 
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
                       {customerMemberships.length ? (
-                        <TextField select fullWidth label='Subscription Scheme' value={selectedMembershipId} onChange={event => void handleMembershipChange(event.target.value)} sx={inputSx}>
+                        <TextField select fullWidth label='Membership Scheme' value={selectedMembershipId} onChange={event => void handleMembershipChange(event.target.value)} sx={inputSx}>
                           {customerMemberships.map(item => (
                             <MenuItem key={item.id} value={String(item.id)}>
                               {`${item.scheme?.name || 'Scheme'} - ${item.membership_no || `#${item.id}`}`}
@@ -1345,7 +1525,7 @@ return rows
                           ))}
                         </TextField>
                       ) : (
-                        <TextField select fullWidth label='Subscription Scheme' value={selectedSchemeId} onChange={event => handleSchemeChange(event.target.value)} sx={inputSx}>
+                        <TextField select fullWidth label='Membership Scheme' value={selectedSchemeId} onChange={event => handleSchemeChange(event.target.value)} sx={inputSx}>
                           <MenuItem value=''>Select Scheme</MenuItem>
                           {schemes.map(item => (
                             <MenuItem key={item.id} value={String(item.id)}>
@@ -1355,34 +1535,46 @@ return rows
                         </TextField>
                       )}
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        type='date'
-                        label={activeMembership ? 'Payment Date' : 'Joining Date'}
-                        value={paymentDate}
-                        onChange={event => setPaymentDate(event.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        helperText={activeMembership ? 'Back-date this payment if collected on an earlier date' : 'Back-date if this customer actually joined earlier'}
-                        sx={inputSx}
-                      />
-                    </Grid>
+                    {(!activeMembership || isEditMode) && (
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          type='date'
+                          label='Joining Date'
+                          value={paymentDate}
+                          onChange={event => setPaymentDate(event.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          helperText='Back-date if this customer actually joined earlier'
+                          sx={inputSx}
+                        />
+                      </Grid>
+                    )}
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         label='Scheme Value'
                         type='number'
                         disabled={!selectedScheme}
-                        value={activeMembership ? currentInstallmentValue.toFixed(2) : editableInstallmentValue}
-                        onChange={!activeMembership ? (event => {
+                        value={activeMembership && !isEditMode ? currentInstallmentValue.toFixed(2) : editableInstallmentValue}
+                        onChange={!activeMembership || (isEditMode && canEditSchemeValue) ? (event => {
                           setEditableInstallmentValue(event.target.value)
                           setPayableAmount(event.target.value)
+                          setPaymentInputsTouched(true)
+                          setSchemeValueTouched(true)
                         }) : undefined}
                         InputProps={{
-                          readOnly: Boolean(activeMembership),
+                          readOnly: Boolean(activeMembership && !(isEditMode && canEditSchemeValue)),
                           startAdornment: <InputAdornment position='start'>₹</InputAdornment>
                         }}
-                        helperText={activeMembership ? 'Locked to scheme plan for repayment' : 'Editable for first subscription'}
+                        helperText={
+                          isEditMode
+                            ? canEditSchemeValue
+                              ? 'Editable for this membership — resets the whole schedule on save'
+                              : "You don't have permission to change this membership's Scheme Value"
+                            : activeMembership
+                              ? 'Locked to scheme plan for repayment'
+                              : 'Editable for first membership'
+                        }
                         sx={inputSx}
                       />
                     </Grid>
@@ -1393,7 +1585,10 @@ return rows
                         type='number'
                         disabled={!selectedScheme}
                         value={payableAmount}
-                        onChange={event => setPayableAmount(event.target.value)}
+                        onChange={event => {
+                          setPayableAmount(event.target.value)
+                          setPaymentInputsTouched(true)
+                        }}
                         error={Boolean(payableAmountError)}
                         helperText={payableAmountError || 'Amount to be collected from customer'}
                         InputProps={{
@@ -1642,8 +1837,8 @@ return rows
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {tableRows.length ? (
-                          tableRows.map(item => {
+                        {displayedInstallmentRows.length ? (
+                          displayedInstallmentRows.map(item => {
                             return (
                               <TableRow key={item.id} hover>
                                 <TableCell>{item.installment_no}</TableCell>
@@ -1759,7 +1954,7 @@ return rows
                       ) : null}
                       <Divider />
                       <Stack direction='row' justifyContent='space-between' spacing={2}>
-                        <Typography color='text.secondary'>Active Subscriptions</Typography>
+                        <Typography color='text.secondary'>Active Memberships</Typography>
                         <Typography fontWeight={700} textAlign='right'>
                           {customerMemberships.length}
                         </Typography>
@@ -1827,7 +2022,19 @@ return rows
                   <Button variant='outlined' size='large' onClick={handlePrint} disabled={!lastSavedPaymentId} sx={{ borderRadius: 3 }}>
                     Print
                   </Button>
-                  <Button variant='text' size='large' onClick={() => router.push('/subscriptions')}>
+                  {isEditMode && activeMembership ? (
+                    <Button
+                      variant='outlined'
+                      color='error'
+                      size='large'
+                      onClick={() => void handleDeleteMembership()}
+                      disabled={deleting}
+                      sx={{ borderRadius: 3 }}
+                    >
+                      {deleting ? 'Deleting...' : 'Delete'}
+                    </Button>
+                  ) : null}
+                  <Button variant='text' size='large' onClick={() => router.push('/membership')}>
                     Close
                   </Button>
                 </Stack>
@@ -1838,13 +2045,13 @@ return rows
       </Grid>
 
       <Dialog open={ticketSearchOpen} onClose={() => setTicketSearchOpen(false)} fullWidth maxWidth='md'>
-        <DialogTitle>Existing Subscription Search</DialogTitle>
+        <DialogTitle>Existing Membership Search</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
               <TextField
                 fullWidth
-                label='Search Subscription No / Customer / A/C'
+                label='Search Membership No / Customer / A/C'
                 value={ticketSearchText}
                 onChange={event => setTicketSearchText(event.target.value)}
                 sx={inputSx}
@@ -1857,7 +2064,7 @@ return rows
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'action.hover' }}>
-                    <TableCell>Subscription No</TableCell>
+                    <TableCell>Membership No</TableCell>
                     <TableCell>Passbook No</TableCell>
                     <TableCell>Ticket No</TableCell>
                     <TableCell>Customer</TableCell>
@@ -1883,7 +2090,7 @@ return rows
                   {!ticketSearchResults.length ? (
                     <TableRow>
                       <TableCell colSpan={6} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-                        Search for a subscription, passbook, or ticket number.
+                        Search for a membership, passbook, or ticket number.
                       </TableCell>
                     </TableRow>
                   ) : null}
@@ -1967,8 +2174,58 @@ return rows
           />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={resetConfirmOpen} onClose={() => (!saving ? setResetConfirmOpen(false) : undefined)} fullWidth maxWidth='sm'>
+        <DialogTitle>Confirm Schedule Reset</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Alert severity='warning'>
+              Changing the Scheme Value resets this membership&apos;s schedule from scratch: every installment
+              (including paid history) is deleted and regenerated at the new value, and the start/maturity dates
+              move to match. This cannot be undone.
+            </Alert>
+            <Stack direction='row' justifyContent='space-between'>
+              <Typography color='text.secondary'>New Start Date</Typography>
+              <Typography fontWeight={700}>{formatDate(paymentDate)}</Typography>
+            </Stack>
+            <Stack direction='row' justifyContent='space-between'>
+              <Typography color='text.secondary'>New Maturity Date</Typography>
+              <Typography fontWeight={700}>
+                {formatDate(
+                  selectedScheme?.total_installments
+                    ? addMonthsToDate(paymentDate, Math.max(Number(selectedScheme.total_installments) - 1, 0))
+                    : paymentDate
+                )}
+              </Typography>
+            </Stack>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label='Reason for this change'
+              value={resetReason}
+              onChange={event => setResetReason(event.target.value)}
+              placeholder='e.g. Customer requested a lower monthly value'
+              sx={inputSx}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetConfirmOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant='contained'
+            color='error'
+            onClick={() => void handleConfirmScheduleReset()}
+            disabled={saving || !resetReason.trim()}
+          >
+            {saving ? 'Resetting...' : 'Confirm Reset'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
 
-export default SubscriptionCreatePage
+export default MembershipEditPage

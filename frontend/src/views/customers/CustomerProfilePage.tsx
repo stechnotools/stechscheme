@@ -538,7 +538,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                 </Button>
                 <Button
                   component={Link}
-                  href={`/subscriptions/create?customerId=${customer.id}`}
+                  href={`/membership/create?customerId=${customer.id}`}
                   variant='outlined'
                   size='small'
                   sx={{
@@ -971,7 +971,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                                 </Box>
                                 <Button
                                   component={Link}
-                                  href={`/subscriptions/${membership.id}`}
+                                  href={`/membership/${membership.id}`}
                                   variant='outlined'
                                   size='small'
                                   sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
@@ -1061,7 +1061,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                             <Stack direction='row' spacing={1} alignItems='center' flexShrink={0}>
                               <Button
                                 component={Link}
-                                href={`/subscriptions/${payment.membershipId}`}
+                                href={`/membership/${payment.membershipId}`}
                                 variant='outlined'
                                 size='small'
                                 sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.75rem' }}

@@ -124,6 +124,41 @@ class MembershipService
     }
 
     /**
+     * Update the locked-in per-installment base amount (scheme_snapshot.installment_value)
+     * and rebuild the installment schedule from scratch: every existing installment row
+     * (paid or unpaid) is deleted and replaced with a fresh, all-unpaid schedule sized to
+     * the membership's current scheme. Deleting installments nulls out payments.installment_id
+     * and cascades receipt_details (see add_installment_id_to_payments_table / receipts
+     * migrations) — payment and receipt records themselves are untouched, only their link
+     * to a specific installment row is lost.
+     *
+     * When $startDate is given, start_date/maturity_date move too (same formula create()
+     * uses), so a schedule reset can also correct the opening date in the same operation
+     * instead of leaving it stale relative to the freshly-regenerated due dates.
+     */
+    public function regenerateInstallments(Membership $membership, float $installmentValue, ?string $startDate = null): void
+    {
+        DB::transaction(function () use ($membership, $installmentValue, $startDate) {
+            $scheme = $membership->scheme ?? Scheme::query()->findOrFail($membership->scheme_id);
+
+            $snapshot = $membership->scheme_snapshot ?? [];
+            $snapshot['installment_value'] = $installmentValue;
+            $updates = ['scheme_snapshot' => $snapshot];
+
+            if ($startDate !== null) {
+                $updates['start_date'] = $startDate;
+                $updates['maturity_date'] = $this->resolveMaturityDate($startDate, $scheme);
+            }
+
+            $membership->update($updates);
+
+            $membership->installments()->delete();
+
+            $this->generateInstallments($membership, $scheme, $installmentValue);
+        });
+    }
+
+    /**
      * Recompute maturity_date and every installment's due_date from the
      * membership's (already-updated) start_date, using the same formula
      * generateInstallments()/resolveMaturityDate() use at enrollment — so

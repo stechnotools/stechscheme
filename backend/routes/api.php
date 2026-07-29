@@ -133,6 +133,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('memberships/{id}/force-closing-preview', [MembershipController::class, 'forceClosingPreview']);
     Route::post('memberships/{id}/force-close', [MembershipController::class, 'forceClose']);
     Route::post('memberships/{id}/undo-force-close', [MembershipController::class, 'undoForceClose']);
+    Route::post('memberships/{id}/regenerate-schedule', [MembershipController::class, 'regenerateSchedule'])
+        ->middleware('role:super-admin,admin,cashier');
     Route::post('payments/bulk', [PaymentController::class, 'storeBulk']);
     Route::delete('schemes/{scheme}/maturity-benefits', [SchemeController::class, 'deleteMaturityBenefits']);
 

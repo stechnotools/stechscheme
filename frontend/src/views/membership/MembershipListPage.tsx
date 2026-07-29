@@ -27,6 +27,9 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
 import MenuItem from '@mui/material/MenuItem'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
+
 import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 const MembershipSkeleton = () => (
@@ -125,19 +128,26 @@ const MembershipListPage = ({
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const request = useCallback(
-    async <T,>(path: string) => {
+    async <T,>(path: string, init?: RequestInit) => {
       if (!accessToken) throw new Error('Missing access token')
 
       const response = await fetch(`${resolveBackendApiUrl()}${path}`, {
-        headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` }
+        ...init,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(init?.headers || {})
+        }
       })
 
       const payload = (await response.json().catch(() => null)) as any
 
       if (!response.ok) throw new Error(payload?.message || 'Request failed')
-      
+
 return payload as T
     },
     [accessToken]
@@ -159,10 +169,25 @@ return payload as T
     }
   }, [accessToken, request])
 
+  const handleDelete = async (item: MembershipItem) => {
+    if (!confirm(`Delete membership #${item.id} for ${item.customer?.name || 'this customer'}?`)) return
+
+    setError(null)
+    setSuccess(null)
+
+    try {
+      await request(`/memberships/${item.id}`, { method: 'DELETE' })
+      setSuccess(`Membership #${item.id} deleted successfully.`)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete membership.')
+    }
+  }
+
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
-      
+
 return
     }
 
@@ -251,12 +276,12 @@ return matchesStatus && matchesSearch
                   {title}
                 </Typography>
                 <Typography sx={{ color: 'rgba(255,255,255,0.85)', maxWidth: 640 }}>
-                  Manage customer scheme subscriptions, monitor installment progress, and track total investments across your branch network.
+                  Manage customer scheme memberships, monitor installment progress, and track total investments across your branch network.
                 </Typography>
                 <Stack direction='row' spacing={3} sx={{ mt: 2 }} flexWrap='wrap' useFlexGap>
                   <Button
                     component={Link}
-                    href='/subscriptions/create'
+                    href='/membership/create'
                     variant='contained'
                     sx={{
                       bgcolor: 'common.white',
@@ -281,7 +306,7 @@ return matchesStatus && matchesSearch
               >
                 <CardContent>
                   <Typography variant='overline' sx={{ color: 'rgba(255,255,255,0.7)', letterSpacing: 1.2 }}>
-                    Live Subscription Count
+                    Live Membership Count
                   </Typography>
                   <Typography variant='h4' sx={{ color: 'common.white', mt: 1.5 }}>
                     {memberships.length}
@@ -331,13 +356,14 @@ return matchesStatus && matchesSearch
             <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
               {currencyFormatter.format(metrics.totalCount > 0 ? metrics.totalInvestment / metrics.totalCount : 0)}
             </Typography>
-            <Typography variant='body2' color='text.secondary'>Per Subscription</Typography>
+            <Typography variant='body2' color='text.secondary'>Per Membership</Typography>
           </CardContent>
         </Card>
       </Grid>
 
       <Grid size={{ xs: 12 }}>
         {error && <Alert severity='error' sx={{ mb: 6 }}>{error}</Alert>}
+        {success && <Alert severity='success' sx={{ mb: 6 }}>{success}</Alert>}
 
         <Stack spacing={6}>
           {/* Search & Filter Bar */}
@@ -347,7 +373,7 @@ return matchesStatus && matchesSearch
                 <Grid size={{ xs: 12, md: 8 }}>
                   <TextField
                     fullWidth
-                    label='Search subscriptions'
+                    label='Search memberships'
                     placeholder='Search by customer name, mobile, scheme code or ID...'
                     value={search}
                     onChange={e => setSearch(e.target.value)}
@@ -383,10 +409,10 @@ return matchesStatus && matchesSearch
             </CardContent>
           </Card>
 
-          {/* Subscriptions Data Table */}
+          {/* Membership Data Table */}
           <Card>
             <TableContainer component={Paper} elevation={0}>
-              <Table sx={{ minWidth: 1000 }} aria-label='subscriptions table'>
+              <Table sx={{ minWidth: 1000 }} aria-label='memberships table'>
                 <TableHead sx={{ bgcolor: 'action.hover' }}>
                   <TableRow>
                     <TableCell sx={{ pl: 4 }}>ID / Customer</TableCell>
@@ -457,15 +483,18 @@ return matchesStatus && matchesSearch
                           />
                         </TableCell>
                         <TableCell align='right' sx={{ pr: 4 }}>
-                          <Button 
-                            component={Link} 
-                            href={`/subscriptions/${item.id}`}
-                            variant='outlined'
-                            size='small'
-                            startIcon={<i className='ri-eye-line' />}
-                          >
-                            Details
-                          </Button>
+                          <Stack direction='row' spacing={0.5} justifyContent='flex-end'>
+                            <Tooltip title='View Details'>
+                              <IconButton component={Link} href={`/membership/${item.id}`} size='small' color='primary'>
+                                <i className='ri-eye-line' />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title='Delete'>
+                              <IconButton size='small' color='error' onClick={() => void handleDelete(item)}>
+                                <i className='ri-delete-bin-line' />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     )
@@ -475,8 +504,8 @@ return matchesStatus && matchesSearch
                     <TableRow>
                       <TableCell colSpan={7} align='center' sx={{ py: 15 }}>
                         <Box sx={{ textAlign: 'center' }}>
-                          <i className='ri-subscription-line' style={{ fontSize: 48, color: 'var(--mui-palette-text-disabled)' }} />
-                          <Typography variant='h6' color='text.secondary' sx={{ mt: 2 }}>No subscriptions found.</Typography>
+                          <i className='ri-file-list-3-line' style={{ fontSize: 48, color: 'var(--mui-palette-text-disabled)' }} />
+                          <Typography variant='h6' color='text.secondary' sx={{ mt: 2 }}>No memberships found.</Typography>
                           <Typography variant='body2' color='text.disabled'>Try a different search term or check another status group.</Typography>
                         </Box>
                       </TableCell>

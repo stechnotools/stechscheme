@@ -38,12 +38,12 @@ const verticalMenuData = (_dictionary: Awaited<ReturnType<typeof getDictionary>>
       ]
     },
     {
-      label: 'Gold SIP',
+      label: 'Membership',
       icon: 'ri-vip-crown-line',
       children: [
-        { label: 'Subscription Entry', href: '/subscriptions/create', permission: 'membership.create' },
-        { label: 'Subscription List', href: '/subscriptions', permission: 'membership.active' },
-        { label: 'Scheme Opening Entry', href: '/subscriptions/opening', permission: 'membership.opening' }
+        { label: 'Membership Entry', href: '/membership/create', permission: 'membership.create' },
+        { label: 'Membership List', href: '/membership', permission: 'membership.active' },
+        { label: 'Scheme Opening Entry', href: '/membership/opening', permission: 'membership.opening' }
       ]
     },
 

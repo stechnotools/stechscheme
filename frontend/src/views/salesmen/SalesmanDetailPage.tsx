@@ -582,7 +582,7 @@ const SalesmanDetailPage = ({ salesmanId }: { salesmanId: number }) => {
                     <TableRow
                       key={m.id}
                       hover
-                      onClick={() => router.push(`/subscriptions/${m.id}`)}
+                      onClick={() => router.push(`/membership/${m.id}`)}
                       sx={{ cursor: 'pointer' }}
                     >
                       <TableCell>{m.customer?.name ?? '—'}</TableCell>

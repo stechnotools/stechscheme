@@ -584,7 +584,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' alignItems={{ xs: 'flex-start', md: 'center' }} spacing={4}>
               <Stack spacing={2}>
                 <Chip
-                  label={membership.membership_no || `Subscription #${membership.id}`}
+                  label={membership.membership_no || `Membership #${membership.id}`}
                   sx={{ alignSelf: 'flex-start', bgcolor: 'rgba(255,255,255,0.16)', color: 'common.white', fontWeight: 700 }}
                 />
                 <Typography variant='h3' sx={{ color: 'common.white', fontWeight: 800 }}>
@@ -610,7 +610,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
                     Close Scheme
                   </Button>
                 )}
-                <Button component={Link} href='/subscriptions' variant='contained' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }} size='medium'>
+                <Button component={Link} href='/membership' variant='contained' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }} size='medium'>
                   Back to List
                 </Button>
               </Stack>
@@ -1117,4 +1117,3 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
 }
 
 export default MembershipDetailPage
-
