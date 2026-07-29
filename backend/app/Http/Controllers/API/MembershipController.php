@@ -300,6 +300,16 @@ class MembershipController extends CrudController
         ], 201);
     }
 
+    public function destroy(int $id): JsonResponse
+    {
+        $membership = Membership::query()->findOrFail($id);
+        $this->membershipService->delete($membership);
+
+        return response()->json([
+            'message' => 'Membership deleted successfully.',
+        ]);
+    }
+
     public function enroll(Request $request): JsonResponse
     {
         $validated = $request->validate([

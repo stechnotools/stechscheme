@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Installment;
 use App\Models\Membership;
+use App\Models\Payment;
+use App\Models\PendingPayment;
+use App\Models\SalesmanCommission;
 use App\Models\Scheme;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -113,6 +116,34 @@ class MembershipService
             $this->generateInstallments($membership, $scheme, $installmentAmount);
 
             return $membership->fresh(['customer.kyc', 'user', 'scheme.maturityBenefits', 'installments', 'payments.installment']);
+        });
+    }
+
+    /**
+     * Hard-delete a membership together with the rows that still point at it.
+     * The memberships -> installments relation is restrictive in the database,
+     * so deletes must clear the dependent rows in the right order instead of
+     * relying on the generic controller destroy() path.
+     */
+    public function delete(Membership $membership): void
+    {
+        DB::transaction(function () use ($membership) {
+            $membershipId = $membership->id;
+
+            Payment::query()
+                ->where('membership_id', $membershipId)
+                ->delete();
+
+            PendingPayment::query()
+                ->where('membership_id', $membershipId)
+                ->delete();
+
+            SalesmanCommission::query()
+                ->where('membership_id', $membershipId)
+                ->delete();
+
+            $membership->installments()->delete();
+            $membership->delete();
         });
     }
 
