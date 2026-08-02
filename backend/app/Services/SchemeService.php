@@ -4,9 +4,14 @@ namespace App\Services;
 
 use App\Models\Scheme;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class SchemeService
 {
+    public function __construct(private readonly MembershipService $membershipService)
+    {
+    }
+
     private function preparePayload(array $validated): array
     {
         $schemeName = trim((string) ($validated['name'] ?? ''));
@@ -59,8 +64,18 @@ class SchemeService
 
     public function update(Scheme $scheme, array $validated): Scheme
     {
-        $scheme->update($this->preparePayload($validated));
-        $this->syncSchemeChartOfAccount($scheme);
+        $previousTotalInstallments = (int) $scheme->total_installments;
+
+        DB::transaction(function () use ($scheme, $validated, $previousTotalInstallments) {
+            $scheme->update($this->preparePayload($validated));
+            $this->syncSchemeChartOfAccount($scheme);
+
+            $newTotalInstallments = (int) $scheme->total_installments;
+
+            if ($newTotalInstallments > $previousTotalInstallments) {
+                $this->membershipService->extendInstallmentSchedulesForScheme($scheme, $newTotalInstallments);
+            }
+        });
 
         return $scheme->fresh(['maturityBenefits', 'memberships']);
     }

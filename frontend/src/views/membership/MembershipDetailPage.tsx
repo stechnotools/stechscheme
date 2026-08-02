@@ -443,7 +443,7 @@ const MembershipDetailPage = ({ membershipId }: { membershipId: number }) => {
     if (salesmen.length === 0) {
       try {
         const response = await request<{ data: Array<{ id: number; name: string }> }>(
-          '/users?per_page=100&sort_by=name&sort_direction=asc&status=active'
+          '/salesmen?per_page=100&sort_by=name&sort_direction=asc&status=active'
         )
 
         setSalesmen(response.data)

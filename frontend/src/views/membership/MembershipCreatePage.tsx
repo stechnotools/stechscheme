@@ -414,7 +414,7 @@ const MembershipCreatePage = () => {
       try {
         const [schemeResponse, userResponse, metalResponse] = await Promise.all([
           request<SchemesResponse>('/schemes?per_page=300&sort_by=created_at&sort_direction=desc'),
-          request<UsersResponse>('/users?per_page=100&sort_by=name&sort_direction=asc&status=active'),
+          request<UsersResponse>('/salesmen?per_page=100&sort_by=name&sort_direction=asc&status=active'),
           request<{ success: boolean; data: any[] }>('/digital-metal-masters')
         ])
 

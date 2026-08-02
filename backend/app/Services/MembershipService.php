@@ -226,22 +226,75 @@ class MembershipService
         $rows = [];
 
         for ($index = 1; $index <= $totalInstallments; $index++) {
-            $rows[] = [
-                'membership_id' => $membership->id,
-                'installment_no' => $index,
-                'due_date' => $startDate->copy()->addMonthsNoOverflow($index - 1)->toDateString(),
-                'amount' => $installmentAmount,
-                'paid' => false,
-                'paid_date' => null,
-                'penalty' => 0,
-                'paid_amount' => 0,
-                'balance_amount' => $installmentAmount,
-                'status' => 'PENDING',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            $rows[] = $this->pendingInstallmentRow($membership->id, $index, $startDate, $installmentAmount);
         }
 
         Installment::query()->insert($rows);
+    }
+
+    private function pendingInstallmentRow(int $membershipId, int $installmentNo, Carbon $startDate, float $amount): array
+    {
+        return [
+            'membership_id' => $membershipId,
+            'installment_no' => $installmentNo,
+            'due_date' => $startDate->copy()->addMonthsNoOverflow($installmentNo - 1)->toDateString(),
+            'amount' => $amount,
+            'paid' => false,
+            'paid_date' => null,
+            'penalty' => 0,
+            'paid_amount' => 0,
+            'balance_amount' => $amount,
+            'status' => 'PENDING',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    /**
+     * Scheme edit hook: when a scheme's total_installments is raised, every
+     * still-active subscriber on that scheme (status active/paused) gets the
+     * extra pending installments appended to their existing schedule and their
+     * maturity_date pushed out to match. Existing rows (paid or unpaid) are
+     * never touched — this only ever adds rows, matching how generateInstallments()
+     * numbers and dates a fresh schedule. Scheme edits that lower the count are
+     * intentionally not handled here; shrinking a live subscriber's schedule stays
+     * a manual, per-membership action (see regenerateInstallments()).
+     */
+    public function extendInstallmentSchedulesForScheme(Scheme $scheme, int $newTotalInstallments): int
+    {
+        return DB::transaction(function () use ($scheme, $newTotalInstallments) {
+            return Membership::query()
+                ->where('scheme_id', $scheme->id)
+                ->whereIn('status', ['active', 'paused'])
+                ->with('installments')
+                ->get()
+                ->filter(fn (Membership $membership) => $this->extendInstallmentSchedule($membership, $newTotalInstallments))
+                ->count();
+        });
+    }
+
+    private function extendInstallmentSchedule(Membership $membership, int $newTotalInstallments): bool
+    {
+        $currentMax = (int) ($membership->installments->max('installment_no') ?? 0);
+
+        if ($newTotalInstallments <= $currentMax) {
+            return false;
+        }
+
+        $installmentAmount = (float) ($membership->scheme_snapshot['installment_value'] ?? 0);
+        $startDate = Carbon::parse($membership->start_date);
+        $rows = [];
+
+        for ($index = $currentMax + 1; $index <= $newTotalInstallments; $index++) {
+            $rows[] = $this->pendingInstallmentRow($membership->id, $index, $startDate, $installmentAmount);
+        }
+
+        Installment::query()->insert($rows);
+
+        $membership->update([
+            'maturity_date' => $startDate->copy()->addMonthsNoOverflow($newTotalInstallments - 1)->toDateString(),
+        ]);
+
+        return true;
     }
 }
