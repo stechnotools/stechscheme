@@ -4,16 +4,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
+import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import CardMedia from '@mui/material/CardMedia'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
 import InputAdornment from '@mui/material/InputAdornment'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Dialog from '@mui/material/Dialog'
@@ -24,7 +30,7 @@ import DialogContentText from '@mui/material/DialogContentText'
 import IconButton from '@mui/material/IconButton'
 
 import { usePageLoading } from '@/contexts/pageLoadingContext'
-import { SkeletonCard } from '@/components/SkeletonLoader'
+import { SkeletonTable } from '@/components/SkeletonLoader'
 import { getApiBaseUrl } from '@/libs/runtimeConfig'
 
 type Scheme = {
@@ -362,7 +368,7 @@ const SchemeListPage = () => {
 
       <Grid size={{ xs: 12 }}>
         <Card>
-          <CardContent>
+          <CardContent sx={{ pb: loading || !filteredSchemes.length ? undefined : 0 }}>
             <Stack spacing={3}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent='space-between'>
                 <div>
@@ -378,129 +384,93 @@ const SchemeListPage = () => {
                 />
               </Stack>
 
-              {loading ? (
-                <SkeletonCard count={6} />
-              ) : (
-                <Grid container spacing={3}>
-                {filteredSchemes.map(scheme => (
-                  <Grid key={scheme.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                    <Card
-                      variant='outlined'
-                      sx={{
-                        height: '100%',
-                        borderColor: 'divider',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {scheme.banner_image_path ? (
-                        <CardMedia
-                          component='img'
-                          height='160'
-                          image={scheme.banner_image_path}
-                          alt={`${scheme.name} banner`}
-                          sx={{ objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            height: 100,
-                            background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.08) 50%, rgba(251,191,36,0.12) 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <i className='ri-vip-diamond-line' style={{ fontSize: 32, opacity: 0.18 }} />
-                        </Box>
-                      )}
-                      <CardContent>
-                        <Stack spacing={2.5}>
-                          <Stack direction='row' justifyContent='space-between' spacing={2} alignItems='flex-start'>
-                            <div>
-                              <Typography variant='h6'>{scheme.name}</Typography>
-                              <Typography variant='body2' color='text.secondary'>
-                                {`${scheme.code} • ${scheme.scheme_type}`}
-                              </Typography>
-                            </div>
-                            <Stack direction='row' spacing={0.5} alignItems='center'>
-                              <Chip
-                                size='small'
-                                label={scheme.scheme_type || 'N/A'}
-                                color='secondary'
-                                variant='tonal'
-                                sx={{ mr: 1 }}
-                              />
-                              <IconButton size='small' component={Link} href={`/schemes/${scheme.id}/view`} color='info'>
-                                <i className='ri-eye-line' />
-                              </IconButton>
-                              <IconButton size='small' component={Link} href={`/schemes/${scheme.id}/edit`} color='primary'>
-                                <i className='ri-pencil-line' />
-                              </IconButton>
-                              <IconButton size='small' color='error' onClick={() => handleDeleteClick(scheme)}>
-                                <i className='ri-delete-bin-line' />
-                              </IconButton>
-                            </Stack>
-                          </Stack>
-
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Installment
-                              </Typography>
-                              <Typography fontWeight={700}>
-                                {currencyFormatter.format(Number(scheme.installment_value || 0))}
-                              </Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Duration
-                              </Typography>
-                              <Typography fontWeight={700}>{`${scheme.total_installments} months`}</Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Grace
-                              </Typography>
-                              <Typography fontWeight={700}>{`${scheme.grace_days ?? 0} days`}</Typography>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                              <Typography variant='body2' color='text.secondary'>
-                                Memberships
-                              </Typography>
-                              <Typography fontWeight={700}>{scheme.memberships?.length || 0}</Typography>
-                            </Grid>
-                          </Grid>
-
-                          <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap'>
-                            <Chip
-                              size='small'
-                              label={scheme.allow_overdue ? 'Overdue allowed' : 'Strict due dates'}
-                              color={scheme.allow_overdue ? 'warning' : 'success'}
-                              variant='outlined'
-                            />
-                            <Chip
-                              size='small'
-                              label={`${scheme.memberships?.length || 0} active links`}
-                              variant='outlined'
-                            />
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-
-                {!filteredSchemes.length ? (
-                  <Grid size={{ xs: 12 }}>
-                    <Alert severity='info'>
-                      No schemes found for the current filters.
-                    </Alert>
-                  </Grid>
-                ) : null}
-              </Grid>
-              )}
+              {loading ? <SkeletonTable rows={6} cols={7} /> : null}
             </Stack>
           </CardContent>
+
+          {!loading ? (
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ bgcolor: 'action.hover' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Scheme</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Installment</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Grace</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Overdue Policy</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Memberships</TableCell>
+                    <TableCell align='right' sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredSchemes.map(scheme => (
+                    <TableRow key={scheme.id} hover>
+                      <TableCell>
+                        <Stack direction='row' spacing={2} alignItems='center'>
+                          {scheme.banner_image_path ? (
+                            <Avatar variant='rounded' src={scheme.banner_image_path} alt={scheme.name} />
+                          ) : (
+                            <Avatar
+                              variant='rounded'
+                              sx={{
+                                bgcolor: 'transparent',
+                                background: 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(217,119,6,0.1) 50%, rgba(251,191,36,0.14) 100%)'
+                              }}
+                            >
+                              <i className='ri-vip-diamond-line' style={{ fontSize: 20, opacity: 0.5 }} />
+                            </Avatar>
+                          )}
+                          <div>
+                            <Typography fontWeight={600}>{scheme.name}</Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              {scheme.code}
+                            </Typography>
+                          </div>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Chip size='small' label={scheme.scheme_type || 'N/A'} color='secondary' variant='tonal' />
+                      </TableCell>
+                      <TableCell>{currencyFormatter.format(Number(scheme.installment_value || 0))}</TableCell>
+                      <TableCell>{`${scheme.total_installments} months`}</TableCell>
+                      <TableCell>{`${scheme.grace_days ?? 0} days`}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size='small'
+                          label={scheme.allow_overdue ? 'Overdue allowed' : 'Strict due dates'}
+                          color={scheme.allow_overdue ? 'warning' : 'success'}
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>{scheme.memberships?.length || 0}</TableCell>
+                      <TableCell align='right'>
+                        <IconButton size='small' component={Link} href={`/schemes/${scheme.id}/view`} color='info'>
+                          <i className='ri-eye-line' style={{ fontSize: '1.1rem' }} />
+                        </IconButton>
+                        <IconButton size='small' component={Link} href={`/schemes/${scheme.id}/edit`} color='primary'>
+                          <i className='ri-pencil-line' style={{ fontSize: '1.1rem' }} />
+                        </IconButton>
+                        <IconButton size='small' color='error' onClick={() => handleDeleteClick(scheme)}>
+                          <i className='ri-delete-bin-line' style={{ fontSize: '1.1rem' }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {!filteredSchemes.length ? (
+                    <TableRow>
+                      <TableCell colSpan={8}>
+                        <Typography color='text.secondary' sx={{ p: 4, textAlign: 'center' }}>
+                          No schemes found for the current filters.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : null}
         </Card>
       </Grid>
 

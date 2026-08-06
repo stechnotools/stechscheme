@@ -24,6 +24,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import InputAdornment from '@mui/material/InputAdornment'
+import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
@@ -259,6 +260,8 @@ const inputSx = {
 
 const summaryPair = (label: string, value: string | number) => ({ label, value })
 
+const ADD_NEW_SCHEME_OPTION = '__add_new_scheme__'
+
 const MembershipCreatePage = () => {
   const customerFormRef = useRef<import('../customers/CustomerModalForm').CustomerModalFormHandle>(null)
   const router = useRouter()
@@ -295,12 +298,20 @@ const MembershipCreatePage = () => {
   const [schemeSearchText, setSchemeSearchText] = useState('')
   const [selectedSchemeOption, setSelectedSchemeOption] = useState<SchemeOption | null>(null)
   const schemeSearchAbortRef = useRef<AbortController | null>(null)
+  const [backToPlansAnchor, setBackToPlansAnchor] = useState<HTMLElement | null>(null)
 
   const [salesmanOptions, setSalesmanOptions] = useState<SalesmanOption[]>([])
   const [salesmanSearching, setSalesmanSearching] = useState(false)
   const [salesmanSearchText, setSalesmanSearchText] = useState('')
   const [selectedSalesmanOption, setSelectedSalesmanOption] = useState<SalesmanOption | null>(null)
   const salesmanSearchAbortRef = useRef<AbortController | null>(null)
+
+  const [salesmanFormModalOpen, setSalesmanFormModalOpen] = useState(false)
+  const [salesmanFormName, setSalesmanFormName] = useState('')
+  const [salesmanFormMobile, setSalesmanFormMobile] = useState('')
+  const [salesmanFormEmail, setSalesmanFormEmail] = useState('')
+  const [salesmanFormSaving, setSalesmanFormSaving] = useState(false)
+  const [salesmanFormError, setSalesmanFormError] = useState<string | null>(null)
 
   const [allMemberships, setAllMemberships] = useState<MembershipLookup[]>([])
   const [lookupCustomer, setLookupCustomer] = useState<CustomerLookup | null>(null)
@@ -623,6 +634,12 @@ return null
     return [...activeMembership.installments].filter(item => !item.paid).sort((a, b) => a.installment_no - b.installment_no)
   }, [activeMembership])
 
+  const isMembershipFullyPaid = Boolean(
+    activeMembership && activeMembership.installments?.length && pendingInstallments.length === 0
+  )
+
+  const disabledFieldSx = isMembershipFullyPaid ? { opacity: 0.55, pointerEvents: 'none' as const } : undefined
+
   const tableRows = useMemo(() => {
     if (!selectedScheme) return []
 
@@ -675,6 +692,14 @@ return rows
   }, [activeMembership, currentInstallmentValue, editableInstallmentValue, isFirstMembershipMode, payableAmount, paymentDate, pendingInstallments, selectedScheme])
 
   const selectedRows = useMemo(() => tableRows.filter(item => selectedInstallmentIds.includes(item.id)), [selectedInstallmentIds, tableRows])
+
+  const displayInstallmentRows = useMemo(() => {
+    if (activeMembership?.installments?.length) {
+      return [...activeMembership.installments].sort((a, b) => a.installment_no - b.installment_no)
+    }
+
+    return tableRows
+  }, [activeMembership, tableRows])
 
   const totals = useMemo(() => {
     const amount = selectedRows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
@@ -1029,6 +1054,14 @@ return rows
     setSuccess(null)
     setError(null)
 
+    if (membershipId === ADD_NEW_SCHEME_OPTION) {
+      setSelectedSchemeOption(null)
+      setSelectedSchemeId('')
+      setSelectedInstallmentIds([])
+
+      return
+    }
+
     const membership = customerMemberships.find(item => String(item.id) === membershipId)
 
     if (!membership) return
@@ -1044,6 +1077,49 @@ return rows
     setSelectedSchemeOption(scheme)
     setSelectedSchemeId(scheme ? String(scheme.id) : '')
     setSelectedInstallmentIds(scheme ? [-1] : [])
+  }
+
+  const openCreateSalesman = () => {
+    setSalesmanFormName(salesmanSearchText)
+    setSalesmanFormMobile('')
+    setSalesmanFormEmail('')
+    setSalesmanFormError(null)
+    setSalesmanFormModalOpen(true)
+  }
+
+  const handleCreateSalesman = async () => {
+    if (!salesmanFormName.trim()) {
+      setSalesmanFormError('Name is required.')
+
+      return
+    }
+
+    setSalesmanFormSaving(true)
+    setSalesmanFormError(null)
+
+    try {
+      const response = await request<{ data: SalesmanOption }>('/salesmen', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: salesmanFormName.trim(),
+          mobile: salesmanFormMobile.trim() || null,
+          email: salesmanFormEmail.trim() || null,
+          status: 'active'
+        })
+      })
+
+      const created = response.data
+
+      setSalesmanOptions(prev => [created, ...prev])
+      setSelectedSalesmanOption(created)
+      setSalesman(created.name)
+      setSalesmanFormModalOpen(false)
+      setSuccess('Salesman created successfully.')
+    } catch (err) {
+      setSalesmanFormError(err instanceof Error ? err.message : 'Failed to create salesman.')
+    } finally {
+      setSalesmanFormSaving(false)
+    }
   }
 
   const handleToggleRow = (rowId: number) => {
@@ -1114,7 +1190,11 @@ return rows
         const membershipId = response.data.membership?.id
 
         if (customerId && membershipId) {
-          router.push(`/subscriptions/${membershipId}`)
+          const newMembership = await loadMembership(membershipId)
+
+          await applyMembershipSelection(newMembership)
+          setLastSavedPaymentId(response.data.payment?.receipt_id?.toString() || null)
+          setSuccess('Scheme enrolled successfully.')
         }
       } else {
         if (!selectedInstallmentIds.length) throw new Error('Select installment rows.')
@@ -1214,6 +1294,25 @@ return rows
             </CardContent>
           </Card>
         </Grid>
+
+        {isMembershipFullyPaid ? (
+          <Grid size={{ xs: 12 }}>
+            <Alert
+              severity='success'
+              action={
+                <Button
+                  color='inherit'
+                  size='small'
+                  onClick={() => router.push(`/membership/${activeMembership!.id}`)}
+                >
+                  View Details
+                </Button>
+              }
+            >
+              All installments have been completed for this membership. The entry form below is disabled — click &ldquo;View Details&rdquo; for more information.
+            </Alert>
+          </Grid>
+        ) : null}
 
         {error ? (
           <Grid size={{ xs: 12 }}>
@@ -1422,49 +1521,88 @@ return rows
 
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      {customerMemberships.length ? (
-                        <TextField select fullWidth label='Membership Scheme' value={selectedMembershipId} onChange={event => void handleMembershipChange(event.target.value)} sx={inputSx}>
-                          {customerMemberships.map(item => (
-                            <MenuItem key={item.id} value={String(item.id)}>
-                              {`${item.scheme?.name || 'Scheme'} - ${item.membership_no || `#${item.id}`}`}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                      {customerMemberships.length && selectedMembershipId !== ADD_NEW_SCHEME_OPTION ? (
+                        <Stack spacing={1}>
+                          <TextField select fullWidth label='Membership Scheme' value={selectedMembershipId} onChange={event => void handleMembershipChange(event.target.value)} sx={inputSx}>
+                            {customerMemberships.map(item => (
+                              <MenuItem key={item.id} value={String(item.id)}>
+                                {`${item.scheme?.name || 'Scheme'} - ${item.membership_no || `#${item.id}`}`}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <Button
+                            size='small'
+                            onClick={() => void handleMembershipChange(ADD_NEW_SCHEME_OPTION)}
+                            sx={{ alignSelf: 'flex-start' }}
+                          >
+                            + Add New Scheme
+                          </Button>
+                        </Stack>
                       ) : (
-                        <Autocomplete
-                          fullWidth
-                          options={schemeOptions}
-                          loading={schemeSearching}
-                          getOptionKey={option => option.id}
-                          getOptionLabel={option => `${option.name} (${option.code})`}
-                          isOptionEqualToValue={(option, value) => option.id === value.id}
-                          value={selectedSchemeOption}
-                          onChange={(_, value) => handleSchemeChange(value)}
-                          onInputChange={(_, value, reason) => {
-                            if (reason === 'input') setSchemeSearchText(value)
-                          }}
-                          filterOptions={options => options}
-                          renderInput={params => (
-                            <TextField
-                              {...params}
-                              label='Membership Scheme'
-                              placeholder='Search scheme...'
-                              InputProps={{
-                                ...params.InputProps,
-                                endAdornment: (
-                                  <>
-                                    {schemeSearching ? <CircularProgress color='inherit' size={16} /> : null}
-                                    {params.InputProps.endAdornment}
-                                  </>
-                                )
-                              }}
-                              sx={inputSx}
-                            />
-                          )}
-                        />
+                        <Stack spacing={1}>
+                          <Autocomplete
+                            fullWidth
+                            options={schemeOptions}
+                            loading={schemeSearching}
+                            getOptionKey={option => option.id}
+                            getOptionLabel={option => `${option.name} (${option.code})`}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            value={selectedSchemeOption}
+                            onChange={(_, value) => handleSchemeChange(value)}
+                            onInputChange={(_, value, reason) => {
+                              if (reason === 'input') setSchemeSearchText(value)
+                            }}
+                            filterOptions={options => options}
+                            renderInput={params => (
+                              <TextField
+                                {...params}
+                                label='Membership Scheme'
+                                placeholder='Search scheme...'
+                                InputProps={{
+                                  ...params.InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {schemeSearching ? <CircularProgress color='inherit' size={16} /> : null}
+                                      {params.InputProps.endAdornment}
+                                    </>
+                                  )
+                                }}
+                                sx={inputSx}
+                              />
+                            )}
+                          />
+                          {customerMemberships.length ? (
+                            <>
+                              <Button
+                                size='small'
+                                onClick={event => setBackToPlansAnchor(event.currentTarget)}
+                                sx={{ alignSelf: 'flex-start' }}
+                              >
+                                ← Back to existing plans
+                              </Button>
+                              <Menu
+                                anchorEl={backToPlansAnchor}
+                                open={Boolean(backToPlansAnchor)}
+                                onClose={() => setBackToPlansAnchor(null)}
+                              >
+                                {customerMemberships.map(item => (
+                                  <MenuItem
+                                    key={item.id}
+                                    onClick={() => {
+                                      setBackToPlansAnchor(null)
+                                      void handleMembershipChange(String(item.id))
+                                    }}
+                                  >
+                                    {`${item.scheme?.name || 'Scheme'} - ${item.membership_no || `#${item.id}`}`}
+                                  </MenuItem>
+                                ))}
+                              </Menu>
+                            </>
+                          ) : null}
+                        </Stack>
                       )}
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 12, md: 6 }} sx={disabledFieldSx}>
                       <TextField
                         fullWidth
                         type='date'
@@ -1476,7 +1614,7 @@ return rows
                         sx={inputSx}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 12, md: 6 }} sx={disabledFieldSx}>
                       <TextField
                         fullWidth
                         label='Scheme Value'
@@ -1495,7 +1633,7 @@ return rows
                         sx={inputSx}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 12, md: 6 }} sx={disabledFieldSx}>
                       <TextField
                         fullWidth
                         label='Payable Amount'
@@ -1512,7 +1650,7 @@ return rows
                       />
                     </Grid>
                     {isWeightScheme && (
-                      <Grid size={{ xs: 12, md: 6 }}>
+                      <Grid size={{ xs: 12, md: 6 }} sx={disabledFieldSx}>
                         <TextField
                           fullWidth
                           label='Weight (gm)'
@@ -1526,51 +1664,66 @@ return rows
                         />
                       </Grid>
                     )}
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 12, md: 6 }} sx={disabledFieldSx}>
                       <TextField fullWidth label='Late Fee' value={totals.lateFee.toFixed(2)} InputProps={{ readOnly: true }} sx={inputSx} />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <Autocomplete
-                        fullWidth
-                        options={salesmanOptions}
-                        loading={salesmanSearching}
-                        getOptionKey={option => option.id}
-                        getOptionLabel={option => option.name}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        value={selectedSalesmanOption}
-                        onChange={(_, value) => {
-                          setSelectedSalesmanOption(value)
-                          setSalesman(value ? value.name : 'None')
-                        }}
-                        onInputChange={(_, value, reason) => {
-                          if (reason === 'input') setSalesmanSearchText(value)
-                        }}
-                        filterOptions={options => options}
-                        renderInput={params => (
-                          <TextField
-                            {...params}
-                            label='Salesman'
-                            placeholder='Search salesman...'
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {salesmanSearching ? <CircularProgress color='inherit' size={16} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              )
-                            }}
-                            sx={inputSx}
-                          />
-                        )}
-                      />
+                    <Grid size={{ xs: 12, md: 4 }} sx={disabledFieldSx}>
+                      <Stack direction='row' spacing={1} alignItems='flex-start'>
+                        <Autocomplete
+                          fullWidth
+                          options={salesmanOptions}
+                          loading={salesmanSearching}
+                          getOptionKey={option => option.id}
+                          getOptionLabel={option => option.name}
+                          isOptionEqualToValue={(option, value) => option.id === value.id}
+                          value={selectedSalesmanOption}
+                          onChange={(_, value) => {
+                            setSelectedSalesmanOption(value)
+                            setSalesman(value ? value.name : 'None')
+                          }}
+                          onInputChange={(_, value, reason) => {
+                            if (reason === 'input') setSalesmanSearchText(value)
+                          }}
+                          filterOptions={options => options}
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              label='Salesman'
+                              placeholder='Search salesman...'
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {salesmanSearching ? <CircularProgress color='inherit' size={16} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                )
+                              }}
+                              sx={inputSx}
+                            />
+                          )}
+                        />
+                        <Button
+                          variant='contained'
+                          color='primary'
+                          onClick={openCreateSalesman}
+                          sx={{ height: 56, borderRadius: 0, minWidth: 44 }}
+                        >
+                          +
+                        </Button>
+                      </Stack>
                     </Grid>
                   </Grid>
                 </Stack>
               </CardContent>
             </Card>
 
-            <Card sx={cardSx}>
+            <Card
+              sx={{
+                ...cardSx,
+                ...(isMembershipFullyPaid ? { opacity: 0.55, pointerEvents: 'none' } : null)
+              }}
+            >
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3}>
                   <Typography variant='h6'>Payment Details</Typography>
@@ -1776,10 +1929,21 @@ return rows
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {tableRows.length ? (
-                          tableRows.map(item => {
+                        {displayInstallmentRows.length ? (
+                          displayInstallmentRows.map(item => {
+                            const isBeingPaid = !item.paid && selectedInstallmentIds.includes(item.id)
+
                             return (
-                              <TableRow key={item.id} hover>
+                              <TableRow
+                                key={item.id}
+                                hover
+                                selected={isBeingPaid}
+                                sx={
+                                  isBeingPaid
+                                    ? { bgcolor: 'primary.50', borderLeft: '3px solid', borderLeftColor: 'primary.main' }
+                                    : undefined
+                                }
+                              >
                                 <TableCell>{item.installment_no}</TableCell>
                                 <TableCell>{(Number(item.amount || 0)).toFixed(2)}</TableCell>
                                 <TableCell>{formatDate(item.due_date)}</TableCell>
@@ -1790,9 +1954,9 @@ return rows
                                 )}
                                 <TableCell>
                                   <Chip
-                                    label={item.paid ? 'Paid' : 'Pending'}
+                                    label={item.paid ? 'Paid' : isBeingPaid ? 'Paying Now' : 'Pending'}
                                     size='small'
-                                    color={item.paid ? 'success' : 'warning'}
+                                    color={item.paid ? 'success' : isBeingPaid ? 'primary' : 'warning'}
                                     variant='outlined'
                                   />
                                 </TableCell>
@@ -1952,7 +2116,7 @@ return rows
                     variant='contained'
                     size='large'
                     onClick={() => void handleSave()}
-                    disabled={saving || !selectedRows.length || (!activeMembership && !selectedSchemeId)}
+                    disabled={saving || isMembershipFullyPaid || !selectedRows.length || (!activeMembership && !selectedSchemeId)}
                     sx={{ borderRadius: 3 }}
                   >
                     {saving ? 'Saving...' : 'Save'}
@@ -2099,6 +2263,42 @@ return rows
             onCancel={() => setCustomerFormModalOpen(false)}
           />
         </DialogContent>
+      </Dialog>
+      <Dialog open={salesmanFormModalOpen} onClose={() => (salesmanFormSaving ? null : setSalesmanFormModalOpen(false))} fullWidth maxWidth='xs'>
+        <DialogTitle>Add New Salesman</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {salesmanFormError ? <Alert severity='error'>{salesmanFormError}</Alert> : null}
+            <TextField
+              fullWidth
+              label='Name'
+              value={salesmanFormName}
+              onChange={event => setSalesmanFormName(event.target.value)}
+              sx={inputSx}
+              autoFocus
+            />
+            <TextField
+              fullWidth
+              label='Mobile'
+              value={salesmanFormMobile}
+              onChange={event => setSalesmanFormMobile(event.target.value)}
+              sx={inputSx}
+            />
+            <TextField
+              fullWidth
+              label='Email'
+              value={salesmanFormEmail}
+              onChange={event => setSalesmanFormEmail(event.target.value)}
+              sx={inputSx}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSalesmanFormModalOpen(false)} disabled={salesmanFormSaving}>Cancel</Button>
+          <Button variant='contained' onClick={() => void handleCreateSalesman()} disabled={salesmanFormSaving}>
+            {salesmanFormSaving ? <CircularProgress size={20} color='inherit' /> : 'Save Salesman'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   )
