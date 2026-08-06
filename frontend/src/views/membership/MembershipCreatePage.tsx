@@ -290,8 +290,18 @@ const MembershipCreatePage = () => {
   const [passbookNumber, setPassbookNumber] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
 
-  const [schemes, setSchemes] = useState<SchemeOption[]>([])
-  const [salesmen, setSalesmen] = useState<SalesmanOption[]>([])
+  const [schemeOptions, setSchemeOptions] = useState<SchemeOption[]>([])
+  const [schemeSearching, setSchemeSearching] = useState(false)
+  const [schemeSearchText, setSchemeSearchText] = useState('')
+  const [selectedSchemeOption, setSelectedSchemeOption] = useState<SchemeOption | null>(null)
+  const schemeSearchAbortRef = useRef<AbortController | null>(null)
+
+  const [salesmanOptions, setSalesmanOptions] = useState<SalesmanOption[]>([])
+  const [salesmanSearching, setSalesmanSearching] = useState(false)
+  const [salesmanSearchText, setSalesmanSearchText] = useState('')
+  const [selectedSalesmanOption, setSelectedSalesmanOption] = useState<SalesmanOption | null>(null)
+  const salesmanSearchAbortRef = useRef<AbortController | null>(null)
+
   const [allMemberships, setAllMemberships] = useState<MembershipLookup[]>([])
   const [lookupCustomer, setLookupCustomer] = useState<CustomerLookup | null>(null)
   const [customerMemberships, setCustomerMemberships] = useState<MembershipLookup[]>([])
@@ -412,11 +422,7 @@ const MembershipCreatePage = () => {
 
     const bootstrap = async () => {
       try {
-        const [schemeResponse, userResponse, metalResponse] = await Promise.all([
-          request<SchemesResponse>('/schemes?per_page=300&sort_by=created_at&sort_direction=desc'),
-          request<UsersResponse>('/salesmen?per_page=100&sort_by=name&sort_direction=asc&status=active'),
-          request<{ success: boolean; data: any[] }>('/digital-metal-masters')
-        ])
+        const metalResponse = await request<{ success: boolean; data: any[] }>('/digital-metal-masters')
 
         const activeMetals = (metalResponse.data || []).filter((m: any) => m.status !== 'inactive')
 
@@ -443,9 +449,6 @@ return {
         }
 
         setMetalRates(mappedMetalRates)
-
-        setSchemes(schemeResponse.data.filter(item => !item.is_closed))
-        setSalesmen(userResponse.data)
       } catch {
         // Keep operator desk usable even if prefetch fails.
       }
@@ -485,8 +488,8 @@ return {
   const selectedScheme = useMemo(() => {
     if (activeMembership?.scheme) return activeMembership.scheme
 
-    return schemes.find(item => item.id === Number(selectedSchemeId)) || null
-  }, [activeMembership?.scheme, schemes, selectedSchemeId])
+    return selectedSchemeOption
+  }, [activeMembership?.scheme, selectedSchemeOption])
 
   const isFirstMembershipMode = !activeMembership && Boolean(customerMobile.trim() || accountSearch.trim() || lookupCustomer)
   const isVariableScheme = (selectedScheme?.no_of_installment_type || '').toLowerCase() === 'variable'
@@ -761,6 +764,7 @@ return rows
         setCustomerMemberships([])
         setSelectedMembershipId('')
         setSelectedSchemeId('')
+        setSelectedSchemeOption(null)
         setSelectedInstallmentIds([])
         setAccountSearch(query.trim())
         setSuccess('New customer ready. Choose scheme and save first subscription.')
@@ -783,6 +787,7 @@ return rows
         setCustomerMemberships([])
         setSelectedMembershipId('')
         setSelectedSchemeId('')
+        setSelectedSchemeOption(null)
         setSelectedInstallmentIds([])
         setSuccess('Customer found. No active subscription yet, continue with first subscription entry.')
 
@@ -884,6 +889,84 @@ return rows
     }
   }, [accessToken, customerInlineSearch, request])
 
+  useEffect(() => {
+    if (!accessToken) return
+
+    const query = schemeSearchText.trim()
+
+    schemeSearchAbortRef.current?.abort()
+    const controller = new AbortController()
+
+    schemeSearchAbortRef.current = controller
+    setSchemeSearching(true)
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        if (controller.signal.aborted) return
+
+        try {
+          const endpoint = query
+            ? `/schemes?per_page=25&search=${encodeURIComponent(query)}`
+            : '/schemes?per_page=25&sort_by=created_at&sort_direction=desc'
+
+          const response = await request<SchemesResponse>(endpoint, { signal: controller.signal })
+
+          if (controller.signal.aborted) return
+
+          setSchemeOptions(response.data.filter(item => !item.is_closed))
+        } catch {
+          if (!controller.signal.aborted) setSchemeOptions([])
+        } finally {
+          if (!controller.signal.aborted) setSchemeSearching(false)
+        }
+      })()
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, [accessToken, schemeSearchText, request])
+
+  useEffect(() => {
+    if (!accessToken) return
+
+    const query = salesmanSearchText.trim()
+
+    salesmanSearchAbortRef.current?.abort()
+    const controller = new AbortController()
+
+    salesmanSearchAbortRef.current = controller
+    setSalesmanSearching(true)
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        if (controller.signal.aborted) return
+
+        try {
+          const endpoint = query
+            ? `/salesmen?per_page=25&status=active&search=${encodeURIComponent(query)}`
+            : '/salesmen?per_page=25&sort_by=name&sort_direction=asc&status=active'
+
+          const response = await request<UsersResponse>(endpoint, { signal: controller.signal })
+
+          if (controller.signal.aborted) return
+
+          setSalesmanOptions(response.data)
+        } catch {
+          if (!controller.signal.aborted) setSalesmanOptions([])
+        } finally {
+          if (!controller.signal.aborted) setSalesmanSearching(false)
+        }
+      })()
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, [accessToken, salesmanSearchText, request])
+
   const handleSelectCustomer = async (customer: CustomerLookup) => {
     setCustomerModalOpen(false)
     setCustomerInlineOpen(false)
@@ -913,6 +996,7 @@ return rows
         setCustomerMemberships([])
         setSelectedMembershipId('')
         setSelectedSchemeId('')
+        setSelectedSchemeOption(null)
         setSelectedInstallmentIds([])
       }
     } catch (err) {
@@ -956,9 +1040,10 @@ return rows
     setSelectedInstallmentIds(pending[0] ? [pending[0].id] : [])
   }
 
-  const handleSchemeChange = (schemeId: string) => {
-    setSelectedSchemeId(schemeId)
-    setSelectedInstallmentIds(schemeId ? [-1] : [])
+  const handleSchemeChange = (scheme: SchemeOption | null) => {
+    setSelectedSchemeOption(scheme)
+    setSelectedSchemeId(scheme ? String(scheme.id) : '')
+    setSelectedInstallmentIds(scheme ? [-1] : [])
   }
 
   const handleToggleRow = (rowId: number) => {
@@ -1187,6 +1272,7 @@ return rows
                                           setCustomerMemberships([])
                                           setSelectedMembershipId('')
                                           setSelectedSchemeId('')
+                                          setSelectedSchemeOption(null)
                                           setSelectedInstallmentIds([])
                                         } else {
                                           setCustomerInlineOpen(current => !current)
@@ -1345,14 +1431,37 @@ return rows
                           ))}
                         </TextField>
                       ) : (
-                        <TextField select fullWidth label='Membership Scheme' value={selectedSchemeId} onChange={event => handleSchemeChange(event.target.value)} sx={inputSx}>
-                          <MenuItem value=''>Select Scheme</MenuItem>
-                          {schemes.map(item => (
-                            <MenuItem key={item.id} value={String(item.id)}>
-                              {`${item.name} (${item.code})`}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                        <Autocomplete
+                          fullWidth
+                          options={schemeOptions}
+                          loading={schemeSearching}
+                          getOptionKey={option => option.id}
+                          getOptionLabel={option => `${option.name} (${option.code})`}
+                          isOptionEqualToValue={(option, value) => option.id === value.id}
+                          value={selectedSchemeOption}
+                          onChange={(_, value) => handleSchemeChange(value)}
+                          onInputChange={(_, value, reason) => {
+                            if (reason === 'input') setSchemeSearchText(value)
+                          }}
+                          filterOptions={options => options}
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              label='Membership Scheme'
+                              placeholder='Search scheme...'
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {schemeSearching ? <CircularProgress color='inherit' size={16} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                )
+                              }}
+                              sx={inputSx}
+                            />
+                          )}
+                        />
                       )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -1423,12 +1532,37 @@ return rows
                     <Grid size={{ xs: 12, md: 4 }}>
                       <Autocomplete
                         fullWidth
-                        options={salesmen}
+                        options={salesmanOptions}
+                        loading={salesmanSearching}
+                        getOptionKey={option => option.id}
                         getOptionLabel={option => option.name}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
-                        value={salesmen.find(item => item.name === salesman) || null}
-                        onChange={(_, value) => setSalesman(value ? value.name : 'None')}
-                        renderInput={params => <TextField {...params} label='Salesman' placeholder='Search salesman...' sx={inputSx} />}
+                        value={selectedSalesmanOption}
+                        onChange={(_, value) => {
+                          setSelectedSalesmanOption(value)
+                          setSalesman(value ? value.name : 'None')
+                        }}
+                        onInputChange={(_, value, reason) => {
+                          if (reason === 'input') setSalesmanSearchText(value)
+                        }}
+                        filterOptions={options => options}
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            label='Salesman'
+                            placeholder='Search salesman...'
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {salesmanSearching ? <CircularProgress color='inherit' size={16} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              )
+                            }}
+                            sx={inputSx}
+                          />
+                        )}
                       />
                     </Grid>
                   </Grid>
@@ -1769,7 +1903,6 @@ return rows
                 </CardContent>
               </Card>
             ) : null}
-
             <Card sx={cardSx}>
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={2.5}>
