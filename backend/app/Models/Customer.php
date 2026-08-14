@@ -3,16 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\LoyaltySetup;
 use App\Models\ActivityLog;
 
 class Customer extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
         'customer_code',
         'name',
         'mobile',
+        'alternate_mobile',
         'email',
         'status',
         'portal_enabled',
@@ -55,6 +59,7 @@ class Customer extends Model
             'opening_points' => 'decimal:2',
             'loyalty_points_balance' => 'decimal:2',
             'lifetime_points' => 'decimal:2',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -71,6 +76,38 @@ class Customer extends Model
     public function memberships()
     {
         return $this->hasMany(Membership::class);
+    }
+
+    public function relativeRequestsAsPrimary()
+    {
+        return $this->hasMany(CustomerRelativeRequest::class, 'primary_customer_id');
+    }
+
+    public function relativeRequestsAsRelative()
+    {
+        return $this->hasMany(CustomerRelativeRequest::class, 'relative_customer_id');
+    }
+
+    public function mergesAsPrimary()
+    {
+        return $this->hasMany(CustomerMerge::class, 'primary_customer_id');
+    }
+
+    public function mergesAsDuplicate()
+    {
+        return $this->hasMany(CustomerMerge::class, 'duplicate_customer_id');
+    }
+
+    /**
+     * Match a Customer by either their primary or alternate mobile number.
+     * Used by the merge-tool matching logic and by shared-mobile lookups —
+     * a mobile number is not guaranteed to identify a unique Customer, since
+     * one person can register two numbers (merge) or one number can be
+     * shared by several people (household).
+     */
+    public function scopeForMobile($query, string $mobile)
+    {
+        return $query->where('mobile', $mobile)->orWhere('alternate_mobile', $mobile);
     }
 
     public function checkAndApplyLoyaltyUpgrade()

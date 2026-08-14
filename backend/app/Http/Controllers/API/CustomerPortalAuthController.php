@@ -30,31 +30,17 @@ class CustomerPortalAuthController extends Controller
             'password' => ['required', 'string', 'min:6'],
         ]);
 
-        $customer = Customer::query()
-            ->with('user.roles')
-            ->where('mobile', $validated['mobile'])
-            ->where('portal_enabled', true)
-            ->first();
+        $user = $this->resolvePortalUserForMobile($validated['mobile']);
 
-        if (! $customer || ! $customer->user || ! Hash::check($validated['password'], $customer->user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return response()->json(['message' => 'Mobile number or password is invalid.'], 401);
         }
 
-        if (($customer->status ?? 'active') !== 'active' || ($customer->user->status ?? 'active') !== 'active') {
+        if (($user->status ?? 'active') !== 'active') {
             return response()->json(['message' => 'Customer portal access is blocked for this account.'], 403);
         }
 
-        // Token name (not abilities) is what EnsureCustomerPortalToken checks — see that middleware.
-        $token = $customer->user->createToken('customer-portal')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Customer login successful.',
-            'token' => $token,
-            'data' => [
-                'customer' => $this->customerPortalService->resolveCustomerForUser($customer->user),
-                'user' => $customer->user->only(['id', 'name', 'mobile', 'email', 'status']),
-            ],
-        ]);
+        return $this->issuePortalSession($user);
     }
 
     public function loginOtpRequest(Request $request): JsonResponse
@@ -63,13 +49,10 @@ class CustomerPortalAuthController extends Controller
             'mobile' => ['required', 'string', 'max:20'],
         ]);
 
-        $customer = Customer::query()
-            ->where('mobile', $validated['mobile'])
-            ->where('portal_enabled', true)
-            ->first();
+        $user = $this->resolvePortalUserForMobile($validated['mobile']);
 
         // Always return the same generic message — never reveal whether the mobile exists.
-        if ($customer) {
+        if ($user) {
             $otp = $this->otpService->generate($validated['mobile']);
 
             $this->whatsAppService->sendOtp($validated['mobile'], $otp->otp);
@@ -92,30 +75,17 @@ class CustomerPortalAuthController extends Controller
             return response()->json(['message' => 'The OTP is invalid or has expired.'], 422);
         }
 
-        $customer = Customer::query()
-            ->with('user.roles')
-            ->where('mobile', $validated['mobile'])
-            ->where('portal_enabled', true)
-            ->first();
+        $user = $this->resolvePortalUserForMobile($validated['mobile']);
 
-        if (! $customer || ! $customer->user) {
+        if (! $user) {
             return response()->json(['message' => 'No customer portal account found for this mobile number.'], 404);
         }
 
-        if (($customer->status ?? 'active') !== 'active' || ($customer->user->status ?? 'active') !== 'active') {
+        if (($user->status ?? 'active') !== 'active') {
             return response()->json(['message' => 'Customer portal access is blocked for this account.'], 403);
         }
 
-        $token = $customer->user->createToken('customer-portal')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Customer login successful.',
-            'token' => $token,
-            'data' => [
-                'customer' => $this->customerPortalService->resolveCustomerForUser($customer->user),
-                'user' => $customer->user->only(['id', 'name', 'mobile', 'email', 'status']),
-            ],
-        ]);
+        return $this->issuePortalSession($user);
     }
 
     public function forgotPasswordRequest(Request $request): JsonResponse
@@ -124,13 +94,10 @@ class CustomerPortalAuthController extends Controller
             'mobile' => ['required', 'string', 'max:20'],
         ]);
 
-        $customer = Customer::query()
-            ->where('mobile', $validated['mobile'])
-            ->where('portal_enabled', true)
-            ->first();
+        $user = $this->resolvePortalUserForMobile($validated['mobile']);
 
         // Always return the same generic message — never reveal whether the mobile exists.
-        if ($customer) {
+        if ($user) {
             $otp = $this->otpService->generate($validated['mobile']);
 
             $this->whatsAppService->sendOtp($validated['mobile'], $otp->otp);
@@ -154,21 +121,68 @@ class CustomerPortalAuthController extends Controller
             return response()->json(['message' => 'The OTP is invalid or has expired.'], 422);
         }
 
-        $customer = Customer::query()
-            ->with('user')
-            ->where('mobile', $validated['mobile'])
-            ->where('portal_enabled', true)
-            ->first();
+        $user = $this->resolvePortalUserForMobile($validated['mobile']);
 
-        if (! $customer || ! $customer->user) {
+        if (! $user) {
             return response()->json(['message' => 'No customer portal account found for this mobile number.'], 404);
         }
 
-        $customer->user->update(['password' => $validated['password']]);
-        $customer->user->tokens()->delete();
+        $user->update(['password' => $validated['password']]);
+        $user->tokens()->delete();
 
         return response()->json([
             'message' => 'Password updated successfully. Please login with your new password.',
+        ]);
+    }
+
+    /**
+     * Resolve the shared portal login (User) for a mobile number. A mobile
+     * may match more than one Customer profile (household sharing a number,
+     * or a merged customer's alternate_mobile) — they all share one User
+     * account (see CustomerService::syncCustomerUser()), so any matching,
+     * portal-enabled profile with a linked user resolves to the same login.
+     */
+    private function resolvePortalUserForMobile(string $mobile): ?User
+    {
+        $customer = Customer::query()
+            ->forMobile($mobile)
+            ->where('portal_enabled', true)
+            ->whereNotNull('user_id')
+            ->with('user')
+            ->first();
+
+        return $customer?->user;
+    }
+
+    /**
+     * Issue a portal session token and resolve what to show next: a single
+     * profile logs straight in as before; a household with several profiles
+     * either auto-resumes its remembered default or asks the frontend to
+     * show a profile picker (`requires_profile_selection`).
+     */
+    private function issuePortalSession(User $user): JsonResponse
+    {
+        $profiles = $this->customerPortalService->profilesForUser($user);
+
+        if ($profiles->isEmpty()) {
+            return response()->json(['message' => 'No active customer portal profile found for this account.'], 404);
+        }
+
+        // Token name (not abilities) is what EnsureCustomerPortalToken checks — see that middleware.
+        $token = $user->createToken('customer-portal')->plainTextToken;
+
+        $hasDefault = $user->default_customer_id && $profiles->contains('id', $user->default_customer_id);
+        $requiresSelection = $profiles->count() > 1 && ! $hasDefault;
+
+        return response()->json([
+            'message' => 'Customer login successful.',
+            'token' => $token,
+            'data' => [
+                'customer' => $requiresSelection ? null : $this->customerPortalService->resolveCustomerForUser($user),
+                'user' => $user->only(['id', 'name', 'mobile', 'email', 'status']),
+            ],
+            'profiles' => $profiles->count() > 1 ? $profiles : [],
+            'requires_profile_selection' => $requiresSelection,
         ]);
     }
 

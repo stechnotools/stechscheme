@@ -14,6 +14,11 @@ import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemAvatar from '@mui/material/ListItemAvatar'
+import ListItemText from '@mui/material/ListItemText'
+import Avatar from '@mui/material/Avatar'
 import QrCode from '@/components/customer-portal/QrCode'
 import {
   customerPortalPublicRequest,
@@ -38,7 +43,20 @@ const Slot = (props: SlotProps) => (
   </div>
 )
 
-type LoginResponse = { token?: string; message?: string; errors?: Record<string, string[]> }
+type PortalProfile = {
+  id: number
+  name?: string | null
+  mobile?: string | null
+  loyalty_card_no?: string | null
+}
+
+type LoginResponse = {
+  token?: string
+  message?: string
+  errors?: Record<string, string[]>
+  profiles?: PortalProfile[]
+  requires_profile_selection?: boolean
+}
 
 const CustomerPortalLoginPage = () => {
   const router = useRouter()
@@ -51,8 +69,45 @@ const CustomerPortalLoginPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
+  const [profiles, setProfiles] = useState<PortalProfile[]>([])
+  const [selectingProfileId, setSelectingProfileId] = useState<number | null>(null)
   const { canInstall, installed, isIos, promptInstall } = useInstallPrompt()
   const [installAppUrl, setInstallAppUrl] = useState('')
+
+  // Shared post-login step: a household sharing one mobile number has more
+  // than one customer profile — store the token either way, then either go
+  // straight into the panel (single profile / remembered default) or show a
+  // picker instead of redirecting.
+  const handleAuthenticated = (payload: LoginResponse) => {
+    if (!payload.token) throw new Error(payload.message || 'Login failed.')
+
+    setCustomerPortalToken(payload.token)
+
+    if (payload.requires_profile_selection && payload.profiles?.length) {
+      setProfiles(payload.profiles)
+
+      return
+    }
+
+    router.replace('/customer/panel')
+  }
+
+  const handleSelectProfile = async (customerId: number) => {
+    setSelectingProfileId(customerId)
+    setError(null)
+
+    try {
+      await customerPortalRequest('/customer-portal/select-profile', {
+        method: 'POST',
+        body: JSON.stringify({ customer_id: customerId })
+      })
+
+      router.replace('/customer/panel')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to switch profile.')
+      setSelectingProfileId(null)
+    }
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') setInstallAppUrl(`${window.location.origin}/customer`)
@@ -107,8 +162,7 @@ const CustomerPortalLoginPage = () => {
         throw new Error(validationMessage || payload?.message || 'Customer login failed.')
       }
 
-      setCustomerPortalToken(payload.token)
-      router.replace('/customer/panel')
+      handleAuthenticated(payload)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Customer login failed.')
     } finally {
@@ -155,10 +209,7 @@ const CustomerPortalLoginPage = () => {
         body: JSON.stringify({ mobile: mobile.trim(), otp })
       })
 
-      if (!payload.token) throw new Error(payload.message || 'OTP login failed.')
-
-      setCustomerPortalToken(payload.token)
-      router.replace('/customer/panel')
+      handleAuthenticated(payload)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'OTP login failed.')
       setOtpSent(false)
@@ -266,32 +317,60 @@ const CustomerPortalLoginPage = () => {
               </Typography>
             </Box>
 
-            <ToggleButtonGroup
-              value={mode}
-              exclusive
-              fullWidth
-              onChange={(_, value: 'password' | 'otp' | null) => value && switchMode(value)}
-              sx={{
-                bgcolor: 'action.hover',
-                borderRadius: 999,
-                p: 0.5,
-                '& .MuiToggleButtonGroup-grouped': {
-                  border: 0,
-                  borderRadius: 999,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  '&.Mui-selected': { bgcolor: 'common.white', boxShadow: 1, color: 'text.primary' }
-                }
-              }}
-            >
-              <ToggleButton value='password'>Password</ToggleButton>
-              <ToggleButton value='otp'>OTP</ToggleButton>
-            </ToggleButtonGroup>
-
             {error ? <Alert severity='error'>{error}</Alert> : null}
             {info ? <Alert severity='success'>{info}</Alert> : null}
 
-            <Stack component='form' spacing={3} onSubmit={handleSubmit}>
+            {profiles.length > 0 ? (
+              <Stack spacing={2}>
+                <Typography variant='body2' color='text.secondary'>
+                  This mobile number has more than one profile. Choose which one to open — you can switch later
+                  from your account settings.
+                </Typography>
+                <List disablePadding>
+                  {profiles.map(candidate => (
+                    <ListItemButton
+                      key={candidate.id}
+                      onClick={() => void handleSelectProfile(candidate.id)}
+                      disabled={selectingProfileId !== null}
+                      sx={{ borderRadius: 2.5, mb: 1.5, border: '1px solid', borderColor: 'divider' }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar>{(candidate.name || '?').charAt(0).toUpperCase()}</Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={candidate.name || 'Unnamed profile'}
+                        secondary={candidate.loyalty_card_no ? `Card ${candidate.loyalty_card_no}` : candidate.mobile}
+                      />
+                      {selectingProfileId === candidate.id && <Typography variant='caption'>Opening...</Typography>}
+                    </ListItemButton>
+                  ))}
+                </List>
+              </Stack>
+            ) : (
+              <>
+                <ToggleButtonGroup
+                  value={mode}
+                  exclusive
+                  fullWidth
+                  onChange={(_, value: 'password' | 'otp' | null) => value && switchMode(value)}
+                  sx={{
+                    bgcolor: 'action.hover',
+                    borderRadius: 999,
+                    p: 0.5,
+                    '& .MuiToggleButtonGroup-grouped': {
+                      border: 0,
+                      borderRadius: 999,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      '&.Mui-selected': { bgcolor: 'common.white', boxShadow: 1, color: 'text.primary' }
+                    }
+                  }}
+                >
+                  <ToggleButton value='password'>Password</ToggleButton>
+                  <ToggleButton value='otp'>OTP</ToggleButton>
+                </ToggleButtonGroup>
+
+                <Stack component='form' spacing={3} onSubmit={handleSubmit}>
               <TextField fullWidth label='Mobile Number' value={mobile} onChange={event => setMobile(event.target.value)} />
 
               {mode === 'password' && (
@@ -335,7 +414,9 @@ const CustomerPortalLoginPage = () => {
                   </Button>
                 </>
               )}
-            </Stack>
+                </Stack>
+              </>
+            )}
 
             <Typography variant='body2' color='text.secondary' align='center'>
               Staff login? <Link href='/login'>Go to dashboard login</Link>

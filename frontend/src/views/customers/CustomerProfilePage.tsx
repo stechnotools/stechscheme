@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -26,6 +26,16 @@ import Typography from '@mui/material/Typography'
 import Skeleton from '@mui/material/Skeleton'
 import { alpha, useTheme } from '@mui/material/styles'
 
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import CircularProgress from '@mui/material/CircularProgress'
+import TextField from '@mui/material/TextField'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemText from '@mui/material/ListItemText'
+
 import {
   getCustomerLocationLabel,
   getCustomerName,
@@ -33,7 +43,11 @@ import {
   getKycStatusColor,
   resolveBackendApiUrl,
   type Customer,
-  type CustomerResponse
+  type CustomerResponse,
+  type MergeHistoryEntry,
+  type RelativeAccount,
+  type RelativeRequest,
+  type SiblingProfile
 } from './customerData'
 
 type Membership = {
@@ -294,9 +308,24 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [memberships, setMemberships] = useState<Membership[]>([])
+  const [relativeAccounts, setRelativeAccounts] = useState<RelativeAccount[]>([])
+  const [relativeRequests, setRelativeRequests] = useState<RelativeRequest[]>([])
+  const [mergeHistory, setMergeHistory] = useState<MergeHistoryEntry[]>([])
+  const [undoingMergeId, setUndoingMergeId] = useState<number | null>(null)
+  const [undoError, setUndoError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState(0)
+
+  // Add Linked Profile (same mobile) dialog
+  const [linkedProfileDialogOpen, setLinkedProfileDialogOpen] = useState(false)
+  const [linkedProfileError, setLinkedProfileError] = useState<string | null>(null)
+  const [relativeSearch, setRelativeSearch] = useState('')
+  const [relativeSearching, setRelativeSearching] = useState(false)
+  const [relativeResults, setRelativeResults] = useState<Customer[]>([])
+  const [relativeTargets, setRelativeTargets] = useState<Customer[]>([])
+  const [savingRelativeRequest, setSavingRelativeRequest] = useState(false)
+  const relativeSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const request = useCallback(
     async <T,>(path: string, init?: RequestInit): Promise<T> => {
@@ -333,6 +362,25 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
     [accessToken]
   )
 
+  const loadCustomer = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await request<CustomerResponse>(`/customers/${customerId}`)
+
+      setCustomer(response.data)
+      setMemberships((response.data.memberships as Membership[] | undefined) || [])
+      setRelativeAccounts(response.relative_accounts || [])
+      setRelativeRequests(response.relative_requests || [])
+      setMergeHistory(response.merge_history || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load customer profile.')
+    } finally {
+      setLoading(false)
+    }
+  }, [request, customerId])
+
   useEffect(() => {
     if (status === 'authenticated' && !accessToken) {
       setError('Login session token is missing. Please logout and login again.')
@@ -342,24 +390,8 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
 
     if (status !== 'authenticated') return
 
-    const loadCustomer = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const response = await request<CustomerResponse>(`/customers/${customerId}`)
-
-        setCustomer(response.data)
-        setMemberships((response.data.memberships as Membership[] | undefined) || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load customer profile.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     void loadCustomer()
-  }, [status, accessToken, customerId, request])
+  }, [status, accessToken, loadCustomer])
 
   if (loading) {
     return <CustomerProfileSkeleton />
@@ -390,6 +422,72 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
     .filter(membership => membership.maturity_date)
     .sort((left, right) => new Date(left.maturity_date).getTime() - new Date(right.maturity_date).getTime())[0]
 
+  const searchRelativeCandidates = async (query: string) => {
+    setRelativeSearching(true)
+
+    try {
+      const response = await request<{ data: Customer[] }>(
+        `/customers?per_page=10&search=${encodeURIComponent(query)}`
+      )
+
+      setRelativeResults((response.data || []).filter(c => c.id !== customer?.id))
+    } catch (err) {
+      setLinkedProfileError(err instanceof Error ? err.message : 'Search failed.')
+    } finally {
+      setRelativeSearching(false)
+    }
+  }
+
+  const toggleRelativeTarget = (target: Customer) => {
+    setRelativeTargets(prev =>
+      prev.some(item => item.id === target.id)
+        ? prev.filter(item => item.id !== target.id)
+        : [...prev, target]
+    )
+  }
+
+  const handleAddRelativeRequest = async () => {
+    if (!customer) return
+
+    setSavingRelativeRequest(true)
+    setLinkedProfileError(null)
+
+    try {
+      await request(`/customers/${customer.id}/relative-requests`, {
+        method: 'POST',
+        body: JSON.stringify({
+          relative_customer_ids: relativeTargets.map(target => target.id)
+        })
+      })
+
+      setLinkedProfileDialogOpen(false)
+      setRelativeTargets([])
+      setRelativeSearch('')
+      setRelativeResults([])
+      await loadCustomer()
+    } catch (err) {
+      setLinkedProfileError(err instanceof Error ? err.message : 'Failed to send relative request.')
+    } finally {
+      setSavingRelativeRequest(false)
+    }
+  }
+
+  const handleUndoMerge = async (mergeId: number) => {
+    if (!confirm('Undo this merge? The absorbed customer, their subscriptions, and their KYC data will be restored exactly as they were before the merge.')) return
+
+    setUndoingMergeId(mergeId)
+    setUndoError(null)
+
+    try {
+      await request(`/customer-merges/${mergeId}/undo`, { method: 'POST' })
+      await loadCustomer()
+    } catch (err) {
+      setUndoError(err instanceof Error ? err.message : 'Failed to undo merge.')
+    } finally {
+      setUndoingMergeId(null)
+    }
+  }
+
   const handleDeleteCustomer = async () => {
     if (!confirm(`Delete ${getCustomerName(customer)}?`)) return
 
@@ -416,6 +514,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
   const isDark = theme.palette.mode === 'dark'
 
   return (
+    <>
     <Grid container spacing={5}>
       {/* ──── Hero Banner ──── */}
       <Grid size={{ xs: 12 }}>
@@ -499,6 +598,7 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
                   {customer.mobile && (
                     <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', mt: 0.5 }}>
                       {`📱 ${customer.mobile}`}
+                      {customer.alternate_mobile ? ` / ${customer.alternate_mobile}` : ''}
                       {customer.email ? `  •  ✉️ ${customer.email}` : ''}
                     </Typography>
                   )}
@@ -600,7 +700,11 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
               </Stack>
 
               <InfoRow icon='👤' label='Full Name' value={getCustomerName(customer)} />
-              <InfoRow icon='📱' label='Mobile' value={customer.mobile} />
+              <InfoRow
+                icon='📱'
+                label='Mobile'
+                value={customer.alternate_mobile ? `${customer.mobile} / ${customer.alternate_mobile}` : customer.mobile}
+              />
               <InfoRow icon='✉️' label='Email' value={customer.email || 'Not provided'} />
               <InfoRow icon='🏷️' label='Category' value={customer.category || 'General'} />
               {customer.loyalty_card_no && (
@@ -657,6 +761,198 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
               />
             </CardContent>
           </Card>
+
+          {/* Relative Accounts Card */}
+          <Card id='family-account-card' sx={{ borderRadius: 3 }}>
+            <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+              <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 3 }}>
+                <Box>
+                  <Typography variant='h6' fontWeight={700}>
+                    Relative Accounts
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    Other customer profiles using the same mobile number
+                  </Typography>
+                </Box>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  onClick={() => {
+                    setLinkedProfileError(null)
+                    setRelativeSearch('')
+                    setRelativeResults([])
+                    setRelativeTargets([])
+                    setLinkedProfileDialogOpen(true)
+                  }}
+                >
+                  + Add Relative
+                </Button>
+              </Stack>
+
+              <Typography variant='caption' color='text.secondary' sx={{ mb: 2, display: 'block' }}>
+                Search an existing customer, send a request, and the other customer can approve it in the portal.
+              </Typography>
+
+              {relativeAccounts.length === 0 ? (
+                <Alert severity='info' sx={{ borderRadius: 2, mb: 2 }}>
+                  No approved relative accounts yet.
+                </Alert>
+              ) : (
+                <List disablePadding sx={{ mb: 2 }}>
+                  {relativeAccounts.map(relative => (
+                    <ListItemButton
+                      key={relative.request_id}
+                      component={Link}
+                      href={`/customers/${relative.customer.id}`}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                          borderColor: 'primary.light'
+                        }
+                      }}
+                    >
+                      <ListItemText
+                        primary={relative.customer.name || 'Unnamed customer'}
+                        secondary={[
+                          relative.customer.mobile,
+                          relative.customer.loyalty_card_no ? `Card: ${relative.customer.loyalty_card_no}` : null
+                        ]
+                          .filter(Boolean)
+                          .join(' • ')}
+                      />
+                      <Stack direction='row' spacing={1} alignItems='center' sx={{ flexShrink: 0 }}>
+                        <Chip label='Approved' size='small' color='success' />
+                        <Typography variant='caption' color='primary.main' fontWeight={700}>
+                          Details →
+                        </Typography>
+                      </Stack>
+                    </ListItemButton>
+                  ))}
+                </List>
+              )}
+
+              {relativeRequests.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                    Pending Requests
+                  </Typography>
+                  <List disablePadding>
+                    {relativeRequests.map(relative => (
+                      <ListItemButton
+                        key={relative.id}
+                        component={Link}
+                        href={`/customers/${relative.customer.id}`}
+                        sx={{
+                          borderRadius: 2,
+                          mb: 1,
+                          border: '1px solid',
+                          borderColor: 'warning.light',
+                          bgcolor: 'warning.lighter'
+                        }}
+                      >
+                        <ListItemText
+                          primary={relative.customer.name || 'Unnamed customer'}
+                          secondary={[
+                            relative.customer.mobile,
+                            relative.direction === 'incoming' ? 'Waiting for your approval' : 'Requested by you'
+                          ]
+                            .filter(Boolean)
+                            .join(' • ')}
+                        />
+                        <Chip
+                          label={relative.direction === 'incoming' ? 'Pending approval' : 'Requested'}
+                          size='small'
+                          color='warning'
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {relativeAccounts.length === 0 && relativeRequests.length === 0 ? (
+                <List disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setLinkedProfileError(null)
+                      setRelativeSearch('')
+                      setRelativeResults([])
+                      setRelativeTargets([])
+                      setLinkedProfileDialogOpen(true)
+                    }}
+                    sx={{ borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}
+                  >
+                    <ListItemText primary='Add a relative account' secondary='Search a customer and send an approval request.' />
+                  </ListItemButton>
+                </List>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          {/* Merge History Card */}
+          {mergeHistory.length > 0 && (
+            <Card id='merge-history-card' sx={{ borderRadius: 3 }}>
+              <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+                <Typography variant='h6' fontWeight={700}>
+                  Merge History
+                </Typography>
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
+                  Duplicate customers absorbed into this record
+                </Typography>
+
+                {undoError && (
+                  <Alert severity='error' sx={{ mb: 2 }} onClose={() => setUndoError(null)}>
+                    {undoError}
+                  </Alert>
+                )}
+
+                <List disablePadding>
+                  {mergeHistory.map(entry => (
+                    <Box
+                      key={entry.id}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1.5,
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Stack direction='row' justifyContent='space-between' alignItems='center' spacing={2}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography fontWeight={600}>
+                            {entry.duplicate_name || entry.duplicate_customer?.name || 'Unnamed customer'}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            {entry.duplicate_mobile || entry.duplicate_customer?.mobile}
+                            {entry.created_at ? ` • Merged ${new Date(entry.created_at).toLocaleDateString('en-IN')}` : ''}
+                          </Typography>
+                        </Box>
+                        {entry.reversed_at ? (
+                          <Chip label='Undone' size='small' color='default' />
+                        ) : (
+                          <Button
+                            size='small'
+                            variant='outlined'
+                            color='warning'
+                            disabled={undoingMergeId === entry.id}
+                            onClick={() => void handleUndoMerge(entry.id)}
+                            startIcon={undoingMergeId === entry.id ? <CircularProgress size={14} color='inherit' /> : undefined}
+                          >
+                            {undoingMergeId === entry.id ? 'Undoing...' : 'Undo'}
+                          </Button>
+                        )}
+                      </Stack>
+                    </Box>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Nominee Card */}
           {customer.kyc?.nominee_name && (
@@ -1105,6 +1401,126 @@ const CustomerProfilePage = ({ customerId }: { customerId: number }) => {
         </Grid>
       )}
     </Grid>
+
+    {/* ──── Add Relative Request Dialog ──── */}
+    <Dialog open={linkedProfileDialogOpen} onClose={() => !savingRelativeRequest && setLinkedProfileDialogOpen(false)} maxWidth='sm' fullWidth>
+      <DialogTitle sx={{ fontWeight: 700 }}>Add Relative Account</DialogTitle>
+      <DialogContent>
+        <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
+          Search an existing customer and send them a request. Once they approve it in their portal, they appear in the
+          relative accounts section.
+        </Typography>
+        {linkedProfileError && (
+          <Alert severity='error' sx={{ mb: 3 }} onClose={() => setLinkedProfileError(null)}>
+            {linkedProfileError}
+          </Alert>
+        )}
+        <Stack spacing={2}>
+          <TextField
+            fullWidth
+            size='small'
+            autoFocus
+            label='Search customer'
+            placeholder='Search by name, mobile, or card number'
+            value={relativeSearch}
+            onChange={e => {
+              const value = e.target.value
+              setRelativeSearch(value)
+
+              if (relativeSearchTimeout.current) clearTimeout(relativeSearchTimeout.current)
+
+              if (value.trim().length < 2) {
+                setRelativeResults([])
+                return
+              }
+
+              relativeSearchTimeout.current = setTimeout(() => void searchRelativeCandidates(value), 350)
+            }}
+          />
+
+          {relativeTargets.length > 0 && (
+            <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+              <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 1 }}>
+                Selected relatives
+              </Typography>
+              <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
+                {relativeTargets.map(target => (
+                  <Chip
+                    key={target.id}
+                    label={target.name || target.mobile}
+                    onDelete={() => toggleRelativeTarget(target)}
+                    color='primary'
+                    variant='outlined'
+                    size='small'
+                  />
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          <Box sx={{ maxHeight: 320, overflowY: 'auto' }}>
+            {relativeSearching ? (
+              <Stack alignItems='center' sx={{ py: 3 }}>
+                <CircularProgress size={24} />
+              </Stack>
+            ) : (
+              <List disablePadding>
+                {relativeResults.map(result => {
+                  const selected = relativeTargets.some(item => item.id === result.id)
+
+                  return (
+                    <ListItemButton
+                      key={result.id}
+                      onClick={() => toggleRelativeTarget(result)}
+                      selected={selected}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1,
+                        border: '1px solid',
+                        borderColor: selected ? 'primary.main' : 'divider',
+                        bgcolor: selected ? 'action.selected' : 'transparent'
+                      }}
+                    >
+                      <ListItemText
+                        primary={result.name || 'Unnamed customer'}
+                        secondary={[
+                          result.mobile,
+                          result.loyalty_card_no ? `Card: ${result.loyalty_card_no}` : null
+                        ]
+                          .filter(Boolean)
+                          .join(' • ')}
+                      />
+                      <Typography variant='caption' color={selected ? 'primary.main' : 'text.secondary'} fontWeight={700}>
+                        {selected ? 'Selected' : 'Select'}
+                      </Typography>
+                    </ListItemButton>
+                  )
+                })}
+                {relativeSearch.trim().length >= 2 && relativeResults.length === 0 && (
+                  <Typography variant='body2' color='text.secondary' sx={{ py: 2 }}>
+                    No matching customers found.
+                  </Typography>
+                )}
+              </List>
+            )}
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ p: 3 }}>
+        <Button onClick={() => setLinkedProfileDialogOpen(false)} variant='outlined' disabled={savingRelativeRequest}>
+          Cancel
+        </Button>
+        <Button
+          onClick={() => void handleAddRelativeRequest()}
+          variant='contained'
+          disabled={relativeTargets.length === 0 || savingRelativeRequest}
+          startIcon={savingRelativeRequest ? <CircularProgress size={16} color='inherit' /> : undefined}
+        >
+          {savingRelativeRequest ? 'Sending...' : 'Send Request'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   )
 }
 

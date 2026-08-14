@@ -91,6 +91,12 @@ const SchemeOpeningEntryPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
 
+  // Danger Zone: full test-data reset (subscriptions, customers, salesmen, users)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resetConfirmText, setResetConfirmText] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const RESET_CONFIRM_PHRASE = 'DELETE ALL'
+
   // Master lists for manual lookups
   const [branches, setBranches] = useState<any[]>([])
   const [salesmen, setSalesmen] = useState<any[]>([])
@@ -259,8 +265,13 @@ const SchemeOpeningEntryPage = () => {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Processing failed')
-      
-      setSuccess('Scheme Opening processed and enrolled successfully!')
+
+      if (result.failed > 0) {
+        const reason = result.failed_details?.[0]?.error_message
+        setError(reason ? `Processing failed: ${reason}` : 'Processing failed. Open the row to check its Error Reason.')
+      } else {
+        setSuccess('Scheme Opening processed and enrolled successfully!')
+      }
       fetchOpenings()
     } catch (err: any) {
       setError(err.message || 'Processing failed.')
@@ -279,6 +290,7 @@ const SchemeOpeningEntryPage = () => {
 
     let processedCount = 0
     let failedCount = 0
+    const failureReasons: string[] = []
 
     // One AJAX request per row (not one bulk call) so the progress bar reflects
     // real completed/total counts instead of an indeterminate spinner.
@@ -298,6 +310,9 @@ const SchemeOpeningEntryPage = () => {
 
         processedCount += result.processed ?? 0
         failedCount += result.failed ?? 0
+        for (const detail of result.failed_details || []) {
+          failureReasons.push(`${detail.account_name || 'Row'}: ${detail.error_message || 'Unknown error'}`)
+        }
       } catch (rowErr) {
         failedCount += 1
       } finally {
@@ -305,7 +320,11 @@ const SchemeOpeningEntryPage = () => {
       }
     }
 
-    setSuccess(`Bulk Enrollment completed. processed: ${processedCount}, failed: ${failedCount}`)
+    if (failedCount > 0) {
+      setError(`Bulk Enrollment completed with failures. processed: ${processedCount}, failed: ${failedCount}. ${failureReasons.slice(0, 5).join(' | ')}${failureReasons.length > 5 ? ` (+${failureReasons.length - 5} more — check Error Reason on each row)` : ''}`)
+    } else {
+      setSuccess(`Bulk Enrollment completed. processed: ${processedCount}, failed: ${failedCount}`)
+    }
     setSelectedRows([])
     setBulkEnrollProgress(null)
     fetchOpenings()
@@ -358,7 +377,7 @@ const SchemeOpeningEntryPage = () => {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Bulk delete failed')
-      
+
       setSuccess('Selected staged records deleted successfully.')
       setSelectedRows([])
       fetchOpenings()
@@ -366,6 +385,35 @@ const SchemeOpeningEntryPage = () => {
       setError(err.message || 'Bulk delete failed.')
     } finally {
       setLoadingList(false)
+    }
+  }
+
+  const handleResetAllData = async () => {
+    if (!accessToken || resetConfirmText !== RESET_CONFIRM_PHRASE) return
+    setResetting(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/reset-all-data`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ confirm: resetConfirmText })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Reset failed.')
+
+      setSuccess(result.message || 'All test data cleared successfully.')
+      setResetDialogOpen(false)
+      setResetConfirmText('')
+      fetchOpenings()
+    } catch (err: any) {
+      setError(err.message || 'Reset failed.')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -437,7 +485,7 @@ const SchemeOpeningEntryPage = () => {
       setImportResult(null)
       setIsValidated(false)
       setValidationResults(null)
-      
+
       const reader = new FileReader()
       reader.onload = (e) => {
         const text = e.target?.result as string
@@ -460,7 +508,7 @@ const SchemeOpeningEntryPage = () => {
               cells.push(current.trim())
               return cells.map(c => c.replace(/^"|"$/g, ''))
             })
-          
+
           if (data.length > 0) {
             setPreviewHeader(data[0])
             setPreviewRows(data.slice(1))
@@ -548,12 +596,12 @@ const SchemeOpeningEntryPage = () => {
     try {
       const response = await fetch(`${resolveBackendApiUrl()}/scheme-openings/validate-rows`, {
         method: 'POST',
-        headers: { 
+        headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-          rows: [{ data: previewRows[rowIndex], index: rowIndex + 1 }] 
+        body: JSON.stringify({
+          rows: [{ data: previewRows[rowIndex], index: rowIndex + 1 }]
         })
       })
       const result = await response.json()
@@ -565,7 +613,7 @@ const SchemeOpeningEntryPage = () => {
           const existingIdx = newRows.findIndex((r: any) => r.index === rowResult.index)
           if (existingIdx !== -1) newRows[existingIdx] = rowResult
           else newRows.push(rowResult)
-          
+
           const errorCount = newRows.filter((r: any) => !r.is_valid).length
           return { ...prev, rows: newRows, error_count: errorCount, is_all_valid: errorCount === 0 }
         })
@@ -619,8 +667,16 @@ const SchemeOpeningEntryPage = () => {
       if (!response.ok) throw new Error(result.message || 'Import failed')
 
       setImportResult(result)
+
+      const messages: string[] = []
       if (skippedCount > 0) {
-        setSuccess(`${skippedCount} invalid row${skippedCount > 1 ? 's were' : ' was'} skipped. Enrolling ${validRowIndices.length} valid row${validRowIndices.length > 1 ? 's' : ''}...`)
+        messages.push(`${skippedCount} invalid row${skippedCount > 1 ? 's were' : ' was'} skipped`)
+      }
+      if (result.skipped_duplicates > 0) {
+        messages.push(`${result.skipped_duplicates} duplicate row${result.skipped_duplicates > 1 ? 's were' : ' was'} skipped (already staged or enrolled)`)
+      }
+      if (messages.length > 0) {
+        setSuccess(`${messages.join('. ')}. ${result.processed_rows > 0 ? `Enrolling ${result.processed_rows} row${result.processed_rows > 1 ? 's' : ''}...` : 'Nothing left to enroll.'}`)
       }
 
       if (result.processed_rows > 0) {
@@ -766,19 +822,21 @@ const SchemeOpeningEntryPage = () => {
 
   const downloadSample = () => {
     // Final 10-column format:
-    // 0:Account Name, 1:City, 2:MobileNo, 3:Salesman, 4:SchemeType,
+    // 0:Account Name, 1:City, 2:MobileNo, 3:Salesman, 4:Joining Date,
     // 5:Total Amount, 6:Installment Amount, 7:Number of Months, 8:Branch ID, 9:Scheme ID
     const headers = [
-      'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
+      'Account Name', 'City', 'MobileNo', 'Salesman', 'Joining Date',
       'Total Amount', 'Installment Amount', 'Number of Months', 'Branch ID', 'Scheme ID'
     ]
-    // Sample rows — Branch ID and Scheme ID accept name, code, or numeric ID
+    // Sample rows — Branch ID and Scheme ID must be numeric IDs (not name/code).
+    // Joining Date is optional (DD-MM-YYYY) — leave blank to default to today.
+    // Scheme Type (Amount/Weight) is no longer a column — it's read from the matched Scheme record.
     const sampleRows = [
-      ['Ramesh Kumar',  'BBSR',    '9861000001', 'Niranjan', 'Amount', '25000', '5000', '5',  'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
-      ['Sunita Devi',   'BBSR',    '9861000002', 'Khitish',  'Amount', '9000',  '3000', '3',  'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
-      ['Bijay Mohanty', 'BBSR',    '9861000003', 'Niranjan', 'Weight', '0',     '2',    '4',  'City Jewellers', 'SWARNA LAXMI'],
-      ['Pratima Sahoo', 'Cuttack', '9861000004', 'Niranjan', 'Amount', '60000', '6000', '10', 'City Jewellers', 'Swarna Laxmi Yojana-Amount'],
-      ['Manoj Nayak',   'BBSR',    '9861000005', 'Khitish',  'Weight', '0',     '1.5',  '6',  'City Jewellers', 'SWARNA LAXMI'],
+      ['Ramesh Kumar',  'BBSR',    '9861000001', 'Niranjan', '01-04-2026', '25000', '5000', '5',  '1', '2'],
+      ['Sunita Devi',   'BBSR',    '9861000002', 'Khitish',  '02-04-2026', '9000',  '3000', '3',  '1', '2'],
+      ['Bijay Mohanty', 'BBSR',    '9861000003', 'Niranjan', '03-04-2026', '0',     '2',    '4',  '1', '1'],
+      ['Pratima Sahoo', 'Cuttack', '9861000004', 'Niranjan', '04-04-2026', '60000', '6000', '10', '1', '2'],
+      ['Manoj Nayak',   'BBSR',    '9861000005', 'Khitish',  '',           '0',     '1.5',  '6',  '1', '1'],
     ]
 
     const csvLines = [
@@ -843,8 +901,8 @@ const SchemeOpeningEntryPage = () => {
       // reference \u2014 the importer only reads columns 0-9 positionally, so the
       // extra column is safely ignored on re-import.
       const headers = [
-        'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
-        'Total Amount', 'Installment Amount', 'Number of Months', 'Branch', 'Scheme',
+        'Account Name', 'City', 'MobileNo', 'Salesman', 'Joining Date',
+        'Total Amount', 'Installment Amount', 'Number of Months', 'Branch ID', 'Scheme ID',
         'Error Reason'
       ]
 
@@ -853,12 +911,12 @@ const SchemeOpeningEntryPage = () => {
         row.city ?? '',
         row.mobile_no ?? '',
         row.salesman ?? '',
-        row.scheme_type ?? '',
+        row.opening_date ? new Date(row.opening_date).toLocaleDateString('en-GB').replace(/\//g, '-') : '',
         row.total_amount ?? '',
         row.installment_amount ?? '',
         row.number_of_months ?? '',
-        row.branch_name ?? '',
-        row.scheme_name ?? '',
+        row.branch_id ?? '',
+        row.scheme_id ?? '',
         row.error_message ?? ''
       ])
 
@@ -899,8 +957,8 @@ const SchemeOpeningEntryPage = () => {
     if (invalidRows.length === 0) return
 
     const headers = [
-      'Row #', 'Account Name', 'City', 'MobileNo', 'Salesman', 'SchemeType',
-      'Total Amount', 'Installment Amount', 'Number of Months', 'Branch', 'Scheme',
+      'Row #', 'Account Name', 'City', 'MobileNo', 'Salesman', 'Joining Date',
+      'Total Amount', 'Installment Amount', 'Number of Months', 'Branch ID', 'Scheme ID',
       'Validation Errors'
     ]
 
@@ -932,34 +990,34 @@ const SchemeOpeningEntryPage = () => {
 
   return (
     <Box sx={{ p: 4, bgcolor: 'var(--mui-palette-background-default)', minHeight: '100vh' }}>
-      
+
       {/* Action Bar (Standardized Top Toolbar) */}
       <Card sx={{ mb: 6, borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
         <Stack direction='row' spacing={2} sx={{ p: 2, bgcolor: 'var(--mui-palette-action-hover)' }} alignItems="center">
-          <Button 
-            size='medium' 
+          <Button
+            size='medium'
             variant='contained'
             color='primary'
-            startIcon={<i className='ri-file-excel-2-line' />} 
+            startIcon={<i className='ri-file-excel-2-line' />}
             onClick={() => setImportDialogOpen(true)}
             sx={{ fontWeight: 600, textTransform: 'none' }}
           >
             Import
           </Button>
-          <Button 
-            size='medium' 
+          <Button
+            size='medium'
             variant='contained'
             color='secondary'
-            startIcon={<i className='ri-add-line' />} 
+            startIcon={<i className='ri-add-line' />}
             onClick={() => setAddDialogOpen(true)}
             sx={{ fontWeight: 600, textTransform: 'none' }}
           >
             Add Entry
           </Button>
-          <Button 
-            size='medium' 
+          <Button
+            size='medium'
             variant='outlined'
-            startIcon={<i className='ri-refresh-line' />} 
+            startIcon={<i className='ri-refresh-line' />}
             onClick={fetchOpenings}
             sx={{ fontWeight: 600, textTransform: 'none' }}
           >
@@ -1082,6 +1140,39 @@ const SchemeOpeningEntryPage = () => {
         )}
       </Card>
 
+      {/* Danger Zone */}
+      <Card
+        variant="outlined"
+        sx={{ mb: 6, borderRadius: '8px', borderColor: 'error.main', borderStyle: 'dashed' }}
+      >
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          justifyContent="space-between"
+          sx={{ p: 3 }}
+        >
+          <Box>
+            <Typography variant="subtitle2" color="error.main" sx={{ fontWeight: 700 }}>
+              Danger Zone
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Permanently deletes every subscription, customer, and salesman user (with all related payments, receipts, KYC and commission data). Admin/staff accounts are kept.
+            </Typography>
+          </Box>
+          <Button
+            size="medium"
+            variant="outlined"
+            color="error"
+            startIcon={<i className="ri-delete-bin-7-line" />}
+            onClick={() => setResetDialogOpen(true)}
+            sx={{ fontWeight: 600, textTransform: 'none', whiteSpace: 'nowrap' }}
+          >
+            Reset All Data
+          </Button>
+        </Stack>
+      </Card>
+
       {/* Main Title Banner */}
       <Stack direction='row' spacing={2} alignItems='center' sx={{ mb: 6 }}>
         <Typography variant='h5' sx={{ fontWeight: 700 }}>
@@ -1099,7 +1190,7 @@ const SchemeOpeningEntryPage = () => {
             <thead>
               <tr style={{ backgroundColor: 'var(--mui-palette-action-hover)', borderBottom: '1px solid var(--mui-palette-divider)' }}>
                 <th style={{ padding: '14px 18px', fontWeight: 600, fontSize: '0.85rem', width: 50 }}>
-                  <Checkbox 
+                  <Checkbox
                     size="small"
                     indeterminate={selectedRows.length > 0 && selectedRows.length < listData.length}
                     checked={listData.length > 0 && selectedRows.length === listData.length}
@@ -1144,16 +1235,16 @@ const SchemeOpeningEntryPage = () => {
                 listData.map((row: any, index: number) => {
                   const isSelected = selectedRows.includes(row.id)
                   return (
-                    <tr 
-                      key={row.id} 
-                      style={{ 
+                    <tr
+                      key={row.id}
+                      style={{
                         borderBottom: '1px solid var(--mui-palette-divider)',
                         backgroundColor: isSelected ? 'rgba(var(--mui-palette-primary-mainChannel), 0.08)' : 'transparent'
                       }}
                     >
                       <td style={{ padding: '0 18px', fontSize: '0.85rem' }}>
-                        <Checkbox 
-                          size="small" 
+                        <Checkbox
+                          size="small"
                           checked={isSelected}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -1169,9 +1260,9 @@ const SchemeOpeningEntryPage = () => {
                       <td style={{ padding: '14px 18px', fontSize: '0.85rem', fontWeight: 500, color: '#1e3a8a' }}>{row.account_name}</td>
                       <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.mobile_no}</td>
                       <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>
-                        <Chip 
-                          label={row.scheme_type || 'N/A'} 
-                          size="small" 
+                        <Chip
+                          label={row.scheme_type || 'N/A'}
+                          size="small"
                           variant="outlined"
                           color={row.scheme_type === 'Amount' ? 'primary' : row.scheme_type === 'Weight' ? 'secondary' : 'default'}
                           sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
@@ -1183,12 +1274,14 @@ const SchemeOpeningEntryPage = () => {
                       <td style={{ padding: '14px 18px', fontSize: '0.85rem', textAlign: 'center' }}>{row.number_of_months || '-'}</td>
                       <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>{row.salesman_user?.name || row.salesman || '-'}</td>
                       <td style={{ padding: '14px 18px' }}>
-                        <Chip 
-                          label={row.status} 
-                          size="small" 
-                          color={row.status === 'Processed' ? 'success' : row.status === 'Failed' ? 'error' : 'warning'}
-                          sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
-                        />
+                        <Tooltip title={row.status === 'Failed' ? (row.error_message || 'No error reason recorded.') : ''} arrow>
+                          <Chip
+                            label={row.status}
+                            size="small"
+                            color={row.status === 'Processed' ? 'success' : row.status === 'Failed' ? 'error' : 'warning'}
+                            sx={{ borderRadius: '4px', fontWeight: 600, height: 22 }}
+                          />
+                        </Tooltip>
                       </td>
                       <td style={{ padding: '14px 18px', textAlign: 'right' }}>
                         <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -1223,7 +1316,7 @@ const SchemeOpeningEntryPage = () => {
             </tbody>
           </table>
         </Box>
-        
+
         {/* Pagination Bar */}
         {totalRecords > 0 && (
           <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 4, flexWrap: 'wrap', gap: 2 }}>
@@ -1261,10 +1354,10 @@ const SchemeOpeningEntryPage = () => {
       </Card>
 
       {/* Wide Dialog Modal: Import Excel / CSV Workspace */}
-      <Dialog 
-        open={importDialogOpen} 
-        onClose={() => !importing && !processing && setImportDialogOpen(false)} 
-        maxWidth="xl" 
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => !importing && !processing && setImportDialogOpen(false)}
+        maxWidth="xl"
         fullWidth
       >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1276,9 +1369,9 @@ const SchemeOpeningEntryPage = () => {
         <Divider />
         <DialogContent sx={{ p: 6 }}>
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ mb: 4, '& .MuiAlert-message': { width: '100%' } }} 
+            <Alert
+              severity="error"
+              sx={{ mb: 4, '& .MuiAlert-message': { width: '100%' } }}
               onClose={() => setError(null)}
             >
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -1318,9 +1411,9 @@ const SchemeOpeningEntryPage = () => {
             <Typography variant='body2' color='text.secondary'>
               Upload your spreadsheet containing columns mapping to standard customer details, starting paid amount, and target scheme parameters.
             </Typography>
-            <Button 
-              variant='outlined' 
-              size='small' 
+            <Button
+              variant='outlined'
+              size='small'
               startIcon={<i className='ri-download-line' />}
               onClick={downloadSample}
             >
@@ -1342,7 +1435,7 @@ const SchemeOpeningEntryPage = () => {
               {file ? file.name : 'Click or Drag & Drop CSV file here'}
             </Typography>
             <Typography variant='caption' color='text.secondary' display="block" sx={{ mt: 1 }}>
-              Required format (10 columns): Account Name, City, MobileNo, Salesman, SchemeType (Amount or Weight), Total Amount, Installment Amount, Number of Months, Branch, Scheme
+              Required format (10 columns): Account Name, City, MobileNo, Salesman, Joining Date (DD-MM-YYYY, optional), Total Amount, Installment Amount, Number of Months, Branch ID (numeric), Scheme ID (numeric)
             </Typography>
           </Dropzone>
 
@@ -1366,9 +1459,9 @@ const SchemeOpeningEntryPage = () => {
                       </Typography>
                     ) : null
                   })()}
-                  <Button 
-                    variant="contained" 
-                    color="info" 
+                  <Button
+                    variant="contained"
+                    color="info"
                     onClick={handleValidate}
                     disabled={validating || processing}
                     startIcon={validating && <CircularProgress size={16} color="inherit" />}
@@ -1432,11 +1525,11 @@ const SchemeOpeningEntryPage = () => {
                 </Box>
               )}
 
-              <Box sx={{ 
-                overflowX: 'auto', 
-                border: '1px solid', 
-                borderColor: 'divider', 
-                borderRadius: '8px', 
+              <Box sx={{
+                overflowX: 'auto',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '8px',
                 maxHeight: 400,
                 position: 'relative',
                 '& table': { width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }
@@ -1445,7 +1538,7 @@ const SchemeOpeningEntryPage = () => {
                   <thead style={{ backgroundColor: 'var(--mui-palette-action-hover)', position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr>
                       <th style={{ padding: '10px', borderBottom: '1px solid var(--mui-palette-divider)', textAlign: 'left', width: 50 }}>
-                        <Checkbox 
+                        <Checkbox
                           size="small"
                           indeterminate={selectedPreviewRows.length > 0 && selectedPreviewRows.length < previewRows.length}
                           checked={previewRows.length > 0 && selectedPreviewRows.length === previewRows.length}
@@ -1469,23 +1562,23 @@ const SchemeOpeningEntryPage = () => {
                        const validationRow = validationResults?.rows?.find((r: any) => r.index === rowIndex + 1)
                        const rowErrors = validationRow?.errors || []
                        const isSelected = selectedPreviewRows.includes(rowIndex)
-                       
+
                        return (
-                         <tr 
-                           key={rowIndex} 
+                         <tr
+                           key={rowIndex}
                            onClick={() => {
                               if (isSelected) setSelectedPreviewRows(selectedPreviewRows.filter(i => i !== rowIndex))
                               else setSelectedPreviewRows([...selectedPreviewRows, rowIndex])
                            }}
-                           style={{ 
+                           style={{
                              backgroundColor: isSelected ? 'rgba(var(--mui-palette-primary-mainChannel), 0.08)' : (rowErrors.length > 0 ? 'rgba(255, 0, 0, 0.05)' : 'transparent'),
                              cursor: 'pointer'
                            }}
                          >
                            <td style={{ padding: '0 10px', borderBottom: '1px solid var(--mui-palette-divider)' }}>
-                              <Checkbox 
-                                size="small" 
-                                checked={isSelected} 
+                              <Checkbox
+                                size="small"
+                                checked={isSelected}
                                 onChange={() => {}}
                                 onClick={(e) => e.stopPropagation()}
                               />
@@ -1503,8 +1596,8 @@ const SchemeOpeningEntryPage = () => {
                              const cellError = rowErrors.find((e: any) => e.column === cellIndex)
                              return (
                                <Tooltip key={cellIndex} title={cellError?.message || ''} arrow>
-                                 <td style={{ 
-                                   padding: '10px', 
+                                 <td style={{
+                                   padding: '10px',
                                    borderBottom: '1px solid var(--mui-palette-divider)',
                                    color: cellError ? 'var(--mui-palette-error-main)' : 'inherit',
                                    backgroundColor: cellError ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
@@ -1526,10 +1619,10 @@ const SchemeOpeningEntryPage = () => {
         </DialogContent>
         <Divider />
         <DialogActions sx={{ p: 4 }}>
-          <Button 
-            onClick={handleClearWorkspace} 
-            color="error" 
-            variant="outlined" 
+          <Button
+            onClick={handleClearWorkspace}
+            color="error"
+            variant="outlined"
             disabled={!file}
             sx={{ mr: 'auto', textTransform: 'none' }}
             startIcon={<i className="ri-delete-bin-line" />}
@@ -1551,31 +1644,34 @@ const SchemeOpeningEntryPage = () => {
               { label: 'City', index: 1 },
               { label: 'Mobile No * (10 digits)', index: 2 },
               { label: 'Salesman (optional)', index: 3 },
-              { label: 'Scheme Type * (Amount or Weight)', index: 4 },
+              { label: 'Joining Date (DD-MM-YYYY, optional)', index: 4 },
               { label: 'Total Amount *', index: 5 },
               { label: 'Installment Amount *', index: 6 },
               { label: 'Number of Months * (whole number)', index: 7 },
-              { label: 'Branch (Name, Code, or ID)', index: 8 },
-              { label: 'Scheme * (Name, Code, or ID)', index: 9 }
-            ].map((col) => (
+              { label: 'Branch ID * (numeric)', index: 8 },
+              { label: 'Scheme ID * (numeric)', index: 9 }
+            ].map((col) => {
+              const isIntegerField = [7, 8, 9].includes(col.index)
+              return (
               <Grid size={{ xs: 12, sm: 4 }} key={col.index}>
                 <TextField
                   fullWidth
                   size="small"
                   label={col.label}
                   value={editPreviewData[col.index] || ''}
-                  inputProps={col.index === 7 ? { inputMode: 'numeric', pattern: '[0-9]*' } : {}}
+                  inputProps={isIntegerField ? { inputMode: 'numeric', pattern: '[0-9]*' } : {}}
                   onChange={(e) => {
                     const updated = [...editPreviewData]
-                    // Number of Months: strip non-digits
-                    updated[col.index] = col.index === 7
+                    // Number of Months / Branch ID / Scheme ID: strip non-digits
+                    updated[col.index] = isIntegerField
                       ? e.target.value.replace(/[^0-9]/g, '')
                       : e.target.value
                     setEditPreviewData(updated)
                   }}
                 />
               </Grid>
-            ))}
+              )
+            })}
           </Grid>
         </DialogContent>
         <Divider />
@@ -1589,10 +1685,20 @@ const SchemeOpeningEntryPage = () => {
       <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Scheme Opening Entry Details</span>
-          <Chip label={selectedRow?.status || 'Pending'} color={selectedRow?.status === 'Processed' ? 'success' : 'warning'} size="small" />
+          <Chip
+            label={selectedRow?.status || 'Pending'}
+            color={selectedRow?.status === 'Processed' ? 'success' : selectedRow?.status === 'Failed' ? 'error' : 'warning'}
+            size="small"
+          />
         </DialogTitle>
         <Divider />
         <DialogContent sx={{ p: 6 }}>
+          {selectedRow?.status === 'Failed' && (
+            <Alert severity="error" sx={{ mb: 4 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Error Reason</Typography>
+              <Typography variant="body2">{selectedRow.error_message || 'No error reason recorded.'}</Typography>
+            </Alert>
+          )}
           {selectedRow && (
             <Grid container spacing={4}>
               {/* General & Customer Details */}
@@ -1748,9 +1854,9 @@ const SchemeOpeningEntryPage = () => {
         <Divider />
         <DialogActions sx={{ p: 4 }}>
           {selectedRow && selectedRow.status !== 'Processed' && (
-            <Button 
-              onClick={() => { setViewDialogOpen(false); handleEditRowClick(selectedRow); }} 
-              variant="contained" 
+            <Button
+              onClick={() => { setViewDialogOpen(false); handleEditRowClick(selectedRow); }}
+              variant="contained"
               color="primary"
               startIcon={<i className="ri-edit-line" />}
               sx={{ mr: 'auto', textTransform: 'none' }}
@@ -2167,6 +2273,56 @@ const SchemeOpeningEntryPage = () => {
         <DialogActions sx={{ p: 4 }}>
           <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">Cancel</Button>
           <Button onClick={handleConfirmDelete} variant="contained" color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reset All Data confirmation dialog */}
+      <Dialog
+        open={resetDialogOpen}
+        onClose={() => { if (!resetting) { setResetDialogOpen(false); setResetConfirmText('') } }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
+          Reset All Data — This cannot be undone
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            This will permanently delete <strong>every subscription (membership)</strong>, <strong>every customer</strong>,
+            and <strong>every salesman user</strong> — plus all their payments, receipts, installments, KYC records,
+            commissions, digital metal sales/purchases, loyalty data, and staged scheme opening entries.
+            Admin/staff accounts without the salesman role are kept so you can still log in.
+          </Alert>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Type <strong>{RESET_CONFIRM_PHRASE}</strong> below to confirm.
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            autoFocus
+            placeholder={RESET_CONFIRM_PHRASE}
+            value={resetConfirmText}
+            onChange={e => setResetConfirmText(e.target.value)}
+            disabled={resetting}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 4 }}>
+          <Button
+            onClick={() => { setResetDialogOpen(false); setResetConfirmText('') }}
+            variant="outlined"
+            disabled={resetting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleResetAllData}
+            variant="contained"
+            color="error"
+            disabled={resetting || resetConfirmText !== RESET_CONFIRM_PHRASE}
+            startIcon={resetting ? <CircularProgress size={16} color="inherit" /> : <i className="ri-delete-bin-7-line" />}
+          >
+            {resetting ? 'Resetting...' : 'Permanently Delete Everything'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -101,6 +101,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('customers/{id}/regenerate-loyalty-card', [CustomerController::class, 'regenerateLoyaltyCard']);
     Route::get('customers/next-loyalty-card-no', [CustomerController::class, 'getNextLoyaltyCardNo']);
+    Route::post('customers/{id}/merge', [CustomerController::class, 'merge'])
+        ->middleware('role:super-admin,admin');
+    Route::post('customer-merges/{mergeId}/undo', [CustomerController::class, 'undoMerge'])
+        ->middleware('role:super-admin,admin');
+    Route::post('customers/{id}/add-linked-profile', [CustomerController::class, 'addLinkedProfile']);
+    Route::post('customers/{id}/relative-requests', [CustomerController::class, 'sendRelativeRequest']);
 
     Route::apiResources([
         'chart-of-accounts' => ChartOfAccountController::class,
@@ -160,6 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('customer-portal')->middleware('customer-portal-token')->group(function () {
         Route::get('dashboard', [CustomerPortalController::class, 'dashboard']);
         Route::get('profile', [CustomerPortalController::class, 'profile']);
+        Route::get('profiles', [CustomerPortalController::class, 'profiles']);
+        Route::post('select-profile', [CustomerPortalController::class, 'selectProfile']);
         Route::get('memberships', [CustomerPortalController::class, 'memberships']);
         Route::get('memberships/{membership}', [CustomerPortalController::class, 'showMembership']);
         Route::get('memberships/{membership}/statement', [CustomerPortalController::class, 'membershipStatement']);
@@ -174,6 +182,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('support', [CustomerPortalController::class, 'supportMessages']);
         Route::post('scheme-join-requests', [CustomerPortalController::class, 'submitSchemeJoinRequest']);
         Route::get('scheme-join-requests', [CustomerPortalController::class, 'schemeJoinRequests']);
+        Route::post('relative-requests/{relativeRequest}/approve', [CustomerPortalController::class, 'approveRelativeRequest']);
+        Route::post('relative-requests/{relativeRequest}/reject', [CustomerPortalController::class, 'rejectRelativeRequest']);
         Route::post('push/subscribe', [CustomerPortalController::class, 'pushSubscribe']);
         Route::post('push/unsubscribe', [CustomerPortalController::class, 'pushUnsubscribe']);
         Route::get('push/status', [CustomerPortalController::class, 'pushStatus']);
@@ -264,6 +274,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('scheme-openings/records/{id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'destroy']);
     Route::put('scheme-openings/records/{id}', [\App\Http\Controllers\API\SchemeOpeningController::class, 'update']);
     Route::post('scheme-openings/records/bulk-delete', [\App\Http\Controllers\API\SchemeOpeningController::class, 'bulkDelete']);
+    Route::post('scheme-openings/reset-all-data', [\App\Http\Controllers\API\SchemeOpeningController::class, 'resetAllData'])
+        ->middleware('role:super-admin');
 
 
     Route::get('loyalty-point-adjustments', [\App\Http\Controllers\LoyaltyPointAdjustmentController::class, 'index']);

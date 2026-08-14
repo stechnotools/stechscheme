@@ -292,6 +292,19 @@ return matchesStatus && matchesSearch
                   >
                     New Enrollment
                   </Button>
+                  <Button
+                    component={Link}
+                    href='/membership/opening'
+                    variant='outlined'
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.6)',
+                      color: 'common.white',
+                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                    startIcon={<i className='ri-upload-2-line' />}
+                  >
+                    Opening Entry
+                  </Button>
                 </Stack>
               </Stack>
 

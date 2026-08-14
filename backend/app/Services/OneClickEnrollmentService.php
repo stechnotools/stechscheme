@@ -34,13 +34,33 @@ class OneClickEnrollmentService
                 'loyalty_card_no' => data_get($validated, 'customer.loyalty_card_no'),
             ];
 
-            // Only dedupe by mobile when one is actually provided — Laravel's
-            // where('mobile', null) compiles to whereNull('mobile'), which would
-            // otherwise match (and silently merge into) the first customer that
-            // has no mobile number at all.
-            $existingCustomer = ! empty($customerPayload['mobile'])
-                ? Customer::query()->where('mobile', $customerPayload['mobile'])->first()
-                : null;
+            // A mobile number does not uniquely identify one person: it may
+            // already belong to a *different* family member sharing one
+            // household number (never silently overwrite their identity —
+            // create a separate profile instead), or it may genuinely be the
+            // same customer re-enrolling (reuse). Only trust a match when the
+            // incoming name agrees with an existing profile on that mobile;
+            // when it doesn't (or is ambiguous), default to creating a new
+            // profile — staff can merge true duplicates later via
+            // CustomerMergeService, which is far safer than corrupting an
+            // existing customer's record.
+            $existingCustomer = null;
+
+            if (! empty($customerPayload['mobile'])) {
+                $candidates = Customer::query()->forMobile($customerPayload['mobile'])->get();
+                $incomingName = trim((string) ($customerPayload['name'] ?? ''));
+
+                $existingCustomer = $candidates->first(
+                    fn (Customer $candidate) => $incomingName !== ''
+                        && strcasecmp(trim((string) $candidate->name), $incomingName) === 0
+                );
+
+                // No name to compare and exactly one existing profile on this
+                // mobile — safe to assume it's the same person.
+                if (! $existingCustomer && $incomingName === '' && $candidates->count() === 1) {
+                    $existingCustomer = $candidates->first();
+                }
+            }
 
             $customer = $existingCustomer
                 ? $this->customerService->update($existingCustomer, $customerPayload)

@@ -59,6 +59,8 @@ export type Customer = {
   id: number
   name?: string | null
   mobile: string
+  alternate_mobile?: string | null
+  user_id?: number | null
   email?: string | null
   status?: 'active' | 'inactive' | 'blocked' | null
   feedback?: string | null
@@ -135,10 +137,71 @@ export type Customer = {
 
 export type CustomersResponse = {
   data: Customer[]
+  total?: number
+  per_page?: number
+  current_page?: number
+  last_page?: number
+  from?: number | null
+  to?: number | null
+  summary?: {
+    total_customers: number
+    active_customers: number
+    approved_kyc_customers: number
+    pending_kyc_customers: number
+  }
+}
+
+export type SiblingProfile = {
+  id: number
+  name?: string | null
+  mobile?: string | null
+  alternate_mobile?: string | null
+  loyalty_card_no?: string | null
+  status?: Customer['status']
+}
+
+export type RelativeAccount = {
+  request_id: number
+  status: 'pending' | 'approved' | 'rejected'
+  direction?: 'incoming' | 'outgoing'
+  notes?: string | null
+  requested_at?: string | null
+  reviewed_at?: string | null
+  customer: SiblingProfile
+}
+
+export type RelativeRequest = {
+  id: number
+  status: 'pending' | 'approved' | 'rejected'
+  direction?: 'incoming' | 'outgoing'
+  notes?: string | null
+  requested_at?: string | null
+  reviewed_at?: string | null
+  customer: SiblingProfile
+}
+
+export type MergeHistoryEntry = {
+  id: number
+  primary_customer_id: number
+  duplicate_customer_id: number
+  reversed_at?: string | null
+  duplicate_name?: string | null
+  duplicate_mobile?: string | null
+  created_at?: string | null
+  duplicate_customer?: {
+    id: number
+    name?: string | null
+    mobile?: string | null
+  } | null
 }
 
 export type CustomerResponse = {
   data: Customer
+  family_profiles?: SiblingProfile[]
+  relative_accounts?: RelativeAccount[]
+  relative_requests?: RelativeRequest[]
+  sibling_profiles?: SiblingProfile[]
+  merge_history?: MergeHistoryEntry[]
 }
 
 export const resolveBackendApiUrl = getApiBaseUrl

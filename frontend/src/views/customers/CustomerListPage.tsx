@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Alert from '@mui/material/Alert'
@@ -12,22 +12,23 @@ import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
-
-import { SkeletonCard } from '@/components/SkeletonLoader'
 import InputAdornment from '@mui/material/InputAdornment'
 import MenuItem from '@mui/material/MenuItem'
+import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
+import TablePagination from '@mui/material/TablePagination'
 import TableRow from '@mui/material/TableRow'
-import Paper from '@mui/material/Paper'
-import Tooltip from '@mui/material/Tooltip'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
+
+import { SkeletonCard } from '@/components/SkeletonLoader'
 import {
   getCustomerLocationLabel,
   getCustomerName,
@@ -47,9 +48,17 @@ const CustomerListPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [searching, setSearching] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'blocked'>('all')
   const [kycFilter, setKycFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [totalRows, setTotalRows] = useState(0)
+  const [summary, setSummary] = useState<{
+    total_customers: number
+    active_customers: number
+    approved_kyc_customers: number
+    pending_kyc_customers: number
+  } | null>(null)
 
   const request = useCallback(
     async <T,>(path: string, init?: RequestInit): Promise<T> => {
@@ -85,14 +94,26 @@ const CustomerListPage = () => {
     setError(null)
 
     try {
-      const response = await request<CustomersResponse>('/customers?per_page=200&sort_by=created_at&sort_direction=desc')
-      setCustomers(response.data)
+      const params = new URLSearchParams({
+        page: String(page + 1),
+        per_page: String(rowsPerPage)
+      })
+
+      const query = search.trim()
+      if (query) params.set('search', query)
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (kycFilter !== 'all') params.set('kyc_status', kycFilter)
+
+      const response = await request<CustomersResponse>(`/customers?${params.toString()}`)
+      setCustomers(response.data || [])
+      setTotalRows(response.total || response.data?.length || 0)
+      setSummary(response.summary || null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load customers.')
     } finally {
       setLoading(false)
     }
-  }, [accessToken, request])
+  }, [accessToken, request, page, rowsPerPage, search, statusFilter, kycFilter])
 
   const handleDeleteCustomer = async (customer: Customer) => {
     if (!confirm(`Delete ${getCustomerName(customer)}?`)) return
@@ -101,11 +122,18 @@ const CustomerListPage = () => {
     setSuccess(null)
 
     try {
+      const shouldGoToPreviousPage = customers.length === 1 && page > 0
+
       await request(`/customers/${customer.id}`, {
         method: 'DELETE'
       })
       setSuccess(`${getCustomerName(customer)} deleted successfully.`)
-      await loadCustomers()
+
+      if (shouldGoToPreviousPage) {
+        setPage(current => Math.max(0, current - 1))
+      } else {
+        await loadCustomers()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete customer.')
     }
@@ -122,39 +150,36 @@ const CustomerListPage = () => {
     }
   }, [status, accessToken, loadCustomers])
 
-  const filteredCustomers = useMemo(() => {
-    const query = search.trim().toLowerCase()
+  const totals = summary || {
+    total_customers: totalRows,
+    active_customers: customers.filter(customer => customer.status === 'active').length,
+    approved_kyc_customers: customers.filter(customer => customer.kyc?.status === 'approved').length,
+    pending_kyc_customers: customers.filter(customer => !customer.kyc || customer.kyc.status === 'pending').length
+  }
 
-    return customers.filter(customer => {
-      const name = getCustomerName(customer)
-      const location = getCustomerLocationLabel(customer)
-      const matchesSearch =
-        !query ||
-        name.toLowerCase().includes(query) ||
-        customer.mobile.toLowerCase().includes(query) ||
-        (customer.email || '').toLowerCase().includes(query) ||
-        location.toLowerCase().includes(query)
+  const handleSearchChange = (value: string) => {
+    setPage(0)
+    setSearch(value)
+  }
 
-      const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
-      const customerKycStatus = customer.kyc?.status || 'pending'
-      const matchesKyc = kycFilter === 'all' || customerKycStatus === kycFilter
+  const handleStatusChange = (value: typeof statusFilter) => {
+    setPage(0)
+    setStatusFilter(value)
+  }
 
-      return matchesSearch && matchesStatus && matchesKyc
-    })
-  }, [customers, kycFilter, search, statusFilter])
+  const handleKycChange = (value: typeof kycFilter) => {
+    setPage(0)
+    setKycFilter(value)
+  }
 
-  const totals = useMemo(() => {
-    const active = filteredCustomers.filter(customer => customer.status === 'active').length
-    const approvedKyc = filteredCustomers.filter(customer => customer.kyc?.status === 'approved').length
-    const pendingKyc = filteredCustomers.filter(customer => !customer.kyc || customer.kyc.status === 'pending').length
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage)
+  }
 
-    return {
-      total: filteredCustomers.length,
-      active,
-      approvedKyc,
-      pendingKyc
-    }
-  }, [filteredCustomers])
+  const handleChangeRowsPerPage = (event: ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
 
   return (
     <Grid container spacing={6}>
@@ -220,6 +245,22 @@ const CustomerListPage = () => {
                     Add Customer
                   </Button>
                   <Button
+                    component={Link}
+                    href='/customers/merge'
+                    variant='outlined'
+                    startIcon={<i className='ri-group-line' />}
+                    sx={{
+                      color: 'common.white',
+                      borderColor: 'rgba(255,255,255,0.28)',
+                      '&:hover': {
+                        borderColor: 'rgba(255,255,255,0.5)',
+                        bgcolor: 'rgba(255,255,255,0.04)'
+                      }
+                    }}
+                  >
+                    Merge Duplicate
+                  </Button>
+                  <Button
                     variant='outlined'
                     onClick={() => void loadCustomers()}
                     sx={{
@@ -247,13 +288,13 @@ const CustomerListPage = () => {
               >
                 <CardContent>
                   <Typography variant='overline' sx={{ color: 'rgba(255,255,255,0.72)', letterSpacing: 1 }}>
-                    Live Customer Count
+                    Matching Customers
                   </Typography>
                   <Typography variant='h4' sx={{ color: 'common.white', mt: 1.5 }}>
-                    {totals.total}
+                    {totals.total_customers}
                   </Typography>
                   <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.78)', mt: 1 }}>
-                    {totals.approvedKyc} customers have approved KYC in the current view.
+                    {totals.approved_kyc_customers} customers have approved KYC in the current result set.
                   </Typography>
                 </CardContent>
               </Card>
@@ -266,10 +307,10 @@ const CustomerListPage = () => {
         <Card>
           <CardContent>
             <Typography variant='body2' color='text.secondary'>
-              Visible Customers
+              Matching Customers
             </Typography>
             <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
-              {totals.total}
+              {totals.total_customers}
             </Typography>
             <Typography variant='body2' color='text.secondary'>
               Based on current filters
@@ -284,7 +325,7 @@ const CustomerListPage = () => {
               Active Customers
             </Typography>
             <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
-              {totals.active}
+              {totals.active_customers}
             </Typography>
             <Typography variant='body2' color='success.main'>
               Ready for engagement
@@ -299,7 +340,7 @@ const CustomerListPage = () => {
               Approved KYC
             </Typography>
             <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
-              {totals.approvedKyc}
+              {totals.approved_kyc_customers}
             </Typography>
             <Typography variant='body2' color='text.secondary'>
               Fully verified profiles
@@ -314,9 +355,9 @@ const CustomerListPage = () => {
               Pending KYC
             </Typography>
             <Typography variant='h4' sx={{ mt: 2, mb: 1 }}>
-              {totals.pendingKyc}
+              {totals.pending_kyc_customers}
             </Typography>
-            <Typography variant='body2' color={totals.pendingKyc > 0 ? 'warning.main' : 'text.secondary'}>
+            <Typography variant='body2' color={totals.pending_kyc_customers > 0 ? 'warning.main' : 'text.secondary'}>
               Needs follow-up
             </Typography>
           </CardContent>
@@ -336,18 +377,11 @@ const CustomerListPage = () => {
                   label='Search customers'
                   placeholder='Search by name, mobile, email, or city'
                   value={search}
-                  onChange={event => {
-                    const value = event.target.value
-                    setSearch(value)
-                    if (value.trim()) {
-                      setSearching(true)
-                    }
-                  }}
-                  onBlur={() => setSearching(false)}
+                  onChange={event => handleSearchChange(event.target.value)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
-                        {searching ? <CircularProgress size={18} /> : <i className='ri-search-line' />}
+                        {loading ? <CircularProgress size={18} /> : <i className='ri-search-line' />}
                       </InputAdornment>
                     )
                   }}
@@ -357,7 +391,7 @@ const CustomerListPage = () => {
                   fullWidth
                   label='Customer status'
                   value={statusFilter}
-                  onChange={event => setStatusFilter(event.target.value as typeof statusFilter)}
+                  onChange={event => handleStatusChange(event.target.value as typeof statusFilter)}
                 >
                   <MenuItem value='all'>All statuses</MenuItem>
                   <MenuItem value='active'>Active</MenuItem>
@@ -369,7 +403,7 @@ const CustomerListPage = () => {
                   fullWidth
                   label='KYC status'
                   value={kycFilter}
-                  onChange={event => setKycFilter(event.target.value as typeof kycFilter)}
+                  onChange={event => handleKycChange(event.target.value as typeof kycFilter)}
                 >
                   <MenuItem value='all'>All KYC states</MenuItem>
                   <MenuItem value='pending'>Pending</MenuItem>
@@ -378,105 +412,122 @@ const CustomerListPage = () => {
                 </TextField>
               </Stack>
 
-              {loading ? <SkeletonCard count={6} /> : !filteredCustomers.length ? (
+              {loading ? (
+                <SkeletonCard count={6} />
+              ) : !customers.length ? (
                 <Alert severity='info'>No customers found for the current filters.</Alert>
               ) : (
-                <TableContainer component={Paper} variant='outlined' sx={{ borderRadius: 1 }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                      <TableRow>
-                        <TableCell>Customer</TableCell>
-                        <TableCell>Contact Info</TableCell>
-                        <TableCell>Status & KYC</TableCell>
-                        <TableCell>Location</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredCustomers.map(customer => {
-                        const location = getCustomerLocationLabel(customer)
-                        const joinedOn = customer.created_at ? new Date(customer.created_at).toLocaleDateString('en-IN') : 'Unknown'
-                        const kycStatus = customer.kyc?.status || 'pending'
+                <>
+                  <TableContainer component={Paper} variant='outlined' sx={{ borderRadius: 1 }}>
+                    <Table size='small'>
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                        <TableRow>
+                          <TableCell>Sl No</TableCell>
+                          <TableCell>Customer ID</TableCell>
+                          <TableCell>Customer</TableCell>
+                          <TableCell>Contact Info</TableCell>
+                          <TableCell>Status & KYC</TableCell>
+                          <TableCell>Location</TableCell>
+                          <TableCell align='right'>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {customers.map((customer, index) => {
+                          const location = getCustomerLocationLabel(customer)
+                          const joinedOn = customer.created_at ? new Date(customer.created_at).toLocaleDateString('en-IN') : 'Unknown'
+                          const kycStatus = customer.kyc?.status || 'pending'
 
-                        return (
-                          <TableRow key={customer.id} hover>
-                            <TableCell>
-                              <Stack direction='row' spacing={2} alignItems='center'>
-                                <Avatar
-                                  src={customer.kyc?.photo || undefined}
-                                  alt={getCustomerName(customer)}
-                                  sx={{ width: 40, height: 40 }}
-                                >
-                                  {getCustomerName(customer).charAt(0).toUpperCase()}
-                                </Avatar>
-                                <div>
-                                  <Typography variant='subtitle2' fontWeight={600}>
-                                    {getCustomerName(customer)}
+                          return (
+                            <TableRow key={customer.id} hover>
+                              <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                              <TableCell sx={{ color: 'text.secondary', fontWeight: 600 }}>{customer.id}</TableCell>
+                              <TableCell>
+                                <Stack direction='row' spacing={2} alignItems='center'>
+                                  <Avatar
+                                    src={customer.kyc?.photo || undefined}
+                                    alt={getCustomerName(customer)}
+                                    sx={{ width: 40, height: 40 }}
+                                  >
+                                    {getCustomerName(customer).charAt(0).toUpperCase()}
+                                  </Avatar>
+                                  <div>
+                                    <Typography variant='subtitle2' fontWeight={600}>
+                                      {getCustomerName(customer)}
+                                    </Typography>
+                                    <Typography variant='caption' color='text.secondary'>
+                                      Joined {joinedOn}
+                                    </Typography>
+                                  </div>
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                <Stack spacing={0.5}>
+                                  <Typography variant='body2' fontWeight={500}>
+                                    {customer.mobile}
                                   </Typography>
-                                  <Typography variant='caption' color='text.secondary'>
-                                    ID #{customer.id} • Joined {joinedOn}
-                                  </Typography>
-                                </div>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Stack spacing={0.5}>
-                                <Typography variant='body2' fontWeight={500}>
-                                  {customer.mobile}
-                                </Typography>
-                                {customer.email && (
-                                  <Typography variant='caption' color='text.secondary'>
-                                    {customer.email}
-                                  </Typography>
-                                )}
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Stack direction='row' spacing={1} alignItems='center'>
-                                <Chip
-                                  label={customer.status || 'blocked'}
-                                  color={getCustomerStatusColor(customer.status)}
-                                  size='small'
-                                  variant='tonal'
-                                  sx={{ height: 24 }}
-                                />
-                                <Chip
-                                  label={kycStatus === 'pending' ? 'KYC Pending' : `KYC ${kycStatus}`}
-                                  color={getKycStatusColor(kycStatus)}
-                                  size='small'
-                                  variant='outlined'
-                                  sx={{ height: 24 }}
-                                />
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant='body2'>{location}</Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Stack direction='row' spacing={0.5} justifyContent='flex-end'>
-                                <Tooltip title="View Details">
-                                  <IconButton component={Link} href={`/customers/${customer.id}`} size="small" color="primary">
-                                    <i className='ri-eye-line' />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Edit">
-                                  <IconButton component={Link} href={`/customers/${customer.id}/edit`} size="small" color="info">
-                                    <i className='ri-edit-line' />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete">
-                                  <IconButton size="small" color="error" onClick={() => void handleDeleteCustomer(customer)}>
-                                    <i className='ri-delete-bin-line' />
-                                  </IconButton>
-                                </Tooltip>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                                  {customer.email && (
+                                    <Typography variant='caption' color='text.secondary'>
+                                      {customer.email}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                <Stack direction='row' spacing={1} alignItems='center'>
+                                  <Chip
+                                    label={customer.status || 'blocked'}
+                                    color={getCustomerStatusColor(customer.status)}
+                                    size='small'
+                                    variant='tonal'
+                                    sx={{ height: 24 }}
+                                  />
+                                  <Chip
+                                    label={kycStatus === 'pending' ? 'KYC Pending' : `KYC ${kycStatus}`}
+                                    color={getKycStatusColor(kycStatus)}
+                                    size='small'
+                                    variant='outlined'
+                                    sx={{ height: 24 }}
+                                  />
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant='body2'>{location}</Typography>
+                              </TableCell>
+                              <TableCell align='right'>
+                                <Stack direction='row' spacing={0.5} justifyContent='flex-end'>
+                                  <Tooltip title='View Details'>
+                                    <IconButton component={Link} href={`/customers/${customer.id}`} size='small' color='primary'>
+                                      <i className='ri-eye-line' />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title='Edit'>
+                                    <IconButton component={Link} href={`/customers/${customer.id}/edit`} size='small' color='info'>
+                                      <i className='ri-edit-line' />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title='Delete'>
+                                    <IconButton size='small' color='error' onClick={() => void handleDeleteCustomer(customer)}>
+                                      <i className='ri-delete-bin-line' />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <TablePagination
+                    component='div'
+                    count={totalRows}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                  />
+                </>
               )}
             </Stack>
           </CardContent>

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Kyc\StoreKycRequest;
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\CustomerSupportMessage;
+use App\Models\CustomerRelativeRequest;
 use App\Models\DigitalMetalMaster;
 use App\Models\GoldRateAlert;
 use App\Models\LoyaltyLedger;
@@ -15,6 +17,7 @@ use App\Models\SchemeJoinRequest;
 use App\Models\User;
 use App\Services\CustomerPortalService;
 use App\Services\KycService;
+use App\Services\CustomerRelativeRequestService;
 use App\Services\PushNotificationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -64,6 +67,7 @@ class CustomerPortalController extends Controller
         private readonly CustomerPortalService $customerPortalService,
         private readonly KycService $kycService,
         private readonly PushNotificationService $pushNotificationService,
+        private readonly CustomerRelativeRequestService $customerRelativeRequestService,
     ) {
     }
 
@@ -84,6 +88,54 @@ class CustomerPortalController extends Controller
         $user = $request->user();
 
         return response()->json([
+            'data' => $this->customerPortalService->resolveCustomerForUser($user),
+        ]);
+    }
+
+    /**
+     * List every Customer profile linked to the authenticated portal login —
+     * used by the profile switcher for households sharing one mobile number.
+     */
+    public function profiles(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'data' => $this->customerPortalService->profilesForUser($user),
+            'default_customer_id' => $user->default_customer_id,
+        ]);
+    }
+
+    /**
+     * Switch the active profile for this session and remember it as the
+     * default for future logins. The chosen profile must belong to the
+     * authenticated login — never trust a client-supplied customer_id blindly.
+     */
+    public function selectProfile(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'customer_id' => ['required', 'integer'],
+        ]);
+
+        $customer = Customer::query()
+            ->where('id', $validated['customer_id'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->where('portal_enabled', true)
+            ->first();
+
+        if (! $customer) {
+            return response()->json(['message' => 'That profile is not available on this account.'], 404);
+        }
+
+        $user->update(['default_customer_id' => $customer->id]);
+
+        return response()->json([
+            'message' => 'Profile switched successfully.',
             'data' => $this->customerPortalService->resolveCustomerForUser($user),
         ]);
     }
@@ -368,6 +420,56 @@ class CustomerPortalController extends Controller
 
         return response()->json([
             'data' => $requests,
+        ]);
+    }
+
+    public function approveRelativeRequest(Request $request, CustomerRelativeRequest $relativeRequest): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $customer = $this->customerPortalService->resolveCustomerForUser($user);
+
+        if ($relativeRequest->relative_customer_id !== $customer->id) {
+            abort(404);
+        }
+
+        $updated = $this->customerRelativeRequestService->approve($relativeRequest, $user);
+
+        $primaryUser = $updated->primaryCustomer?->user;
+        if ($primaryUser) {
+            $this->pushNotificationService->sendToUser(
+                $primaryUser,
+                'Relative request approved',
+                sprintf('%s approved your relative account request.', $customer->name ?: 'The customer'),
+                '/customer/panel'
+            );
+        }
+
+        return response()->json([
+            'message' => 'Relative account request approved.',
+            'data' => $updated,
+        ]);
+    }
+
+    public function rejectRelativeRequest(Request $request, CustomerRelativeRequest $relativeRequest): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $customer = $this->customerPortalService->resolveCustomerForUser($user);
+
+        if ($relativeRequest->relative_customer_id !== $customer->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $updated = $this->customerRelativeRequestService->reject($relativeRequest, $user, $validated['notes'] ?? null);
+
+        return response()->json([
+            'message' => 'Relative account request rejected.',
+            'data' => $updated,
         ]);
     }
 

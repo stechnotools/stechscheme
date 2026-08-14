@@ -525,8 +525,13 @@ const EditSchemePage = () => {
       nextErrors.total_installments = 'Total installments must be greater than 0.'
     }
 
+    if (!form.installment_value.trim() || Number(form.installment_value) <= 0) {
+      nextErrors.installment_value = 'Installment value must be greater than 0.'
+    }
 
-
+    if (form.installment_value_type === 'Variable' && Number(form.min_installment_value) > Number(form.installment_value)) {
+      nextErrors.min_installment_value = 'Minimum installment value cannot exceed the default installment value.'
+    }
 
 
     if (form.allow_bonus && form.bonus_mode === 'Maturity Benefit') {
@@ -538,6 +543,10 @@ const EditSchemePage = () => {
         if (!benefit.month || Number(benefit.month) <= 0) nextErrors[`maturityBenefits.${index}.month`] = 'Required.'
         if (!benefit.value || Number(benefit.value) < 0) nextErrors[`maturityBenefits.${index}.value`] = 'Required.'
       })
+    }
+
+    if (form.allow_bonus && form.bonus_mode === 'Regular' && Number(form.bonus_installment_count) <= 0) {
+      nextErrors.bonus_installment_count = 'Enter how many installment amounts the bonus equals (e.g. 1).'
     }
 
     return nextErrors
@@ -591,6 +600,7 @@ const EditSchemePage = () => {
       formData.append('allow_bonus', form.allow_bonus ? '1' : '0')
       formData.append('benefit_type', form.bonus_mode)
       formData.append('benefit_mode', form.bonus_basis)
+      formData.append('bonus_no_of_installments', String(form.bonus_installment_count || 0))
       formData.append('bonus_effect_account', form.bonus_effect_account.trim() || '')
       formData.append('remarks', form.remarks.trim() || '')
       formData.append('lock_in_period_months', String(form.lock_in_period_months || 0))
@@ -823,6 +833,40 @@ const EditSchemePage = () => {
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <Stack spacing={2.5}>
+                        <TextField
+                          select
+                          fullWidth
+                          label='Installment Value Type'
+                          value={form.installment_value_type}
+                          onChange={e => updateForm('installment_value_type', e.target.value as SchemeFormState['installment_value_type'])}
+                          sx={fieldSx}
+                          helperText={form.installment_value_type === 'Variable' ? 'Customer chooses their own installment amount each month' : 'Fixed installment amount set by the scheme'}
+                        >
+                          <MenuItem value='Fix'>Fix</MenuItem>
+                          <MenuItem value='Variable'>Variable</MenuItem>
+                        </TextField>
+                        <TextField
+                          fullWidth
+                          type='number'
+                          label={form.installment_value_type === 'Variable' ? 'Default Installment Value (₹)' : 'Installment Value (₹)'}
+                          value={form.installment_value}
+                          onChange={e => updateForm('installment_value', e.target.value)}
+                          error={Boolean(fieldErrors.installment_value)}
+                          helperText={fieldErrors.installment_value || (form.installment_value_type === 'Variable' ? 'Suggested amount shown to the customer; they may pay a different amount at or above the minimum below.' : 'Amount collected from the customer every installment.')}
+                          sx={fieldSx}
+                        />
+                        {form.installment_value_type === 'Variable' && (
+                          <TextField
+                            fullWidth
+                            type='number'
+                            label='Min Installment Value (₹)'
+                            value={form.min_installment_value}
+                            onChange={e => updateForm('min_installment_value', e.target.value)}
+                            error={Boolean(fieldErrors.min_installment_value)}
+                            helperText={fieldErrors.min_installment_value || 'Minimum amount the customer can choose per installment.'}
+                            sx={fieldSx}
+                          />
+                        )}
                         <TextField fullWidth type='number' label='No Of Installment' value={form.total_installments} onChange={e => updateForm('total_installments', e.target.value)} error={Boolean(fieldErrors.total_installments)} helperText={fieldErrors.total_installments} sx={fieldSx} />
                         <TextField select fullWidth label='Installment Duration' value={form.installment_duration} onChange={e => updateForm('installment_duration', e.target.value)} error={Boolean(fieldErrors.installment_duration)} helperText={fieldErrors.installment_duration} sx={fieldSx}>
                           <MenuItem value='Monthly'>Monthly</MenuItem>
@@ -888,6 +932,34 @@ const EditSchemePage = () => {
                           <TextField
                             select
                             fullWidth
+                            label='Bonus Type'
+                            value={form.bonus_mode}
+                            onChange={e => updateForm('bonus_mode', e.target.value as SchemeFormState['bonus_mode'])}
+                            sx={fieldSx}
+                            helperText={form.bonus_mode === 'Regular' ? 'Flat bonus — fixed number of installment amounts' : 'Tiered — percentage/value schedule by month reached'}
+                          >
+                            <MenuItem value='Regular'>Regular (Flat Bonus)</MenuItem>
+                            <MenuItem value='Maturity Benefit'>Maturity Benefit (Tiered)</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            fullWidth
+                            label='Bonus Basis'
+                            value={form.bonus_basis}
+                            onChange={e => updateForm('bonus_basis', e.target.value as SchemeFormState['bonus_basis'])}
+                            sx={fieldSx}
+                            helperText={
+                              form.bonus_mode === 'Regular'
+                                ? 'Regular-mode bonuses are always a fixed currency value, regardless of this setting'
+                                : 'Amount = fixed currency value. Weight = value in grams, converted to currency at closing.'
+                            }
+                          >
+                            <MenuItem value='Amount'>Amount</MenuItem>
+                            <MenuItem value='Weight'>Weight</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            fullWidth
                             label='Apply Rate'
                             value={form.apply_rate}
                             onChange={e => updateForm('apply_rate', e.target.value)}
@@ -899,11 +971,37 @@ const EditSchemePage = () => {
                             <MenuItem value='As Of Closing'>As Of Closing</MenuItem>
                           </TextField>
                           <Alert severity='info' icon={<i className='ri-information-line' />}>
-                            Bonus will be calculated based on the scheme type ({form.scheme_type}).
+                            Bonus will be calculated as a {form.bonus_mode === 'Regular' ? 'flat installment count' : 'tiered maturity schedule'}, based on the scheme type ({form.scheme_type}).
                           </Alert>
                         </Stack>
                       </Grid>
                       <Grid size={{ xs: 12, md: 8 }}>
+                        {form.bonus_mode === 'Regular' ? (
+                          <Box sx={{
+                            p: 3,
+                            borderRadius: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: theme => theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.5) : theme.palette.grey[50]
+                          }}>
+                            <Stack spacing={3}>
+                              <Typography variant='subtitle2' fontWeight={600}>Flat Bonus</Typography>
+                              <TextField
+                                fullWidth
+                                type='number'
+                                label='Bonus = No. of Installments'
+                                value={form.bonus_installment_count}
+                                onChange={e => updateForm('bonus_installment_count', e.target.value)}
+                                error={Boolean(fieldErrors.bonus_installment_count)}
+                                helperText={fieldErrors.bonus_installment_count || 'Company bonus equals this many installment amounts (e.g. 1 = one full installment), credited as a fixed benefit — never added to the customer\'s gold weight or paid as cash.'}
+                                sx={fieldSx}
+                              />
+                              <Alert severity='success' icon={<i className='ri-vip-diamond-line' />}>
+                                Bonus per closing: {currencyFormatter.format(Number(form.bonus_installment_count || 0) * Number(form.installment_value || 0))}
+                              </Alert>
+                            </Stack>
+                          </Box>
+                        ) : (
                         <Box sx={{
                           p: 3,
                           borderRadius: 1,
@@ -976,6 +1074,7 @@ const EditSchemePage = () => {
                             ))}
                           </Stack>
                         </Box>
+                        )}
                       </Grid>
                     </Grid>
                     </Box>

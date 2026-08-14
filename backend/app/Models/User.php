@@ -25,6 +25,7 @@ class User extends Authenticatable
         'mobile_verified',
         'mobile_verified_at',
         'status',
+        'default_customer_id',
     ];
 
     protected $hidden = [
@@ -51,6 +52,25 @@ class User extends Authenticatable
     public function customer()
     {
         return $this->hasOne(Customer::class);
+    }
+
+    /**
+     * All Customer profiles logged in via this portal account — normally
+     * one, but more than one when a household shares a single mobile number
+     * (Customer::syncCustomerUser reuses this same User for each of them).
+     */
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    /**
+     * The profile auto-selected on login when this User has more than one
+     * linked Customer — set via CustomerPortalController::selectProfile().
+     */
+    public function defaultCustomer()
+    {
+        return $this->belongsTo(Customer::class, 'default_customer_id');
     }
 
     public function transactions()

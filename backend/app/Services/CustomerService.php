@@ -6,7 +6,6 @@ use App\Models\Customer;
 use App\Models\CustomerKyc;
 use App\Models\User;
 use App\Models\Branch;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -14,34 +13,75 @@ use Spatie\Permission\Models\Role;
 class CustomerService
 {
     private static ?string $lastGeneratedLoyaltyCardNo = null;
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters): array
     {
-        $query = Customer::query()->with(['kyc']);
+        $query = Customer::query()
+            ->with(['kyc'])
+            ->leftJoin('customer_kycs as kyc', 'kyc.customer_id', '=', 'customers.id')
+            ->select('customers.*');
 
         foreach (['status'] as $field) {
             if (! empty($filters[$field])) {
-                $query->where($field, $filters[$field]);
+                $query->where("customers.{$field}", $filters[$field]);
+            }
+        }
+
+        if (! empty($filters['kyc_status'])) {
+            $query->where('kyc.status', $filters['kyc_status']);
+        }
+
+        foreach (['name', 'mobile', 'loyalty_card_no', 'old_card_no', 'introducer_card_no', 'introducer_name'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where("customers.{$field}", 'ilike', '%' . $filters[$field] . '%');
+            }
+        }
+
+        foreach (['phone', 'city'] as $field) {
+            if (! empty($filters[$field])) {
+                $column = $field === 'phone' ? 'phone_no_1' : 'city';
+                $query->where("kyc.{$column}", 'ilike', '%' . $filters[$field] . '%');
             }
         }
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'ilike', "%{$search}%")
-                    ->orWhere('mobile', 'ilike', "%{$search}%")
-                    ->orWhere('email', 'ilike', "%{$search}%")
-                    ->orWhere('loyalty_card_no', 'ilike', "%{$search}%");
+                $builder->where('customers.name', 'ilike', "%{$search}%")
+                    ->orWhere('customers.mobile', 'ilike', "%{$search}%")
+                    ->orWhere('customers.email', 'ilike', "%{$search}%")
+                    ->orWhere('customers.loyalty_card_no', 'ilike', "%{$search}%")
+                    ->orWhere('customers.old_card_no', 'ilike', "%{$search}%")
+                    ->orWhere('customers.introducer_card_no', 'ilike', "%{$search}%")
+                    ->orWhere('customers.introducer_name', 'ilike', "%{$search}%")
+                    ->orWhere('kyc.phone_no_1', 'ilike', "%{$search}%")
+                    ->orWhere('kyc.city', 'ilike', "%{$search}%");
             });
         }
 
-        $sortBy = (string) ($filters['sort_by'] ?? 'id');
-        $sortBy = in_array($sortBy, ['id', 'name', 'mobile', 'loyalty_card_no', 'created_at', 'updated_at'], true)
-            ? $sortBy
-            : 'id';
-        $sortDirection = strtolower((string) ($filters['sort_direction'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+        $summaryQuery = clone $query;
         $perPage = max(1, min((int) ($filters['per_page'] ?? 15), 100));
+        $page = max(1, (int) ($filters['page'] ?? 1));
 
-        return $query->orderBy($sortBy, $sortDirection)->paginate($perPage);
+        $paginated = $query
+            ->orderByDesc('customers.created_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $summary = [
+            'total_customers' => (clone $summaryQuery)->count(),
+            'active_customers' => (clone $summaryQuery)->where('customers.status', 'active')->count(),
+            'approved_kyc_customers' => (clone $summaryQuery)->where('kyc.status', 'approved')->count(),
+            'pending_kyc_customers' => (clone $summaryQuery)
+                ->where(function ($builder) {
+                    $builder->whereNull('kyc.status')
+                        ->orWhere('kyc.status', 'pending');
+                })
+                ->count(),
+        ];
+
+        return [
+            ...$paginated->toArray(),
+            'summary' => $summary,
+        ];
     }
 
     public function create(array $validated): Customer

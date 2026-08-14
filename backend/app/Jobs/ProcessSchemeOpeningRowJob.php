@@ -30,9 +30,11 @@ class ProcessSchemeOpeningRowJob implements ShouldQueue
     public function handle(SchemeOpeningProcessingService $processingService): void
     {
         // Re-check status here too: if this row was already processed via the
-        // synchronous endpoint (or another worker) before this job ran, skip it.
+        // synchronous endpoint (or another worker) before this job ran, skip
+        // it — but a Failed row is a valid retry target, same as the
+        // synchronous endpoint (see SchemeOpeningController::process()).
         $data = SchemeOpening::where('id', $this->schemeOpeningId)
-            ->where('status', 'Pending')
+            ->whereIn('status', ['Pending', 'Failed'])
             ->first();
 
         if (! $data) {

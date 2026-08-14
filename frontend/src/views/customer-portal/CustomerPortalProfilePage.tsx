@@ -14,9 +14,11 @@ import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
+import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { clearCustomerPortalToken, customerPortalRequest } from '@/libs/customerPortal'
+import { type RelativeAccount, type RelativeRequest } from '../customers/customerData'
 
 type ProfileResponse = {
   data: {
@@ -34,6 +36,8 @@ type ProfileResponse = {
       active_memberships_count: number
       total_paid: number
     }
+    relative_accounts?: RelativeAccount[]
+    relative_requests?: RelativeRequest[]
   }
 }
 
@@ -104,6 +108,7 @@ const CustomerPortalProfilePage = () => {
   const router = useRouter()
   const [payload, setPayload] = useState<ProfileResponse['data'] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [processingRequestId, setProcessingRequestId] = useState<number | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -129,6 +134,27 @@ const CustomerPortalProfilePage = () => {
     router.replace('/customer/login')
   }
 
+  const refreshProfile = async () => {
+    const response = await customerPortalRequest<ProfileResponse>('/customer-portal/dashboard')
+    setPayload(response.data)
+  }
+
+  const handleRelativeRequestAction = async (requestId: number, action: 'approve' | 'reject') => {
+    setProcessingRequestId(requestId)
+
+    try {
+      await customerPortalRequest(`/customer-portal/relative-requests/${requestId}/${action}`, {
+        method: 'POST'
+      })
+
+      await refreshProfile()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update relative request.')
+    } finally {
+      setProcessingRequestId(null)
+    }
+  }
+
   if (!payload) {
     return (
       <Box sx={{ p: 4 }}>
@@ -141,6 +167,8 @@ const CustomerPortalProfilePage = () => {
   const memberSinceYear = payload.customer.created_at ? new Date(payload.customer.created_at).getFullYear() : null
   const points = Number(payload.customer.loyalty_points_balance || 0)
   const lifetimePoints = Number(payload.customer.lifetime_points || 0)
+  const approvedRelatives = payload.relative_accounts || []
+  const pendingRelativeRequests = (payload.relative_requests || []).filter(relative => relative.direction === 'incoming')
   // Honest substitute for a "tier progress" bar (no tier-threshold rule is configured
   // anywhere in this system) — shows how much of the customer's lifetime-earned
   // points are still sitting in their balance, unspent.
@@ -269,6 +297,75 @@ const CustomerPortalProfilePage = () => {
                 title='Wallet & Rewards'
                 subtitle={`${points.toLocaleString('en-IN')} pts available`}
               />
+            </List>
+          </Card>
+        </Box>
+
+        <Box>
+          <Typography variant='caption' sx={{ px: 0.5, color: 'text.secondary', fontWeight: 700, letterSpacing: '0.5px' }}>
+            RELATIVE ACCOUNTS
+          </Typography>
+          <Card sx={{ mt: 1, borderRadius: 2 }}>
+            <List disablePadding>
+              {pendingRelativeRequests.map(request => (
+                <Box key={request.id} sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Stack spacing={1}>
+                    <Stack direction='row' justifyContent='space-between' alignItems='center' spacing={2}>
+                      <Box>
+                        <Typography variant='subtitle2' fontWeight={700}>
+                          {request.customer?.name || 'Unnamed customer'}
+                        </Typography>
+                        <Typography variant='caption' color='text.secondary'>
+                          {request.customer?.mobile}
+                        </Typography>
+                      </Box>
+                      <Chip size='small' label='Awaiting approval' color='warning' />
+                    </Stack>
+                    <Stack direction='row' spacing={1}>
+                      <Button
+                        size='small'
+                        variant='contained'
+                        onClick={() => void handleRelativeRequestAction(request.id, 'approve')}
+                        disabled={processingRequestId === request.id}
+                      >
+                        {processingRequestId === request.id ? 'Working...' : 'Approve'}
+                      </Button>
+                      <Button
+                        size='small'
+                        variant='outlined'
+                        color='error'
+                        onClick={() => void handleRelativeRequestAction(request.id, 'reject')}
+                        disabled={processingRequestId === request.id}
+                      >
+                        Reject
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Box>
+              ))}
+
+              {approvedRelatives.map(relative => (
+                <ListRow
+                  key={relative.request_id}
+                  href={`/customer/panel`}
+                  icon='ri-team-line'
+                  iconBg='#F3F4F6'
+                  iconColor='#6B7280'
+                  title={relative.customer?.name || 'Unnamed customer'}
+                  subtitle={[relative.customer?.mobile, relative.customer?.loyalty_card_no ? `Card: ${relative.customer.loyalty_card_no}` : null]
+                    .filter(Boolean)
+                    .join(' • ')}
+                  badge='Approved'
+                />
+              ))}
+
+              {!pendingRelativeRequests.length && !approvedRelatives.length && (
+                <Box sx={{ p: 2 }}>
+                  <Typography variant='body2' color='text.secondary'>
+                    No relative accounts yet.
+                  </Typography>
+                </Box>
+              )}
             </List>
           </Card>
         </Box>

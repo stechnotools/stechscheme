@@ -16,7 +16,11 @@ class StoreCustomerRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20', 'unique:customers,mobile', 'unique:users,mobile'],
+            // Not unique: a mobile number can legitimately be shared by more
+            // than one Customer (e.g. household members) — CustomerService
+            // reuses the existing portal User for that mobile rather than
+            // creating a duplicate, so no uniqueness check is needed here.
+            'mobile' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'blocked'])],
             'portal_enabled' => ['nullable', 'boolean'],

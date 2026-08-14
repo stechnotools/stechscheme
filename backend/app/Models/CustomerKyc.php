@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomerKyc extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'customer_id',
         'family_head',
@@ -74,6 +77,7 @@ class CustomerKyc extends Model
             'anniversary' => 'date',
             'child_1_birth_date' => 'date',
             'child_2_birth_date' => 'date',
+            'deleted_at' => 'datetime',
         ];
     }
 
